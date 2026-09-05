@@ -1,0 +1,218 @@
+{
+  "common": {
+    "appName": "CodeForge",
+    "tagline": "Forgez vos algorithmes",
+    "language": "Langue",
+    "loading": "Chargement…",
+    "retry": "Réessayer"
+  },
+  "pageTitle": {
+    "login": "Connexion",
+    "register": "Créer un compte",
+    "home": "Accueil",
+    "themePreview": "Aperçu du thème",
+    "profile": "Profil",
+    "problems": "Problèmes",
+    "solve": "Résoudre"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Reprenez là où vous vous étiez arrêté.",
+      "submit": "Se connecter",
+      "submitting": "Connexion…",
+      "noAccount": "Pas encore de compte ?",
+      "signUpLink": "Créer un compte"
+    },
+    "register": {
+      "title": "Créer votre compte",
+      "subtitle": "Commencez à résoudre des problèmes en quelques secondes.",
+      "submit": "Créer le compte",
+      "submitting": "Création du compte…",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "signInLink": "Se connecter"
+    },
+    "fields": {
+      "username": "Nom d'utilisateur",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe"
+    },
+    "hints": {
+      "username": "Lettres, chiffres, tirets bas et tirets.",
+      "password": "Au moins 8 caractères."
+    },
+    "logout": "Se déconnecter"
+  },
+  "home": {
+    "welcome": "Bon retour, {{username}}",
+    "signedInAs": "Connecté en tant que",
+    "role": "Rôle",
+    "placeholder": "Les pages produit arrivent ensuite. Pour l'instant, cette page prouve seulement que la connexion fonctionne de bout en bout.",
+    "themePreview": "Ouvrir l'aperçu du thème"
+  },
+  "validation": {
+    "username": {
+      "required": "Le nom d'utilisateur est obligatoire",
+      "length": "Le nom d'utilisateur doit contenir entre 3 et 32 caractères",
+      "format": "Le nom d'utilisateur ne peut contenir que des lettres, des chiffres, des tirets bas et des tirets",
+      "taken": "Ce nom d'utilisateur est déjà pris"
+    },
+    "email": {
+      "required": "L'e-mail est obligatoire",
+      "length": "L'adresse e-mail est trop longue",
+      "format": "Saisissez une adresse e-mail valide",
+      "taken": "Cette adresse e-mail est déjà enregistrée"
+    },
+    "password": {
+      "required": "Le mot de passe est obligatoire",
+      "length": "Le mot de passe doit contenir entre 8 et 72 caractères"
+    },
+    "confirmPassword": {
+      "required": "Veuillez confirmer votre mot de passe",
+      "mismatch": "Les mots de passe ne correspondent pas"
+    },
+    "avatar": {
+      "required": "Choisissez un avatar",
+      "unknown": "Cet avatar n'est pas disponible"
+    },
+    "currentPassword": {
+      "required": "Saisissez votre mot de passe actuel",
+      "incorrect": "Ce n'est pas votre mot de passe actuel"
+    },
+    "newPassword": {
+      "unchanged": "Choisissez un mot de passe que vous n'avez pas déjà utilisé ici"
+    }
+  },
+  "error": {
+    "validation": {
+      "failed": "Veuillez corriger les champs en surbrillance."
+    },
+    "auth": {
+      "invalidCredentials": "Nom d'utilisateur ou mot de passe incorrect.",
+      "unauthenticated": "Votre session a expiré. Veuillez vous reconnecter.",
+      "forbidden": "Vous n'avez pas l'autorisation de faire cela."
+    },
+    "user": {
+      "notFound": "Ce compte n'existe plus."
+    },
+    "request": {
+      "invalid": "Cette requête n'a pas pu être traitée."
+    },
+    "internal": "Une erreur est survenue. Veuillez réessayer.",
+    "network": "Serveur injoignable. Le backend est-il démarré ?",
+    "execution": {
+      "unavailable": "Le juge est indisponible. Judge0 est-il démarré ?",
+      "languageUnsupported": "Ce langage n'est pas pris en charge pour ce problème.",
+      "noSignature": "Ce problème ne peut pas encore être exécuté.",
+      "emptySource": "Il n'y a aucun code à exécuter.",
+      "sourceTooLong": "Cette solution est trop longue pour être exécutée."
+    }
+  },
+  "avatar": {
+    "choose": "Choisissez votre avatar",
+    "current": "Votre avatar",
+    "saved": "Avatar mis à jour"
+  },
+  "userMenu": {
+    "open": "Ouvrir le menu du compte",
+    "profile": "Profil"
+  },
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Modifiez votre apparence et votre méthode de connexion.",
+    "avatarSection": "Avatar",
+    "usernameSection": "Nom d'utilisateur",
+    "passwordSection": "Mot de passe",
+    "usernameHelp": "Ce nom est visible par les autres.",
+    "passwordHelp": "Saisissez votre mot de passe actuel pour en définir un nouveau.",
+    "saveUsername": "Enregistrer le nom",
+    "savePassword": "Changer le mot de passe",
+    "saving": "Enregistrement…",
+    "usernameSaved": "Nom d'utilisateur mis à jour",
+    "passwordSaved": "Mot de passe modifié",
+    "back": "Retour"
+  },
+  "nav": {
+    "problems": "Problèmes",
+    "home": "Accueil"
+  },
+  "difficulty": {
+    "easy": "Facile",
+    "medium": "Moyen",
+    "hard": "Difficile"
+  },
+  "problems": {
+    "title": "Problèmes",
+    "subtitle": "Choisissez un problème et commencez à forger.",
+    "searchPlaceholder": "Rechercher des problèmes",
+    "difficulty": "Difficulté",
+    "anyDifficulty": "N'importe quelle difficulté",
+    "topic": "Thème",
+    "anyTopic": "N'importe quel thème",
+    "clearFilters": "Effacer",
+    "topics": "Thèmes",
+    "status": "Statut",
+    "solved": "Résolu",
+    "count_one": "{{count}} problème",
+    "count_other": "{{count}} problèmes",
+    "emptyTitle": "Aucun problème ne correspond à ces filtres",
+    "emptyBody": "Essayez un autre thème ou effacez les filtres.",
+    "loadError": "Impossible de charger la liste des problèmes."
+  },
+  "solve": {
+    "description": "Énoncé",
+    "editorial": "Solution",
+    "submissions": "Soumissions",
+    "examples": "Exemples",
+    "example": "Exemple {{index}}",
+    "input": "Entrée",
+    "output": "Sortie",
+    "explanation": "Explication",
+    "constraints": "Contraintes",
+    "topics": "Thèmes",
+    "hints": "Indices",
+    "hint": "Indice {{index}}",
+    "testcase": "Cas de test",
+    "result": "Résultat",
+    "run": "Exécuter",
+    "submit": "Soumettre",
+    "backToProblems": "Tous les problèmes",
+    "notFound": "Ce problème n'existe pas.",
+    "language": "Langage",
+    "case": "Cas {{index}}",
+    "expected": "Attendu",
+    "stdout": "Sortie standard",
+    "stderr": "Erreur standard",
+    "compileError": "Erreur de compilation",
+    "noOutput": "Aucune sortie",
+    "running": "Exécution sur les cas d'exemple…",
+    "casesPassed": "{{passed}} / {{total}} cas réussis",
+    "runtime": "{{ms}} ms",
+    "memory": "{{mb}} Mo",
+    "resetCode": "Réinitialiser au code de départ",
+    "editorSettings": "Paramètres de l'éditeur",
+    "fontSize": "Taille de police",
+    "tabSize": "Largeur de tabulation",
+    "wordWrap": "Retour à la ligne",
+    "minimap": "Minicarte",
+    "runHint": "Exécuter les cas d'exemple (⌘/Ctrl + Entrée)",
+    "submitComingSoon": "La soumission n'est pas encore disponible",
+    "notSolvable": "Ce problème n'a pas encore de signature de solution, il ne peut donc pas être résolu dans l'éditeur.",
+    "noSampleCases": "Ce problème n'a aucun cas d'exemple.",
+    "programmingLanguage": "Langage de programmation"
+  },
+  "verdict": {
+    "pending": "En attente",
+    "running": "En cours",
+    "accepted": "Accepté",
+    "wrongAnswer": "Mauvaise réponse",
+    "timeLimitExceeded": "Temps limite dépassé",
+    "memoryLimitExceeded": "Mémoire limite dépassée",
+    "runtimeError": "Erreur d'exécution",
+    "compileError": "Erreur de compilation",
+    "internalError": "Erreur du juge"
+  }
+}

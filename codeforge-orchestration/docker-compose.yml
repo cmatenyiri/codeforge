@@ -1,1 +1,91 @@
-version: '3.8'
+# Local development dependencies for CodeForge.
+# The application schema is created by Hibernate, not by a migration tool.
+#
+# Judge0 runs submitted code, so its containers are privileged and its ports are
+# bound to 127.0.0.1 only. Two things about the image are worth knowing before
+# debugging it:
+#
+#   * it is published for linux/amd64 only, so on Apple Silicon it runs emulated
+#     — correct, but slower than the reported times suggest;
+#   * it needs cgroup v1. On Docker Desktop that means "DeprecatedCgroupv1": true
+#     in ~/Library/Group Containers/group.com.docker/settings-store.json,
+#     followed by a restart of the VM.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: codeforge-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: codeforge
+      MYSQL_USER: codeforge
+      MYSQL_PASSWORD: codeforge
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p$$MYSQL_ROOT_PASSWORD']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ── Judge0 ────────────────────────────────────────────────────────────────
+  # The API the backend talks to. It only enqueues work; nothing runs here.
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    platform: linux/amd64
+    container_name: codeforge-judge0-server
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - '127.0.0.1:2358:2358'
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
+
+  # Where submissions are actually compiled and run, under isolate.
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    platform: linux/amd64
+    container_name: codeforge-judge0-workers
+    restart: unless-stopped
+    privileged: true
+    command: ['./scripts/workers']
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
+
+  judge0-db:
+    image: postgres:16-alpine
+    container_name: codeforge-judge0-db
+    restart: unless-stopped
+    env_file: judge0.conf
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U judge0 -d judge0']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  judge0-redis:
+    image: redis:7-alpine
+    container_name: codeforge-judge0-redis
+    restart: unless-stopped
+    # Judge0 uses Redis as a work queue, not as a cache, so it must require the
+    # password the workers are configured with.
+    command: ['redis-server', '--appendonly', 'no', '--requirepass', 'judge0redis']
+
+volumes:
+  mysql-data:
+  judge0-db-data:

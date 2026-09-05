@@ -1,0 +1,218 @@
+{
+  "common": {
+    "appName": "CodeForge",
+    "tagline": "Schmiede deine Algorithmen",
+    "language": "Sprache",
+    "loading": "Wird geladen…",
+    "retry": "Erneut versuchen"
+  },
+  "pageTitle": {
+    "login": "Anmelden",
+    "register": "Konto erstellen",
+    "home": "Start",
+    "themePreview": "Theme-Vorschau",
+    "profile": "Profil",
+    "problems": "Aufgaben",
+    "solve": "Lösen"
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "subtitle": "Mach dort weiter, wo du aufgehört hast.",
+      "submit": "Anmelden",
+      "submitting": "Anmeldung läuft…",
+      "noAccount": "Noch kein Konto?",
+      "signUpLink": "Jetzt erstellen"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "In wenigen Sekunden mit dem Lösen beginnen.",
+      "submit": "Konto erstellen",
+      "submitting": "Konto wird erstellt…",
+      "haveAccount": "Du hast bereits ein Konto?",
+      "signInLink": "Anmelden"
+    },
+    "fields": {
+      "username": "Benutzername",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "confirmPassword": "Passwort bestätigen",
+      "currentPassword": "Aktuelles Passwort",
+      "newPassword": "Neues Passwort"
+    },
+    "hints": {
+      "username": "Buchstaben, Ziffern, Unterstriche und Bindestriche.",
+      "password": "Mindestens 8 Zeichen."
+    },
+    "logout": "Abmelden"
+  },
+  "home": {
+    "welcome": "Willkommen zurück, {{username}}",
+    "signedInAs": "Angemeldet als",
+    "role": "Rolle",
+    "placeholder": "Die Produktseiten folgen als Nächstes. Vorerst belegt diese Seite nur, dass die Anmeldung durchgängig funktioniert.",
+    "themePreview": "Theme-Vorschau öffnen"
+  },
+  "validation": {
+    "username": {
+      "required": "Benutzername ist erforderlich",
+      "length": "Der Benutzername muss zwischen 3 und 32 Zeichen lang sein",
+      "format": "Der Benutzername darf nur Buchstaben, Ziffern, Unterstriche und Bindestriche enthalten",
+      "taken": "Dieser Benutzername ist bereits vergeben"
+    },
+    "email": {
+      "required": "E-Mail ist erforderlich",
+      "length": "Die E-Mail-Adresse ist zu lang",
+      "format": "Gib eine gültige E-Mail-Adresse ein",
+      "taken": "Diese E-Mail-Adresse ist bereits registriert"
+    },
+    "password": {
+      "required": "Passwort ist erforderlich",
+      "length": "Das Passwort muss zwischen 8 und 72 Zeichen lang sein"
+    },
+    "confirmPassword": {
+      "required": "Bitte bestätige dein Passwort",
+      "mismatch": "Die Passwörter stimmen nicht überein"
+    },
+    "avatar": {
+      "required": "Wähle einen Avatar",
+      "unknown": "Dieser Avatar ist nicht verfügbar"
+    },
+    "currentPassword": {
+      "required": "Gib dein aktuelles Passwort ein",
+      "incorrect": "Das ist nicht dein aktuelles Passwort"
+    },
+    "newPassword": {
+      "unchanged": "Wähle ein Passwort, das du hier noch nicht verwendet hast"
+    }
+  },
+  "error": {
+    "validation": {
+      "failed": "Bitte korrigiere die markierten Felder."
+    },
+    "auth": {
+      "invalidCredentials": "Falscher Benutzername oder falsches Passwort.",
+      "unauthenticated": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+      "forbidden": "Dazu hast du keine Berechtigung."
+    },
+    "user": {
+      "notFound": "Dieses Konto existiert nicht mehr."
+    },
+    "request": {
+      "invalid": "Diese Anfrage konnte nicht verarbeitet werden."
+    },
+    "internal": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "network": "Der Server ist nicht erreichbar. Läuft das Backend?",
+    "execution": {
+      "unavailable": "Der Judge ist nicht erreichbar. Läuft Judge0?",
+      "languageUnsupported": "Diese Sprache wird für diese Aufgabe nicht unterstützt.",
+      "noSignature": "Diese Aufgabe kann noch nicht ausgeführt werden.",
+      "emptySource": "Es gibt keinen Code zum Ausführen.",
+      "sourceTooLong": "Diese Lösung ist zu lang zum Ausführen."
+    }
+  },
+  "avatar": {
+    "choose": "Wähle deinen Avatar",
+    "current": "Dein Avatar",
+    "saved": "Avatar aktualisiert"
+  },
+  "userMenu": {
+    "open": "Kontomenü öffnen",
+    "profile": "Profil"
+  },
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Ändere, wie du erscheinst und wie du dich anmeldest.",
+    "avatarSection": "Avatar",
+    "usernameSection": "Benutzername",
+    "passwordSection": "Passwort",
+    "usernameHelp": "Diesen Namen sehen andere.",
+    "passwordHelp": "Gib dein aktuelles Passwort ein, um ein neues zu setzen.",
+    "saveUsername": "Benutzernamen speichern",
+    "savePassword": "Passwort ändern",
+    "saving": "Wird gespeichert…",
+    "usernameSaved": "Benutzername aktualisiert",
+    "passwordSaved": "Passwort geändert",
+    "back": "Zurück"
+  },
+  "nav": {
+    "problems": "Aufgaben",
+    "home": "Start"
+  },
+  "difficulty": {
+    "easy": "Leicht",
+    "medium": "Mittel",
+    "hard": "Schwer"
+  },
+  "problems": {
+    "title": "Aufgaben",
+    "subtitle": "Wähle eine Aufgabe und leg los.",
+    "searchPlaceholder": "Aufgaben suchen",
+    "difficulty": "Schwierigkeit",
+    "anyDifficulty": "Beliebige Schwierigkeit",
+    "topic": "Thema",
+    "anyTopic": "Beliebiges Thema",
+    "clearFilters": "Zurücksetzen",
+    "topics": "Themen",
+    "status": "Status",
+    "solved": "Gelöst",
+    "count_one": "{{count}} Aufgabe",
+    "count_other": "{{count}} Aufgaben",
+    "emptyTitle": "Keine Aufgaben passen zu diesen Filtern",
+    "emptyBody": "Probiere ein anderes Thema oder setze die Filter zurück.",
+    "loadError": "Die Aufgabenliste konnte nicht geladen werden."
+  },
+  "solve": {
+    "description": "Beschreibung",
+    "editorial": "Lösungsweg",
+    "submissions": "Einreichungen",
+    "examples": "Beispiele",
+    "example": "Beispiel {{index}}",
+    "input": "Eingabe",
+    "output": "Ausgabe",
+    "explanation": "Erklärung",
+    "constraints": "Einschränkungen",
+    "topics": "Themen",
+    "hints": "Hinweise",
+    "hint": "Hinweis {{index}}",
+    "testcase": "Testfall",
+    "result": "Ergebnis",
+    "run": "Ausführen",
+    "submit": "Einreichen",
+    "backToProblems": "Alle Aufgaben",
+    "notFound": "Diese Aufgabe existiert nicht.",
+    "language": "Sprache",
+    "case": "Fall {{index}}",
+    "expected": "Erwartet",
+    "stdout": "Stdout",
+    "stderr": "Stderr",
+    "compileError": "Kompilierfehler",
+    "noOutput": "Keine Ausgabe",
+    "running": "Wird mit den Beispielfällen ausgeführt…",
+    "casesPassed": "{{passed}} / {{total}} Fälle bestanden",
+    "runtime": "{{ms}} ms",
+    "memory": "{{mb}} MB",
+    "resetCode": "Auf Startcode zurücksetzen",
+    "editorSettings": "Editor-Einstellungen",
+    "fontSize": "Schriftgröße",
+    "tabSize": "Tabulatorbreite",
+    "wordWrap": "Zeilenumbruch",
+    "minimap": "Minikarte",
+    "runHint": "Beispielfälle ausführen (⌘/Strg + Enter)",
+    "submitComingSoon": "Das Einreichen ist noch nicht verfügbar",
+    "notSolvable": "Für diese Aufgabe gibt es noch keine Lösungssignatur, sie kann daher im Editor nicht gelöst werden.",
+    "noSampleCases": "Diese Aufgabe hat keine Beispielfälle.",
+    "programmingLanguage": "Programmiersprache"
+  },
+  "verdict": {
+    "pending": "Ausstehend",
+    "running": "Läuft",
+    "accepted": "Akzeptiert",
+    "wrongAnswer": "Falsche Antwort",
+    "timeLimitExceeded": "Zeitlimit überschritten",
+    "memoryLimitExceeded": "Speicherlimit überschritten",
+    "runtimeError": "Laufzeitfehler",
+    "compileError": "Kompilierfehler",
+    "internalError": "Judge-Fehler"
+  }
+}

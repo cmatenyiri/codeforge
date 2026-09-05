@@ -1,3 +1,70 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: codeforge-backend
+
+  datasource:
+    # `createDatabaseIfNotExist` keeps first-run friction low; the schema itself is
+    # created by Hibernate (see `ddl-auto` below) rather than a migration tool.
+    url: jdbc:mysql://localhost:3306/codeforge?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: codeforge
+    password: codeforge
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    # No Flyway/Liquibase: entities are the single source of truth for the schema.
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+codeforge:
+  jwt:
+    # Dev-only secret. Must be at least 32 bytes for HS256 — move this to an
+    # environment variable before anything leaves localhost.
+    secret: 8f2b41d6c07e4a95b3d18ea27c5f60934ab7de815c26f0a94db3e57816cf2a0d
+    issuer: codeforge
+    access-token-ttl: PT12H
+    cookie:
+      name: codeforge_token
+      # `secure` must be true anywhere reachable over HTTPS; it is false here
+      # only so the cookie survives plain-HTTP localhost.
+      secure: false
+      same-site: Lax
+      path: /
+
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+
+  execution:
+    judge0:
+      base-url: http://localhost:2358
+      # Unauthenticated because it is bound to localhost and reachable from
+      # nowhere else. Set a token before that changes, and never expose an open
+      # instance — it runs arbitrary code by design.
+      auth-token:
+      # Instance-specific: `GET /languages` lists what the running image actually
+      # has. These are the ids in judge0/judge0:1.13.1.
+      language-ids:
+        JAVA: 62 # OpenJDK 13.0.1
+        PYTHON: 71 # 3.8.1
+        JAVASCRIPT: 63 # Node.js 12.14.0
+        TYPESCRIPT: 74 # 3.7.4
+      # Judge0 caps these at its own MAX_* settings — 15s CPU and 20s wall by
+      # default — and rejects the entire batch with a 422 if either is exceeded.
+      cpu-time-limit: PT5S
+      wall-time-limit: PT10S
+      memory-limit-kb: 256000
+      poll-interval: PT0.3S
+      poll-timeout: PT60S
+      connect-timeout: PT5S
+      read-timeout: PT30S

@@ -1,0 +1,218 @@
+{
+  "common": {
+    "appName": "CodeForge",
+    "tagline": "Forge your algorithms",
+    "language": "Language",
+    "loading": "Loading…",
+    "retry": "Try again"
+  },
+  "pageTitle": {
+    "login": "Sign in",
+    "register": "Create account",
+    "home": "Home",
+    "themePreview": "Theme preview",
+    "profile": "Profile",
+    "problems": "Problems",
+    "solve": "Solve"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Pick up where you left off.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Create one"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start solving problems in a few seconds.",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in"
+    },
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "currentPassword": "Current password",
+      "newPassword": "New password"
+    },
+    "hints": {
+      "username": "Letters, digits, underscores and hyphens.",
+      "password": "At least 8 characters."
+    },
+    "logout": "Sign out"
+  },
+  "home": {
+    "welcome": "Welcome back, {{username}}",
+    "signedInAs": "Signed in as",
+    "role": "Role",
+    "placeholder": "The product pages land here next. For now this page only proves the login flow works end to end.",
+    "themePreview": "Open theme preview"
+  },
+  "validation": {
+    "username": {
+      "required": "Username is required",
+      "length": "Username must be between 3 and 32 characters",
+      "format": "Username may only contain letters, digits, underscores and hyphens",
+      "taken": "That username is already taken"
+    },
+    "email": {
+      "required": "Email is required",
+      "length": "Email is too long",
+      "format": "Enter a valid email address",
+      "taken": "That email is already registered"
+    },
+    "password": {
+      "required": "Password is required",
+      "length": "Password must be between 8 and 72 characters"
+    },
+    "confirmPassword": {
+      "required": "Please confirm your password",
+      "mismatch": "Passwords do not match"
+    },
+    "avatar": {
+      "required": "Choose an avatar",
+      "unknown": "That avatar is not available"
+    },
+    "currentPassword": {
+      "required": "Enter your current password",
+      "incorrect": "That is not your current password"
+    },
+    "newPassword": {
+      "unchanged": "Choose a password you have not used here"
+    }
+  },
+  "error": {
+    "validation": {
+      "failed": "Please correct the highlighted fields."
+    },
+    "auth": {
+      "invalidCredentials": "Wrong username or password.",
+      "unauthenticated": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have permission to do that."
+    },
+    "user": {
+      "notFound": "That account no longer exists."
+    },
+    "request": {
+      "invalid": "That request could not be processed."
+    },
+    "internal": "Something went wrong. Please try again.",
+    "network": "Cannot reach the server. Is the backend running?",
+    "execution": {
+      "unavailable": "The judge is unavailable. Is Judge0 running?",
+      "languageUnsupported": "That language is not supported for this problem.",
+      "noSignature": "This problem cannot be run yet.",
+      "emptySource": "There is no code to run.",
+      "sourceTooLong": "That solution is too long to run."
+    }
+  },
+  "avatar": {
+    "choose": "Choose your avatar",
+    "current": "Your avatar",
+    "saved": "Avatar updated"
+  },
+  "userMenu": {
+    "open": "Open account menu",
+    "profile": "Profile"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Change how you appear and how you sign in.",
+    "avatarSection": "Avatar",
+    "usernameSection": "Username",
+    "passwordSection": "Password",
+    "usernameHelp": "This is the name other people see.",
+    "passwordHelp": "Enter your current password to set a new one.",
+    "saveUsername": "Save username",
+    "savePassword": "Change password",
+    "saving": "Saving…",
+    "usernameSaved": "Username updated",
+    "passwordSaved": "Password changed",
+    "back": "Back"
+  },
+  "nav": {
+    "problems": "Problems",
+    "home": "Home"
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "problems": {
+    "title": "Problems",
+    "subtitle": "Pick a problem and start forging.",
+    "searchPlaceholder": "Search problems",
+    "difficulty": "Difficulty",
+    "anyDifficulty": "Any difficulty",
+    "topic": "Topic",
+    "anyTopic": "Any topic",
+    "clearFilters": "Clear",
+    "topics": "Topics",
+    "status": "Status",
+    "solved": "Solved",
+    "count_one": "{{count}} problem",
+    "count_other": "{{count}} problems",
+    "emptyTitle": "No problems match those filters",
+    "emptyBody": "Try a different topic, or clear the filters.",
+    "loadError": "Could not load the problem list."
+  },
+  "solve": {
+    "description": "Description",
+    "editorial": "Editorial",
+    "submissions": "Submissions",
+    "examples": "Examples",
+    "example": "Example {{index}}",
+    "input": "Input",
+    "output": "Output",
+    "explanation": "Explanation",
+    "constraints": "Constraints",
+    "topics": "Topics",
+    "hints": "Hints",
+    "hint": "Hint {{index}}",
+    "testcase": "Testcase",
+    "result": "Result",
+    "run": "Run",
+    "submit": "Submit",
+    "backToProblems": "All problems",
+    "notFound": "That problem does not exist.",
+    "language": "Language",
+    "case": "Case {{index}}",
+    "expected": "Expected",
+    "stdout": "Stdout",
+    "stderr": "Stderr",
+    "compileError": "Compile error",
+    "noOutput": "No output",
+    "running": "Running against the sample cases…",
+    "casesPassed": "{{passed}} / {{total}} cases passed",
+    "runtime": "{{ms}} ms",
+    "memory": "{{mb}} MB",
+    "resetCode": "Reset to starter code",
+    "editorSettings": "Editor settings",
+    "fontSize": "Font size",
+    "tabSize": "Tab size",
+    "wordWrap": "Word wrap",
+    "minimap": "Minimap",
+    "runHint": "Run the sample cases (⌘/Ctrl + Enter)",
+    "submitComingSoon": "Submitting is not available yet",
+    "notSolvable": "This problem has no solution signature yet, so it cannot be solved in the editor.",
+    "noSampleCases": "This problem has no sample cases.",
+    "programmingLanguage": "Programming language"
+  },
+  "verdict": {
+    "pending": "Pending",
+    "running": "Running",
+    "accepted": "Accepted",
+    "wrongAnswer": "Wrong Answer",
+    "timeLimitExceeded": "Time Limit Exceeded",
+    "memoryLimitExceeded": "Memory Limit Exceeded",
+    "runtimeError": "Runtime Error",
+    "compileError": "Compile Error",
+    "internalError": "Judge Error"
+  }
+}

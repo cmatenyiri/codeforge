@@ -69,9 +69,11 @@ export default defineConfig(
     rules: {
       // ── typescript-eslint ────────────────────────────────────────────────
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      // `verbatimModuleSyntax` (tsconfig) requires type-only imports to be marked,
+      // so prefer inline `type` specifiers rather than banning them.
       '@typescript-eslint/consistent-type-imports': [
         'error',
-        { prefer: 'no-type-imports', fixStyle: 'inline-type-imports' },
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-confusing-void-expression': [

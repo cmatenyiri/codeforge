@@ -1,0 +1,111 @@
+package com.codeforge.domain;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import lombok.Getter;
+import org.hibernate.annotations.BatchSize;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/** A single coding problem, its examples and its test cases. */
+@Getter
+@Setter
+@Entity
+@NoArgsConstructor
+@Table(
+        name = "problems",
+        uniqueConstraints = {
+            @UniqueConstraint(name = "uk_problems_title", columnNames = "title"),
+            @UniqueConstraint(name = "uk_problems_slug", columnNames = "slug")
+        })
+public class Problem extends AuditableEntity {
+
+    @Column(nullable = false, length = 160)
+    private String title;
+
+    @Column(nullable = false, length = 180)
+    private String slug;
+
+    /** Markdown. */
+    @Lob
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String description;
+
+    /** Markdown. Column is not named `constraints` — that is reserved in MySQL. */
+    @Lob
+    @Column(name = "constraints_md", columnDefinition = "TEXT")
+    private String constraintsMarkdown;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private Difficulty difficulty;
+
+    @Column(nullable = false)
+    private boolean archived = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    // ── Solution signature ────────────────────────────────────────────────
+    // Together these describe the function a solver writes. One declaration
+    // drives three things that would otherwise be authored by hand for every
+    // (problem, language) pair: the starter code, the harness that feeds stdin
+    // into the function, and the canonical formatting of its return value.
+
+    /** Name of the function to implement, e.g. {@code twoSum}. */
+    @Column(name = "function_name", length = 64)
+    private String functionName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "return_type", length = 32)
+    private DataType returnType;
+
+    /** In signature order, which is also the order of the input lines per case. */
+    @OrderColumn(name = "position")
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "problem_parameters", joinColumns = @JoinColumn(name = "problem_id"))
+    private List<ProblemParameter> parameters = new ArrayList<>();
+
+    // Batch fetching turns the per-row tag lookup on a listing page into one
+    // extra query instead of one per problem.
+    @BatchSize(size = 32)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "problem_tags",
+            joinColumns = @JoinColumn(name = "problem_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id"))
+    private Set<Tag> tags = new LinkedHashSet<>();
+
+    @OrderBy("displayOrder ASC")
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProblemExample> examples = new ArrayList<>();
+
+    @OrderBy("displayOrder ASC")
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProblemHint> hints = new ArrayList<>();
+
+    @OrderBy("displayOrder ASC")
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TestCase> testCases = new ArrayList<>();
+}
