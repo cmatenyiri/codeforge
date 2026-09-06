@@ -1,13 +1,13 @@
-import { Alert, Stack } from '@mui/material';
+import { Alert, Snackbar, Stack } from '@mui/material';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toApiError } from '../../api/api-error';
 import { executionApi } from '../../api/execution-api';
-import { type Language, type ProblemDetail, type RunResult } from '../../api/types';
+import { type Language, type ProblemDetail } from '../../api/types';
 import { useMessages } from '../../i18n/use-messages';
 import { CodeEditor } from './CodeEditor';
 import { EditorToolbar } from './EditorToolbar';
-import { RunConsole, type ConsoleTab } from './RunConsole';
+import { RunConsole, type ConsoleOutcome, type ConsoleTab } from './RunConsole';
 import { DEFAULT_EDITOR_SETTINGS, type EditorSettings } from './editor-settings';
 import { useCodeDraft } from './use-code-draft';
 
@@ -18,9 +18,16 @@ type EditorWorkspaceProps = {
   problem: ProblemDetail;
   languages: Language[];
   initialLanguage: Language;
+  /**
+   * Called once per recorded submission — accepted or not. The page reloads the
+   * problem from it, which is what updates the solved badge, the acceptance rate
+   * and the submissions tab.
+   */
+  onSubmitted: () => void;
 };
 
-const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspaceProps) => {
+const EditorWorkspace = ({ problem, languages, initialLanguage, onSubmitted }: EditorWorkspaceProps) => {
+  const { t } = useTranslation();
   const message = useMessages();
   const [language, setLanguage] = useState<Language>(initialLanguage);
 
@@ -28,11 +35,28 @@ const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspac
   const { code, setCode, reset } = useCodeDraft(problem.slug, language, starterCode);
 
   const [settings, setSettings] = useState<EditorSettings>(DEFAULT_EDITOR_SETTINGS);
-  const [result, setResult] = useState<RunResult | null>(null);
+  const [outcome, setOutcome] = useState<ConsoleOutcome | null>(null);
   const [running, setRunning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<ConsoleTab>('testcase');
   const [selectedCase, setSelectedCase] = useState(0);
+  const [celebration, setCelebration] = useState<string | null>(null);
+
+  /** Land on the first failure: that is the case the solver needs to read. */
+  const focusFirstFailure = useCallback((results: { status: string }[]) => {
+    const firstFailure = results.findIndex((result) => result.status !== 'ACCEPTED');
+    setSelectedCase(firstFailure === -1 ? 0 : firstFailure);
+  }, []);
+
+  const handleFailure = useCallback(
+    (caught: unknown) => {
+      const apiError = toApiError(caught);
+      setOutcome(null);
+      setError(message(apiError.code, apiError.message));
+    },
+    [message],
+  );
 
   const handleRun = useCallback(() => {
     setRunning(true);
@@ -41,28 +65,43 @@ const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspac
 
     executionApi
       .run(problem.slug, { language, sourceCode: code })
-      .then((runResult) => {
-        setResult(runResult);
-        // Land on the first failure: that is the one the solver needs to read,
-        // and on a passing run every case says the same thing anyway.
-        const firstFailure = runResult.results.findIndex((caseResult) => caseResult.status !== 'ACCEPTED');
-        setSelectedCase(firstFailure === -1 ? 0 : firstFailure);
+      .then((result) => {
+        setOutcome({ kind: 'run', result });
+        focusFirstFailure(result.results);
       })
-      .catch((caught: unknown) => {
-        const apiError = toApiError(caught);
-        setResult(null);
-        setError(message(apiError.code, apiError.message));
-      })
+      .catch(handleFailure)
       .finally(() => {
         setRunning(false);
       });
-  }, [problem.slug, language, code, message]);
+  }, [problem.slug, language, code, focusFirstFailure, handleFailure]);
+
+  const handleSubmit = useCallback(() => {
+    setSubmitting(true);
+    setError(null);
+    setTab('result');
+
+    executionApi
+      .submit(problem.slug, { language, sourceCode: code })
+      .then((result) => {
+        setOutcome({ kind: 'submit', result });
+        focusFirstFailure(result.results);
+        onSubmitted();
+
+        if (result.status === 'ACCEPTED') {
+          setCelebration(result.firstAccepted ? t('solve.firstAccepted') : t('solve.acceptedAgain'));
+        }
+      })
+      .catch(handleFailure)
+      .finally(() => {
+        setSubmitting(false);
+      });
+  }, [problem.slug, language, code, focusFirstFailure, handleFailure, onSubmitted, t]);
 
   const handleLanguageChange = useCallback((next: Language) => {
     setLanguage(next);
-    // The previous run described code in another language, so keeping it on
-    // screen would attribute those verdicts to what is now in the editor.
-    setResult(null);
+    // The previous verdict described code in another language, so keeping it on
+    // screen would attribute it to what is now in the editor.
+    setOutcome(null);
     setError(null);
     setTab('testcase');
     setSelectedCase(0);
@@ -78,7 +117,9 @@ const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspac
         onSettingsChange={setSettings}
         onReset={reset}
         onRun={handleRun}
+        onSubmit={handleSubmit}
         running={running}
+        submitting={submitting}
         canRun={code.trim().length > 0}
       />
 
@@ -93,14 +134,28 @@ const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspac
 
       <RunConsole
         sampleTestCases={problem.sampleTestCases}
-        result={result}
-        running={running}
+        outcome={outcome}
+        busy={running || submitting}
+        busyLabel={submitting ? t('solve.submitting') : t('solve.running')}
         error={error}
         tab={tab}
         onTabChange={setTab}
         selectedCase={selectedCase}
         onSelectCase={setSelectedCase}
       />
+
+      <Snackbar
+        open={celebration !== null}
+        autoHideDuration={5000}
+        onClose={() => {
+          setCelebration(null);
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" variant="filled">
+          {celebration}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 };
@@ -117,7 +172,7 @@ const EditorWorkspace = ({ problem, languages, initialLanguage }: EditorWorkspac
  * rather than initialising state from `languages[0]` on a list that may be
  * empty and calling the `undefined` a `Language`.
  */
-export const EditorPanel = ({ problem }: { problem: ProblemDetail }) => {
+export const EditorPanel = ({ problem, onSubmitted }: { problem: ProblemDetail; onSubmitted: () => void }) => {
   const { t } = useTranslation();
   const languages = useMemo(() => Object.keys(problem.starterCode) as Language[], [problem.starterCode]);
   const initialLanguage = languages.includes(DEFAULT_LANGUAGE) ? DEFAULT_LANGUAGE : languages[0];
@@ -130,5 +185,12 @@ export const EditorPanel = ({ problem }: { problem: ProblemDetail }) => {
     );
   }
 
-  return <EditorWorkspace problem={problem} languages={languages} initialLanguage={initialLanguage} />;
+  return (
+    <EditorWorkspace
+      problem={problem}
+      languages={languages}
+      initialLanguage={initialLanguage}
+      onSubmitted={onSubmitted}
+    />
+  );
 };

@@ -75,7 +75,20 @@ export type ProblemSummary = {
   tags: Tag[];
   /** Whether the signed-in user has an accepted submission for it. */
   solved: boolean;
+  /** Whether they have submitted at all. Every solved problem is also attempted. */
+  attempted: boolean;
+  /** Accepted submissions over all submissions, absent until somebody has submitted. */
+  acceptanceRate?: number;
+  totalSubmissions: number;
 };
+
+/** Narrows the catalogue by what the signed-in user has done with each problem. */
+export type ProblemStatusFilter = 'SOLVED' | 'ATTEMPTED' | 'TODO';
+
+/** Sort keys the catalogue endpoint accepts. */
+export type ProblemSort = 'id' | 'title' | 'difficulty' | 'acceptance';
+
+export type SortOrder = 'asc' | 'desc';
 
 export type ProblemExample = { input: string; output: string; explanation?: string };
 
@@ -117,21 +130,57 @@ export type ProblemDetail = {
    * means no signature has been authored, so the editor cannot run anything.
    */
   starterCode: Partial<Record<Language, string>>;
+  /**
+   * How many further cases a submission is judged against.
+   *
+   * The count is public on purpose — passing the samples is not the bar, and a
+   * solver should know that before they submit — while their contents are not.
+   */
+  hiddenTestCaseCount: number;
+  /** Whether a written solution exists — the Editorial tab is disabled without one. */
+  hasEditorial: boolean;
   solved: boolean;
+  attempted: boolean;
+  acceptanceRate?: number;
+  totalSubmissions: number;
+  acceptedSubmissions: number;
+};
+
+/**
+ * A problem's written solution. Mirrors `EditorialResponse`.
+ *
+ * `solutions` is keyed by the languages the editorial was authored in, which is
+ * what the panel's language picker offers — the same shape as `starterCode`.
+ */
+export type Editorial = {
+  /** Markdown: the approach, and why the obvious attempt falls short. */
+  contentMarkdown: string;
+  timeComplexity?: string;
+  spaceComplexity?: string;
+  solutions: Partial<Record<Language, string>>;
 };
 
 export type RunPayload = { language: Language; sourceCode: string };
 
-/** One sample case's outcome. Mirrors `CaseResultResponse`. */
+export type SubmitPayload = RunPayload;
+
+/**
+ * One judged case's outcome. Mirrors `CaseResultResponse`.
+ *
+ * A hidden case arrives with `hidden: true` and nothing but its verdict and
+ * timings — everything that could give the case away is stripped server-side, so
+ * the optional fields here are genuinely absent rather than merely unread.
+ */
 export type CaseResult = {
-  testCaseId: number;
+  testCaseId?: number;
   status: ExecutionStatus;
-  input: string;
-  expectedOutput: string;
+  hidden: boolean;
+  input?: string;
+  expectedOutput?: string;
   /** The answer line: the last non-blank line the program printed. */
-  actualOutput: string;
+  actualOutput?: string;
   /** Everything printed, so a solver's own debug output survives. */
-  stdout: string;
+  stdout?: string;
   stderr?: string;
   runtimeMs?: number;
   memoryKb?: number;
@@ -150,6 +199,56 @@ export type RunResult = {
   memoryKb?: number;
   results: CaseResult[];
 };
+
+/** Mirrors `SubmissionResultResponse` — the verdict on a submission. */
+export type SubmissionResult = {
+  submissionId: number;
+  status: ExecutionStatus;
+  compileOutput?: string;
+  failureMessage?: string;
+  passed: number;
+  total: number;
+  /** How many of `total` were hidden. */
+  hiddenTotal: number;
+  runtimeMs?: number;
+  memoryKb?: number;
+  /** True only for the submission that first solved the problem. */
+  firstAccepted: boolean;
+  results: CaseResult[];
+};
+
+/** One row in a submission history. Mirrors `SubmissionSummaryResponse`. */
+export type SubmissionSummary = {
+  id: number;
+  problemSlug: string;
+  problemTitle: string;
+  difficulty: Difficulty;
+  status: ExecutionStatus;
+  language: Language;
+  runtimeMs?: number;
+  memoryKb?: number;
+  passedTests?: number;
+  totalTests?: number;
+  createdAt: string;
+};
+
+/** A submission with the code that produced it. */
+export type SubmissionDetail = SubmissionSummary & {
+  sourceCode: string;
+  failureMessage?: string;
+};
+
+/** Solved counts and acceptance, for the dashboard. Mirrors `UserStatsResponse`. */
+export type UserStats = {
+  solved: number;
+  totalProblems: number;
+  submissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate?: number;
+  progress: DifficultyProgress[];
+};
+
+export type DifficultyProgress = { difficulty: Difficulty; solved: number; total: number };
 
 export type PageResponse<T> = {
   content: T[];

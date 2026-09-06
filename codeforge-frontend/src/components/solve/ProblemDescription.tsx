@@ -8,59 +8,20 @@ import {
   Chip,
   Paper,
   Stack,
-  Tab,
-  Tabs,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import Markdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 import { type ProblemDetail } from '../../api/types';
 import { DifficultyChip } from '../problems/DifficultyChip';
-
-/**
- * Renders authored Markdown with the app's typography.
- *
- * <p>Only the elements the problem format actually uses are styled; anything
- * else falls through to sensible browser defaults.
- */
-const MarkdownBody = ({ children }: { children: string }) => (
-  <Box
-    sx={{
-      typography: 'body1',
-      color: 'text.secondary',
-      '& p': { m: 0, mb: 1.5 },
-      '& p:last-child': { mb: 0 },
-      '& strong': { color: 'text.primary', fontWeight: 650 },
-      '& ul': { pl: 2.5, m: 0, mb: 1.5 },
-      '& li': { mb: 0.5 },
-      '& code': {
-        typography: 'code',
-        px: 0.5,
-        py: '0.1em',
-        borderRadius: 0.75,
-        backgroundColor: 'surface.sunken',
-        border: 1,
-        borderColor: 'border.subtle',
-        color: 'text.primary',
-      },
-    }}
-  >
-    <Markdown>{children}</Markdown>
-  </Box>
-);
+import LockRounded from '@mui/icons-material/LockRounded';
+import { MarkdownBody } from './MarkdownBody';
 
 export const ProblemDescription = ({ problem }: { problem: ProblemDetail }) => {
   const { t } = useTranslation();
 
   return (
-    <Stack sx={{ height: '100%' }}>
-      <Tabs value={0} sx={{ px: 1, borderBottom: 1, borderColor: 'border.subtle', flexShrink: 0 }}>
-        <Tab label={t('solve.description')} />
-        <Tab label={t('solve.editorial')} disabled />
-        <Tab label={t('solve.submissions')} disabled />
-      </Tabs>
-
-      <Stack spacing={3} sx={{ p: 3, overflow: 'auto' }}>
+    <Stack spacing={3} sx={{ p: 3 }}>
         <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <Typography variant="h3">{problem.title}</Typography>
           <DifficultyChip difficulty={problem.difficulty} />
@@ -74,6 +35,27 @@ export const ProblemDescription = ({ problem }: { problem: ProblemDetail }) => {
                 '& .MuiChip-icon': { color: 'inherit' },
               }}
             />
+          ) : null}
+        </Stack>
+
+        <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+            {t('solve.acceptanceStat', {
+              rate:
+                problem.acceptanceRate === undefined ? '—' : `${(problem.acceptanceRate * 100).toFixed(1)}%`,
+              submissions: problem.totalSubmissions,
+            })}
+          </Typography>
+
+          {problem.hiddenTestCaseCount > 0 ? (
+            <Tooltip title={t('solve.hiddenCasesHint')}>
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: 'text.disabled' }}>
+                <LockRounded sx={{ fontSize: 14 }} />
+                <Typography variant="body2">
+                  {t('solve.hiddenCases', { count: problem.hiddenTestCaseCount })}
+                </Typography>
+              </Stack>
+            </Tooltip>
           ) : null}
         </Stack>
 
@@ -148,8 +130,7 @@ export const ProblemDescription = ({ problem }: { problem: ProblemDetail }) => {
               <Chip key={tag.slug} label={tag.name} variant="outlined" />
             ))}
           </Stack>
-        </Box>
-      </Stack>
+      </Box>
     </Stack>
   );
 };

@@ -31,7 +31,9 @@ type EditorToolbarProps = {
   onSettingsChange: (settings: EditorSettings) => void;
   onReset: () => void;
   onRun: () => void;
+  onSubmit: () => void;
   running: boolean;
+  submitting: boolean;
   canRun: boolean;
 };
 
@@ -144,10 +146,14 @@ export const EditorToolbar = ({
   onSettingsChange,
   onReset,
   onRun,
+  onSubmit,
   running,
+  submitting,
   canRun,
 }: EditorToolbarProps) => {
   const { t } = useTranslation();
+  // Either judge occupies the sandbox, so neither button may start a second one.
+  const busy = running || submitting;
 
   return (
     <Stack
@@ -187,7 +193,7 @@ export const EditorToolbar = ({
         {/* The span is what lets a disabled button still show a tooltip, but it
             is also what Tooltip labels — so the button needs its own name. */}
         <span>
-          <IconButton size="small" onClick={onReset} disabled={running} aria-label={t('solve.resetCode')}>
+          <IconButton size="small" onClick={onReset} disabled={busy} aria-label={t('solve.resetCode')}>
             <RefreshRounded fontSize="small" />
           </IconButton>
         </span>
@@ -204,7 +210,7 @@ export const EditorToolbar = ({
             variant="soft"
             startIcon={running ? <CircularProgress size={14} color="inherit" /> : <PlayArrowRounded />}
             onClick={onRun}
-            disabled={running || !canRun}
+            disabled={busy || !canRun}
             aria-label={t('solve.run')}
           >
             {t('solve.run')}
@@ -212,11 +218,19 @@ export const EditorToolbar = ({
         </span>
       </Tooltip>
 
-      {/* Submitting judges the hidden cases and records a verdict; that is a
-          separate feature and is deliberately not wired up yet. */}
-      <Tooltip title={t('solve.submitComingSoon')}>
+      {/* Submitting judges every case, hidden ones included, and records the
+          verdict — it is the only thing that can mark a problem solved. */}
+      <Tooltip title={t('solve.submitHint')}>
         <span>
-          <Button size="small" color="success" startIcon={<CloudUploadRounded />} disabled>
+          <Button
+            size="small"
+            variant="contained"
+            color="success"
+            startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <CloudUploadRounded />}
+            onClick={onSubmit}
+            disabled={busy || !canRun}
+            aria-label={t('solve.submit')}
+          >
             {t('solve.submit')}
           </Button>
         </span>

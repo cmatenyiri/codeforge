@@ -12,6 +12,12 @@ import java.util.Map;
  *     problem's signature. Empty when the problem has no signature authored yet,
  *     which the editor reads as "not solvable here" — the keys double as the
  *     list of languages the language picker should offer
+ * @param sampleTestCases the visible cases, which "Run" judges against
+ * @param hiddenTestCaseCount how many further cases a submission is judged
+ *     against. Shown, not hidden: a solver should know that passing the samples
+ *     is not the bar, and the count is not a hint about their content
+ * @param hasEditorial whether a written solution exists, so the tab can be
+ *     disabled rather than opening onto an apology
  */
 public record ProblemDetailResponse(
         Long id,
@@ -24,5 +30,11 @@ public record ProblemDetailResponse(
         List<ProblemExampleResponse> examples,
         List<String> hints,
         List<TestCaseResponse> sampleTestCases,
+        int hiddenTestCaseCount,
         Map<Language, String> starterCode,
-        boolean solved) {}
+        boolean hasEditorial,
+        boolean solved,
+        boolean attempted,
+        Double acceptanceRate,
+        long totalSubmissions,
+        long acceptedSubmissions) {}

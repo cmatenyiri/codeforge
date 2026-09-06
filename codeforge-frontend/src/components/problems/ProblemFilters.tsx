@@ -1,31 +1,80 @@
+import CasinoRounded from '@mui/icons-material/CasinoRounded';
 import ClearRounded from '@mui/icons-material/ClearRounded';
 import SearchRounded from '@mui/icons-material/SearchRounded';
 import { Button, InputAdornment, MenuItem, Stack, TextField } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type Difficulty, type Tag } from '../../api/types';
+import { type ProblemStatusFilter, type Tag } from '../../api/types';
+import { type ProblemQueryState } from './problem-query';
 import { DIFFICULTIES, DIFFICULTY_LABEL_KEY } from './difficulty';
 
-export type Filters = { search: string; difficulty: '' | Difficulty; tag: string };
+/** Literal keys, so a renamed translation is a compile error. */
+const STATUS_LABEL_KEY = {
+  TODO: 'problems.statusTodo',
+  ATTEMPTED: 'problems.statusAttempted',
+  SOLVED: 'problems.statusSolved',
+} as const satisfies Record<ProblemStatusFilter, string>;
+
+const STATUSES = Object.keys(STATUS_LABEL_KEY) as ProblemStatusFilter[];
 
 type ProblemFiltersProps = {
-  filters: Filters;
+  query: ProblemQueryState;
   tags: Tag[];
-  onChange: (next: Filters) => void;
+  onChange: (patch: Partial<ProblemQueryState>) => void;
+  onClear: () => void;
+  onPickRandom: () => void;
+  picking: boolean;
+  filtered: boolean;
 };
 
-export const ProblemFilters = ({ filters, tags, onChange }: ProblemFiltersProps) => {
+/**
+ * The catalogue's toolbar.
+ *
+ * <p>The search box keeps its own state and reports upward on a pause. The URL
+ * is the source of truth for every other control, but a text field driven
+ * straight from it fights the typist: each keystroke would rewrite history and
+ * re-render the page under the cursor.
+ */
+export const ProblemFilters = ({
+  query,
+  tags,
+  onChange,
+  onClear,
+  onPickRandom,
+  picking,
+  filtered,
+}: ProblemFiltersProps) => {
   const { t } = useTranslation();
-  const dirty = filters.search !== '' || filters.difficulty !== '' || filters.tag !== '';
+  const [search, setSearch] = useState(query.search);
+
+  // Follows the URL when it changes from elsewhere — a cleared filter, the back
+  // button — without interfering while the field itself is being typed into.
+  useEffect(() => {
+    setSearch(query.search);
+  }, [query.search]);
+
+  useEffect(() => {
+    if (search === query.search) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      onChange({ search });
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [search, query.search, onChange]);
 
   return (
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
+    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
       <TextField
         placeholder={t('problems.searchPlaceholder')}
-        value={filters.search}
+        value={search}
         onChange={(event) => {
-          onChange({ ...filters, search: event.target.value });
+          setSearch(event.target.value);
         }}
-        sx={{ flex: 1, minWidth: 200 }}
+        sx={{ flex: '1 1 220px', minWidth: 180 }}
         slotProps={{
           input: {
             startAdornment: (
@@ -33,18 +82,54 @@ export const ProblemFilters = ({ filters, tags, onChange }: ProblemFiltersProps)
                 <SearchRounded fontSize="small" />
               </InputAdornment>
             ),
+            endAdornment: search ? (
+              <InputAdornment position="end">
+                <ClearRounded
+                  fontSize="small"
+                  role="button"
+                  aria-label={t('problems.clearSearch')}
+                  tabIndex={0}
+                  onClick={() => {
+                    setSearch('');
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      setSearch('');
+                    }
+                  }}
+                  sx={{ cursor: 'pointer', color: 'text.disabled' }}
+                />
+              </InputAdornment>
+            ) : null,
           },
         }}
       />
 
       <TextField
         select
-        label={t('problems.difficulty')}
-        value={filters.difficulty}
+        label={t('problems.status')}
+        value={query.status}
         onChange={(event) => {
-          onChange({ ...filters, difficulty: event.target.value as Filters['difficulty'] });
+          onChange({ status: event.target.value as ProblemQueryState['status'] });
         }}
-        sx={{ minWidth: 150 }}
+        sx={{ minWidth: 140 }}
+      >
+        <MenuItem value="">{t('problems.anyStatus')}</MenuItem>
+        {STATUSES.map((status) => (
+          <MenuItem key={status} value={status}>
+            {t(STATUS_LABEL_KEY[status])}
+          </MenuItem>
+        ))}
+      </TextField>
+
+      <TextField
+        select
+        label={t('problems.difficulty')}
+        value={query.difficulty}
+        onChange={(event) => {
+          onChange({ difficulty: event.target.value as ProblemQueryState['difficulty'] });
+        }}
+        sx={{ minWidth: 140 }}
       >
         <MenuItem value="">{t('problems.anyDifficulty')}</MenuItem>
         {DIFFICULTIES.map((difficulty) => (
@@ -57,11 +142,11 @@ export const ProblemFilters = ({ filters, tags, onChange }: ProblemFiltersProps)
       <TextField
         select
         label={t('problems.topic')}
-        value={filters.tag}
+        value={query.tag}
         onChange={(event) => {
-          onChange({ ...filters, tag: event.target.value });
+          onChange({ tag: event.target.value });
         }}
-        sx={{ minWidth: 170 }}
+        sx={{ minWidth: 160 }}
       >
         <MenuItem value="">{t('problems.anyTopic')}</MenuItem>
         {tags.map((tag) => (
@@ -71,17 +156,21 @@ export const ProblemFilters = ({ filters, tags, onChange }: ProblemFiltersProps)
         ))}
       </TextField>
 
-      {dirty ? (
-        <Button
-          variant="text"
-          startIcon={<ClearRounded />}
-          onClick={() => {
-            onChange({ search: '', difficulty: '', tag: '' });
-          }}
-        >
+      {filtered ? (
+        <Button variant="text" startIcon={<ClearRounded />} onClick={onClear}>
           {t('problems.clearFilters')}
         </Button>
       ) : null}
+
+      <Button
+        variant="soft"
+        startIcon={<CasinoRounded />}
+        onClick={onPickRandom}
+        disabled={picking}
+        sx={{ ml: { sm: 'auto' } }}
+      >
+        {t('problems.pickRandom')}
+      </Button>
     </Stack>
   );
 };

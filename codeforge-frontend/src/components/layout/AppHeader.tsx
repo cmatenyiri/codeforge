@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router';
 import { paths } from '../../routes/paths';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { UserMenu } from '../user/UserMenu';
+import { ColorModeToggle } from './ColorModeToggle';
 
 const NAV = [
   { to: paths.problems, labelKey: 'nav.problems' },
@@ -55,6 +56,7 @@ export const AppHeader = () => {
 
         <Box sx={{ flex: 1 }} />
         <LanguageSwitcher />
+        <ColorModeToggle />
         <UserMenu />
       </Toolbar>
     </AppBar>

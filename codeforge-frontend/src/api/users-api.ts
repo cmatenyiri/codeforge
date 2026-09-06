@@ -4,6 +4,7 @@ import {
   type ChangePasswordPayload,
   type ChangeUsernamePayload,
   type UserResponse,
+  type UserStats,
 } from './types';
 
 /**
@@ -11,6 +12,12 @@ import {
  * session in one round trip instead of re-fetching `/me`.
  */
 export const usersApi = {
+  /** Solved counts and acceptance rate, for the dashboard and the profile. */
+  async stats(): Promise<UserStats> {
+    const { data } = await apiClient.get<UserStats>('/api/users/me/stats');
+    return data;
+  },
+
   async updateAvatar(payload: ChangeAvatarPayload): Promise<UserResponse> {
     const { data } = await apiClient.patch<UserResponse>('/api/users/me/avatar', payload);
     return data;

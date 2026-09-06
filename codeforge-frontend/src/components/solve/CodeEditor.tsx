@@ -3,38 +3,15 @@ import { Box, CircularProgress } from '@mui/material';
 import { useColorScheme } from '@mui/material/styles';
 import { useCallback, useEffect, useRef } from 'react';
 import { type Language } from '../../api/types';
+import { MONACO_FILE_EXTENSION, MONACO_LANGUAGE_ID } from '../../monaco/languages';
 import { MONACO_THEME } from '../../monaco/theme';
 import { fontFamilyMono } from '../../theme';
 import { type EditorSettings } from './editor-settings';
 // Side-effecting: wires up the workers, themes and completions before mount.
 import '../../monaco/setup';
 
-/** Our language enum to Monaco's language ids. */
-const MONACO_LANGUAGE = {
-  JAVA: 'java',
-  PYTHON: 'python',
-  JAVASCRIPT: 'javascript',
-  TYPESCRIPT: 'typescript',
-} as const satisfies Record<Language, string>;
-
-/**
- * The extension the model's file name gets.
- *
- * <p>Not cosmetic. The TypeScript worker decides whether a file is TypeScript or
- * JavaScript from its extension alone, not from the editor's language id — so a
- * model at an extension-less path is parsed as JavaScript, and every type
- * annotation is reported as "Type annotations can only be used in TypeScript
- * files".
- */
-const FILE_EXTENSION = {
-  JAVA: 'java',
-  PYTHON: 'py',
-  JAVASCRIPT: 'js',
-  TYPESCRIPT: 'ts',
-} as const satisfies Record<Language, string>;
-
 /** Monaco resolves a model by URI, so the file name has to be one. */
-const modelUri = (path: string, language: Language) => `file:///${path}.${FILE_EXTENSION[language]}`;
+const modelUri = (path: string, language: Language) => `file:///${path}.${MONACO_FILE_EXTENSION[language]}`;
 
 type CodeEditorProps = {
   value: string;
@@ -151,7 +128,7 @@ export const CodeEditor = ({ value, language, settings, onChange, onRun, path }:
     <Box sx={{ flex: 1, minHeight: 0, backgroundColor: 'code.bg' }}>
       <Editor
         path={uri}
-        language={MONACO_LANGUAGE[language]}
+        language={MONACO_LANGUAGE_ID[language]}
         // `defaultValue` seeds a newly created model — one is created per
         // language — while `value` only ever carries an outside change.
         defaultValue={value}

@@ -4,7 +4,14 @@
     "tagline": "Forge your algorithms",
     "language": "Language",
     "loading": "Loading…",
-    "retry": "Try again"
+    "retry": "Try again",
+    "close": "Close"
+  },
+  "theme": {
+    "toggle": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   },
   "pageTitle": {
     "login": "Sign in",
@@ -48,10 +55,14 @@
   },
   "home": {
     "welcome": "Welcome back, {{username}}",
-    "signedInAs": "Signed in as",
-    "role": "Role",
-    "placeholder": "The product pages land here next. For now this page only proves the login flow works end to end.",
-    "themePreview": "Open theme preview"
+    "subtitle": "Pick up where you left off, or start something new.",
+    "browseProblems": "Browse problems",
+    "solved": "Solved",
+    "submissions": "Submissions",
+    "acceptanceRate": "Acceptance",
+    "recentSubmissions": "Recent submissions",
+    "noSubmissions": "Nothing submitted yet",
+    "noSubmissionsBody": "Solve a problem and your attempts will show up here."
   },
   "validation": {
     "username": {
@@ -108,7 +119,14 @@
       "languageUnsupported": "That language is not supported for this problem.",
       "noSignature": "This problem cannot be run yet.",
       "emptySource": "There is no code to run.",
-      "sourceTooLong": "That solution is too long to run."
+      "sourceTooLong": "That solution is too long to run.",
+      "noTestCases": "This problem has no test cases to judge against yet."
+    },
+    "submission": {
+      "notFound": "That submission does not exist."
+    },
+    "editorial": {
+      "notFound": "No editorial has been written for this problem."
     }
   },
   "avatar": {
@@ -146,6 +164,7 @@
   },
   "problems": {
     "title": "Problems",
+    "problem": "Problem",
     "subtitle": "Pick a problem and start forging.",
     "searchPlaceholder": "Search problems",
     "difficulty": "Difficulty",
@@ -160,7 +179,18 @@
     "count_other": "{{count}} problems",
     "emptyTitle": "No problems match those filters",
     "emptyBody": "Try a different topic, or clear the filters.",
-    "loadError": "Could not load the problem list."
+    "anyStatus": "Any status",
+    "statusTodo": "Todo",
+    "statusAttempted": "Attempted",
+    "statusSolved": "Solved",
+    "attempted": "Attempted, not solved yet",
+    "number": "#",
+    "acceptance": "Acceptance",
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "perPage": "Per page",
+    "pickRandom": "Pick one",
+    "clearSearch": "Clear search",
+    "solvedTitle": "Solved"
   },
   "solve": {
     "description": "Description",
@@ -181,7 +211,6 @@
     "submit": "Submit",
     "backToProblems": "All problems",
     "notFound": "That problem does not exist.",
-    "language": "Language",
     "case": "Case {{index}}",
     "expected": "Expected",
     "stdout": "Stdout",
@@ -199,10 +228,31 @@
     "wordWrap": "Word wrap",
     "minimap": "Minimap",
     "runHint": "Run the sample cases (⌘/Ctrl + Enter)",
-    "submitComingSoon": "Submitting is not available yet",
     "notSolvable": "This problem has no solution signature yet, so it cannot be solved in the editor.",
     "noSampleCases": "This problem has no sample cases.",
-    "programmingLanguage": "Programming language"
+    "programmingLanguage": "Programming language",
+    "submitHint": "Judge against every test, hidden ones included",
+    "submitting": "Judging against every test case…",
+    "firstAccepted": "Accepted — problem solved!",
+    "acceptedAgain": "Accepted.",
+    "hiddenJudged": "{{hidden}} of the {{total}} cases are hidden and are not shown.",
+    "hiddenCase": "Hidden test case",
+    "hiddenCaseFailed": "Your solution did not pass this one. Its input is not shown — think about which inputs your approach does not handle.",
+    "hiddenCasePassed": "Passed.",
+    "hiddenCases_one": "{{count}} hidden test",
+    "hiddenCases_other": "{{count}} hidden tests",
+    "hiddenCasesHint": "Submitting judges these as well as the samples. They cover edge cases the examples leave out, and some are large enough that an inefficient solution runs out of time.",
+    "acceptanceStat": "Acceptance {{rate}} · {{submissions}} submissions",
+    "noSubmissions": "No submissions yet",
+    "noSubmissionsBody": "Submit a solution and your attempts will appear here.",
+    "status": "Status",
+    "runtimeColumn": "Runtime",
+    "submittedAt": "Submitted",
+    "time": "Time",
+    "space": "Space",
+    "referenceSolution": "Reference solution",
+    "noEditorial": "No editorial yet",
+    "noEditorialBody": "A written solution has not been added for this problem."
   },
   "verdict": {
     "pending": "Pending",

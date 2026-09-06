@@ -1,6 +1,6 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import { Alert, Box, CircularProgress, Divider, Link as MuiLink, Stack } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { toApiError } from '../api/api-error';
@@ -8,7 +8,7 @@ import { problemsApi } from '../api/problems-api';
 import { type ProblemDetail } from '../api/types';
 import { AppHeader } from '../components/layout/AppHeader';
 import { EditorPanel } from '../components/solve/EditorPanel';
-import { ProblemDescription } from '../components/solve/ProblemDescription';
+import { ProblemPanel } from '../components/solve/ProblemPanel';
 import { useMessages } from '../i18n/use-messages';
 import { paths } from '../routes/paths';
 
@@ -28,13 +28,24 @@ export const SolvePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Bumped by every submission. It reloads the submissions tab, and — via the
+  // effect below — the problem itself, so an acceptance updates the solved
+  // badge and the acceptance rate without a manual refresh.
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => {
+    setRefreshKey((key) => key + 1);
+  }, []);
+
   useEffect(() => {
     if (!slug) {
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
+    // Only the first load blanks the page; a refresh after a submission keeps
+    // the editor and the verdict on screen while it happens.
+    setLoading((current) => current || refreshKey === 0);
 
     problemsApi
       .getBySlug(slug)
@@ -59,7 +70,7 @@ export const SolvePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [slug, message, t]);
+  }, [slug, refreshKey, message, t]);
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'surface.canvas' }}>
@@ -102,7 +113,7 @@ export const SolvePage = () => {
               overflow: 'hidden',
             }}
           >
-            <ProblemDescription problem={problem} />
+            <ProblemPanel problem={problem} refreshKey={refreshKey} />
           </Box>
 
           <Box
@@ -118,7 +129,7 @@ export const SolvePage = () => {
               overflow: 'hidden',
             }}
           >
-            <EditorPanel problem={problem} />
+            <EditorPanel problem={problem} onSubmitted={refresh} />
           </Box>
         </Stack>
       ) : null}

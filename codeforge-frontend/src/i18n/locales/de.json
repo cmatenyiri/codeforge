@@ -4,7 +4,14 @@
     "tagline": "Schmiede deine Algorithmen",
     "language": "Sprache",
     "loading": "Wird geladen…",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "close": "Schließen"
+  },
+  "theme": {
+    "toggle": "Darstellung",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
   },
   "pageTitle": {
     "login": "Anmelden",
@@ -48,10 +55,14 @@
   },
   "home": {
     "welcome": "Willkommen zurück, {{username}}",
-    "signedInAs": "Angemeldet als",
-    "role": "Rolle",
-    "placeholder": "Die Produktseiten folgen als Nächstes. Vorerst belegt diese Seite nur, dass die Anmeldung durchgängig funktioniert.",
-    "themePreview": "Theme-Vorschau öffnen"
+    "subtitle": "Mach dort weiter, wo du aufgehört hast — oder fang etwas Neues an.",
+    "browseProblems": "Aufgaben durchsuchen",
+    "solved": "Gelöst",
+    "submissions": "Einreichungen",
+    "acceptanceRate": "Annahmequote",
+    "recentSubmissions": "Letzte Einreichungen",
+    "noSubmissions": "Noch nichts eingereicht",
+    "noSubmissionsBody": "Löse eine Aufgabe, dann erscheinen deine Versuche hier."
   },
   "validation": {
     "username": {
@@ -108,7 +119,14 @@
       "languageUnsupported": "Diese Sprache wird für diese Aufgabe nicht unterstützt.",
       "noSignature": "Diese Aufgabe kann noch nicht ausgeführt werden.",
       "emptySource": "Es gibt keinen Code zum Ausführen.",
-      "sourceTooLong": "Diese Lösung ist zu lang zum Ausführen."
+      "sourceTooLong": "Diese Lösung ist zu lang zum Ausführen.",
+      "noTestCases": "Diese Aufgabe hat noch keine Testfälle."
+    },
+    "submission": {
+      "notFound": "Diese Einreichung existiert nicht."
+    },
+    "editorial": {
+      "notFound": "Für diese Aufgabe wurde keine Erläuterung geschrieben."
     }
   },
   "avatar": {
@@ -146,6 +164,7 @@
   },
   "problems": {
     "title": "Aufgaben",
+    "problem": "Aufgabe",
     "subtitle": "Wähle eine Aufgabe und leg los.",
     "searchPlaceholder": "Aufgaben suchen",
     "difficulty": "Schwierigkeit",
@@ -160,7 +179,18 @@
     "count_other": "{{count}} Aufgaben",
     "emptyTitle": "Keine Aufgaben passen zu diesen Filtern",
     "emptyBody": "Probiere ein anderes Thema oder setze die Filter zurück.",
-    "loadError": "Die Aufgabenliste konnte nicht geladen werden."
+    "anyStatus": "Beliebiger Status",
+    "statusTodo": "Offen",
+    "statusAttempted": "Versucht",
+    "statusSolved": "Gelöst",
+    "attempted": "Versucht, noch nicht gelöst",
+    "number": "Nr.",
+    "acceptance": "Annahmequote",
+    "showing": "{{from}}–{{to}} von {{total}}",
+    "perPage": "Pro Seite",
+    "pickRandom": "Zufallsaufgabe",
+    "clearSearch": "Suche löschen",
+    "solvedTitle": "Gelöst"
   },
   "solve": {
     "description": "Beschreibung",
@@ -181,7 +211,6 @@
     "submit": "Einreichen",
     "backToProblems": "Alle Aufgaben",
     "notFound": "Diese Aufgabe existiert nicht.",
-    "language": "Sprache",
     "case": "Fall {{index}}",
     "expected": "Erwartet",
     "stdout": "Stdout",
@@ -199,10 +228,31 @@
     "wordWrap": "Zeilenumbruch",
     "minimap": "Minikarte",
     "runHint": "Beispielfälle ausführen (⌘/Strg + Enter)",
-    "submitComingSoon": "Das Einreichen ist noch nicht verfügbar",
     "notSolvable": "Für diese Aufgabe gibt es noch keine Lösungssignatur, sie kann daher im Editor nicht gelöst werden.",
     "noSampleCases": "Diese Aufgabe hat keine Beispielfälle.",
-    "programmingLanguage": "Programmiersprache"
+    "programmingLanguage": "Programmiersprache",
+    "submitHint": "Gegen alle Tests prüfen, versteckte eingeschlossen",
+    "submitting": "Wird gegen alle Testfälle geprüft…",
+    "firstAccepted": "Akzeptiert — Aufgabe gelöst!",
+    "acceptedAgain": "Akzeptiert.",
+    "hiddenJudged": "{{hidden}} der {{total}} Fälle sind versteckt und werden nicht angezeigt.",
+    "hiddenCase": "Versteckter Testfall",
+    "hiddenCaseFailed": "Deine Lösung hat diesen Fall nicht bestanden. Die Eingabe wird nicht gezeigt — überlege, welche Eingaben dein Ansatz nicht abdeckt.",
+    "hiddenCasePassed": "Bestanden.",
+    "hiddenCases_one": "{{count}} versteckter Test",
+    "hiddenCases_other": "{{count}} versteckte Tests",
+    "hiddenCasesHint": "Beim Einreichen werden diese zusätzlich zu den Beispielen geprüft. Sie decken Randfälle ab, die in den Beispielen fehlen, und einige sind so groß, dass eine ineffiziente Lösung die Zeit überschreitet.",
+    "acceptanceStat": "Annahmequote {{rate}} · {{submissions}} Einreichungen",
+    "noSubmissions": "Noch keine Einreichungen",
+    "noSubmissionsBody": "Reiche eine Lösung ein, dann erscheinen deine Versuche hier.",
+    "status": "Status",
+    "runtimeColumn": "Laufzeit",
+    "submittedAt": "Eingereicht",
+    "time": "Zeit",
+    "space": "Speicher",
+    "referenceSolution": "Musterlösung",
+    "noEditorial": "Noch keine Erläuterung",
+    "noEditorialBody": "Für diese Aufgabe wurde noch keine Lösung geschrieben."
   },
   "verdict": {
     "pending": "Ausstehend",

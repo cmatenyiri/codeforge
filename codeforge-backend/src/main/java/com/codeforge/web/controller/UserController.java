@@ -3,6 +3,7 @@ package com.codeforge.web.controller;
 import com.codeforge.domain.User;
 import com.codeforge.security.AuthCookieService;
 import com.codeforge.service.AuthService;
+import com.codeforge.service.SubmissionService;
 import com.codeforge.service.UserService;
 import com.codeforge.validation.ChangeAvatarRequestValidator;
 import com.codeforge.validation.ChangePasswordRequestValidator;
@@ -11,6 +12,7 @@ import com.codeforge.web.dto.auth.UserResponse;
 import com.codeforge.web.dto.user.ChangeAvatarRequest;
 import com.codeforge.web.dto.user.ChangePasswordRequest;
 import com.codeforge.web.dto.user.ChangeUsernameRequest;
+import com.codeforge.web.dto.user.UserStatsResponse;
 import com.codeforge.web.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final SubmissionService submissionService;
     private final AuthService authService;
     private final AuthCookieService authCookieService;
     private final UserMapper userMapper;
@@ -38,6 +41,12 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> currentUser() {
         return ResponseEntity.ok(userMapper.toResponse(userService.getCurrentUser()));
+    }
+
+    /** Solved counts and acceptance rate, for the dashboard and the profile. */
+    @GetMapping("/me/stats")
+    public ResponseEntity<UserStatsResponse> stats() {
+        return ResponseEntity.ok(submissionService.stats());
     }
 
     @PatchMapping("/me/avatar")

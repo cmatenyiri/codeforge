@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Formula;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -60,8 +61,38 @@ public class Problem extends AuditableEntity {
     @Column(nullable = false, length = 16)
     private Difficulty difficulty;
 
+    /**
+     * {@link Difficulty#rank()}, denormalised so the catalogue can be ordered by
+     * difficulty in SQL. Maintained by {@link #setDifficulty}; never set by hand.
+     */
+    @Column(name = "difficulty_rank")
+    private Integer difficultyRank;
+
     @Column(nullable = false)
     private boolean archived = false;
+
+    // ── Submission counters ───────────────────────────────────────────────
+    // Kept on the problem rather than recomputed, so listing a page of problems
+    // costs no aggregate over the submissions table. They are incremented by a
+    // single atomic UPDATE per submission, which is also what keeps two
+    // concurrent submissions from losing one of the two increments.
+
+    @Column(name = "total_submissions", nullable = false)
+    private long totalSubmissions;
+
+    @Column(name = "accepted_submissions", nullable = false)
+    private long acceptedSubmissions;
+
+    /**
+     * Accepted / total, or null when nobody has submitted yet.
+     *
+     * <p>Read-only and computed by the database, which is what lets the catalogue
+     * be <em>sorted</em> by acceptance without a second query — a ratio of two
+     * columns is not a property Spring Data could sort by on its own.
+     */
+    @Formula("(case when total_submissions = 0 then null"
+            + " else accepted_submissions * 1.0 / total_submissions end)")
+    private Double acceptanceRate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
@@ -108,4 +139,10 @@ public class Problem extends AuditableEntity {
     @OrderBy("displayOrder ASC")
     @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TestCase> testCases = new ArrayList<>();
+
+    /** Also keeps {@link #difficultyRank} in step, so the two can never disagree. */
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+        this.difficultyRank = difficulty == null ? null : difficulty.rank();
+    }
 }

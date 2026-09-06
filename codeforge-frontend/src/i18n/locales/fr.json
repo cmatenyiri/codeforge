@@ -4,7 +4,14 @@
     "tagline": "Forgez vos algorithmes",
     "language": "Langue",
     "loading": "Chargement…",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "close": "Fermer"
+  },
+  "theme": {
+    "toggle": "Apparence",
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système"
   },
   "pageTitle": {
     "login": "Connexion",
@@ -48,10 +55,14 @@
   },
   "home": {
     "welcome": "Bon retour, {{username}}",
-    "signedInAs": "Connecté en tant que",
-    "role": "Rôle",
-    "placeholder": "Les pages produit arrivent ensuite. Pour l'instant, cette page prouve seulement que la connexion fonctionne de bout en bout.",
-    "themePreview": "Ouvrir l'aperçu du thème"
+    "subtitle": "Reprenez où vous en étiez, ou commencez autre chose.",
+    "browseProblems": "Parcourir les problèmes",
+    "solved": "Résolus",
+    "submissions": "Soumissions",
+    "acceptanceRate": "Taux de réussite",
+    "recentSubmissions": "Soumissions récentes",
+    "noSubmissions": "Rien de soumis pour l’instant",
+    "noSubmissionsBody": "Résolvez un problème et vos tentatives apparaîtront ici."
   },
   "validation": {
     "username": {
@@ -108,7 +119,14 @@
       "languageUnsupported": "Ce langage n'est pas pris en charge pour ce problème.",
       "noSignature": "Ce problème ne peut pas encore être exécuté.",
       "emptySource": "Il n'y a aucun code à exécuter.",
-      "sourceTooLong": "Cette solution est trop longue pour être exécutée."
+      "sourceTooLong": "Cette solution est trop longue pour être exécutée.",
+      "noTestCases": "Ce problème n’a pas encore de cas de test."
+    },
+    "submission": {
+      "notFound": "Cette soumission n’existe pas."
+    },
+    "editorial": {
+      "notFound": "Aucune solution rédigée n’existe pour ce problème."
     }
   },
   "avatar": {
@@ -146,6 +164,7 @@
   },
   "problems": {
     "title": "Problèmes",
+    "problem": "Problème",
     "subtitle": "Choisissez un problème et commencez à forger.",
     "searchPlaceholder": "Rechercher des problèmes",
     "difficulty": "Difficulté",
@@ -160,7 +179,18 @@
     "count_other": "{{count}} problèmes",
     "emptyTitle": "Aucun problème ne correspond à ces filtres",
     "emptyBody": "Essayez un autre thème ou effacez les filtres.",
-    "loadError": "Impossible de charger la liste des problèmes."
+    "anyStatus": "Tout statut",
+    "statusTodo": "À faire",
+    "statusAttempted": "Tenté",
+    "statusSolved": "Résolu",
+    "attempted": "Tenté, pas encore résolu",
+    "number": "N°",
+    "acceptance": "Taux de réussite",
+    "showing": "{{from}}–{{to}} sur {{total}}",
+    "perPage": "Par page",
+    "pickRandom": "Au hasard",
+    "clearSearch": "Effacer la recherche",
+    "solvedTitle": "Résolus"
   },
   "solve": {
     "description": "Énoncé",
@@ -181,7 +211,6 @@
     "submit": "Soumettre",
     "backToProblems": "Tous les problèmes",
     "notFound": "Ce problème n'existe pas.",
-    "language": "Langage",
     "case": "Cas {{index}}",
     "expected": "Attendu",
     "stdout": "Sortie standard",
@@ -199,10 +228,31 @@
     "wordWrap": "Retour à la ligne",
     "minimap": "Minicarte",
     "runHint": "Exécuter les cas d'exemple (⌘/Ctrl + Entrée)",
-    "submitComingSoon": "La soumission n'est pas encore disponible",
     "notSolvable": "Ce problème n'a pas encore de signature de solution, il ne peut donc pas être résolu dans l'éditeur.",
     "noSampleCases": "Ce problème n'a aucun cas d'exemple.",
-    "programmingLanguage": "Langage de programmation"
+    "programmingLanguage": "Langage de programmation",
+    "submitHint": "Évaluer sur tous les tests, y compris les tests cachés",
+    "submitting": "Évaluation sur tous les cas de test…",
+    "firstAccepted": "Accepté — problème résolu !",
+    "acceptedAgain": "Accepté.",
+    "hiddenJudged": "{{hidden}} des {{total}} cas sont cachés et ne sont pas affichés.",
+    "hiddenCase": "Cas de test caché",
+    "hiddenCaseFailed": "Votre solution n’a pas passé ce cas. Son entrée n’est pas affichée — réfléchissez aux entrées que votre approche ne gère pas.",
+    "hiddenCasePassed": "Réussi.",
+    "hiddenCases_one": "{{count}} test caché",
+    "hiddenCases_other": "{{count}} tests cachés",
+    "hiddenCasesHint": "La soumission évalue ces cas en plus des exemples. Ils couvrent des cas limites absents des exemples, et certains sont assez grands pour qu’une solution inefficace dépasse le temps imparti.",
+    "acceptanceStat": "Taux de réussite {{rate}} · {{submissions}} soumissions",
+    "noSubmissions": "Aucune soumission",
+    "noSubmissionsBody": "Soumettez une solution et vos tentatives apparaîtront ici.",
+    "status": "Statut",
+    "runtimeColumn": "Durée",
+    "submittedAt": "Soumis",
+    "time": "Temps",
+    "space": "Mémoire",
+    "referenceSolution": "Solution de référence",
+    "noEditorial": "Pas encore de solution rédigée",
+    "noEditorialBody": "Aucune solution rédigée n’a été ajoutée pour ce problème."
   },
   "verdict": {
     "pending": "En attente",
