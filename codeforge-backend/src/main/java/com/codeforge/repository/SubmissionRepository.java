@@ -72,6 +72,9 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     long countByUserId(Long userId);
 
+    /** How many submissions a problem has, so authoring can refuse to delete a solved one. */
+    long countByProblemId(Long problemId);
+
     @Query("""
             select count(s) from Submission s
             where s.user.id = :userId and s.status = com.codeforge.domain.SubmissionStatus.ACCEPTED

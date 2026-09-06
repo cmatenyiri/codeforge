@@ -68,6 +68,25 @@ public class Problem extends AuditableEntity {
     @Column(name = "difficulty_rank")
     private Integer difficultyRank;
 
+    /**
+     * Whether the problem is visible in the catalogue.
+     *
+     * <p>A new problem starts unpublished, which is what makes authoring in the
+     * app safe: a half-written statement or a test case whose expected output has
+     * not been checked yet is invisible to solvers until an author says otherwise.
+     *
+     * <p>The column carries a database-level default of true so that problems
+     * written before this flag existed — every seeded one — stay in the catalogue
+     * when the column is added, rather than all disappearing at once.
+     */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean published = true;
+
+    /**
+     * Retired: hidden from the catalogue, but kept so the submissions against it
+     * still resolve. The reversible alternative to deleting a problem people
+     * have already solved.
+     */
     @Column(nullable = false)
     private boolean archived = false;
 

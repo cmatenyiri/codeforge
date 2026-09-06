@@ -85,6 +85,41 @@ public class ExecutionService {
     }
 
     /**
+     * Judges a reference solution against every case, hidden ones included, and
+     * records nothing.
+     *
+     * <p>The authoring counterpart of "Run": an author needs to know that the
+     * expected outputs they wrote are the ones a correct solution actually
+     * produces, and finding that out by submitting would put the author's name on
+     * a submission and count their answer as traffic on the problem.
+     *
+     * <p>Unlike a submission's response, hidden cases come back in full — the
+     * caller is the person who wrote them, and seeing what a case produced is the
+     * whole point of the call.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    public RunResponse dryRun(String slug, Language language, String sourceCode) {
+        validate(sourceCode);
+
+        Plan plan = plan(slug, language, sourceCode, true);
+        if (plan.cases().isEmpty()) {
+            throw new BusinessRuleException(
+                    "error.execution.noTestCases", "This problem has no test cases to judge against");
+        }
+
+        Judged judged = judge(plan, execute(plan, slug, language));
+
+        return new RunResponse(
+                judged.status(),
+                judged.compileOutput(),
+                judged.passed(),
+                judged.total(),
+                judged.runtimeMs(),
+                judged.memoryKb(),
+                judged.results());
+    }
+
+    /**
      * Judges every case and records the verdict.
      *
      * <p>A problem with no cases at all cannot be accepted: there is nothing to

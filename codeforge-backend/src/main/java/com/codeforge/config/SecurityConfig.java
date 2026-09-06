@@ -59,6 +59,10 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/actuator/health")
                         .permitAll()
+                        // Authoring. Also enforced per method in the service layer;
+                        // this is the rule that is obvious from the URL alone.
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

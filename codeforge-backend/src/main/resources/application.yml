@@ -41,6 +41,21 @@ codeforge:
       same-site: Lax
       path: /
 
+  seed:
+    # The catalogue is inserted only when the problems table is empty; see
+    # ProblemSeeder.
+    problems: true
+    # Somebody has to be able to write problems, and registration only ever
+    # creates ordinary users. Created on first start if absent; an account that
+    # already exists is promoted, never re-passworded. Dev-only defaults, exactly
+    # like the JWT secret above — turn this off, or change the password, before
+    # the instance is reachable from anywhere but localhost.
+    admin:
+      enabled: true
+      username: admin
+      email: admin@codeforge.local
+      password: forge-admin
+
   cors:
     allowed-origins:
       - http://localhost:5173

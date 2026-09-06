@@ -121,6 +121,15 @@ public class ProblemService {
     public Problem getBySlug(String slug) {
         Problem problem = problemRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.of("problem", slug));
 
+        // A draft is not in the catalogue and must not be reachable by guessing
+        // its URL either — but its author has to be able to open it, which is how
+        // an unpublished problem is previewed and test-run before release. An
+        // archived problem stays readable: people have solved it, and their
+        // submission history links straight here.
+        if (!problem.isPublished() && !SecurityUtils.isAdmin()) {
+            throw NotFoundException.of("problem", slug);
+        }
+
         // Same reason as above. These are separate queries rather than one fetch
         // join on purpose: three List associations in a single join would trip
         // Hibernate's MultipleBagFetchException.

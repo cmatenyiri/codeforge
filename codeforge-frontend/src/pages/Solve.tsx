@@ -1,4 +1,5 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
 import { Alert, Box, CircularProgress, Divider, Link as MuiLink, Stack } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,11 +7,12 @@ import { Link, useParams } from 'react-router';
 import { toApiError } from '../api/api-error';
 import { problemsApi } from '../api/problems-api';
 import { type ProblemDetail } from '../api/types';
+import { useAuth } from '../auth/use-auth';
 import { AppHeader } from '../components/layout/AppHeader';
 import { EditorPanel } from '../components/solve/EditorPanel';
 import { ProblemPanel } from '../components/solve/ProblemPanel';
 import { useMessages } from '../i18n/use-messages';
-import { paths } from '../routes/paths';
+import { adminProblemEditPath, paths } from '../routes/paths';
 
 /**
  * The solving workspace: problem on the left, editor on the right.
@@ -23,6 +25,7 @@ export const SolvePage = () => {
   const { t } = useTranslation();
   const message = useMessages();
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
 
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +79,7 @@ export const SolvePage = () => {
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'surface.canvas' }}>
       <AppHeader />
 
-      <Box sx={{ px: 2, pt: 1.5 }}>
+      <Stack direction="row" spacing={2} sx={{ px: 2, pt: 1.5, alignItems: 'center' }}>
         <MuiLink
           component={Link}
           to={paths.problems}
@@ -85,7 +88,19 @@ export const SolvePage = () => {
           <ArrowBackRounded sx={{ fontSize: 16 }} />
           {t('solve.backToProblems')}
         </MuiLink>
-      </Box>
+
+        {/* The shortest path from "this statement reads wrong" to fixing it. */}
+        {user?.role === 'ADMIN' && problem ? (
+          <MuiLink
+            component={Link}
+            to={adminProblemEditPath(problem.id)}
+            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, typography: 'body2' }}
+          >
+            <EditRounded sx={{ fontSize: 16 }} />
+            {t('admin.form.editThisProblem')}
+          </MuiLink>
+        ) : null}
+      </Stack>
 
       {loading ? (
         <Box sx={{ flex: 1, display: 'grid', placeItems: 'center' }}>

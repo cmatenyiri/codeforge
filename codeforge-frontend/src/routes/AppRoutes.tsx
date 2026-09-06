@@ -21,7 +21,7 @@ const FullPageSpinner = () => (
  * bounce a signed-in user to the login page on every refresh.
  */
 const RouteGuard = ({ access, children }: { access: RouteAccess; children: React.ReactNode }) => {
-  const { isAuthenticated, initialising } = useAuth();
+  const { user, isAuthenticated, initialising } = useAuth();
   const location = useLocation();
 
   if (access === 'public') {
@@ -30,6 +30,19 @@ const RouteGuard = ({ access, children }: { access: RouteAccess; children: React
 
   if (initialising) {
     return <FullPageSpinner />;
+  }
+
+  if (access === 'admin') {
+    if (!isAuthenticated) {
+      return <Navigate to={paths.login} replace state={{ from: location.pathname }} />;
+    }
+    // Sent to the catalogue rather than shown a refusal: for a signed-in user
+    // without the role, the authoring screens are not a locked door — they are
+    // not part of the product they are using.
+    if (user?.role !== 'ADMIN') {
+      return <Navigate to={paths.problems} replace />;
+    }
+    return <>{children}</>;
   }
 
   if (access === 'authenticated' && !isAuthenticated) {

@@ -23,7 +23,10 @@
     "solve": "Résoudre",
     "interviews": "Entretien blanc",
     "interviewSession": "Entretien en cours",
-    "interviewReport": "Débrief"
+    "interviewReport": "Débrief",
+    "adminProblems": "Rédaction",
+    "adminProblemNew": "Nouveau problème",
+    "adminProblemEdit": "Modifier le problème"
   },
   "auth": {
     "login": {
@@ -98,6 +101,80 @@
     },
     "newPassword": {
       "unchanged": "Choisissez un mot de passe que vous n'avez pas déjà utilisé ici"
+    },
+    "problem": {
+      "title": {
+        "required": "Un titre est requis",
+        "length": "Le titre ne peut dépasser 160 caractères",
+        "taken": "Un autre problème porte déjà ce titre"
+      },
+      "slug": {
+        "required": "Un slug d'URL est requis",
+        "length": "Le slug ne peut dépasser 180 caractères",
+        "format": "Minuscules, chiffres et traits d'union simples uniquement",
+        "reserved": "Ce slug est réservé",
+        "taken": "Un autre problème utilise déjà ce slug"
+      },
+      "difficulty": {
+        "required": "Choisis une difficulté"
+      },
+      "description": {
+        "required": "Une description est requise"
+      },
+      "markdown": {
+        "length": "Ce texte est trop long"
+      },
+      "complexity": {
+        "length": "Utilise une forme courte comme O(n log n)"
+      },
+      "tags": {
+        "unknown": "L'un de ces thèmes n'existe plus"
+      },
+      "functionName": {
+        "required": "Un nom de fonction est requis",
+        "length": "Le nom de fonction ne peut dépasser 64 caractères",
+        "format": "Utilise un identifiant simple, p. ex. twoSum"
+      },
+      "returnType": {
+        "required": "Choisis un type de retour"
+      },
+      "parameter": {
+        "required": "Chaque argument doit avoir un nom",
+        "length": "Le nom d'argument ne peut dépasser 64 caractères",
+        "format": "Utilise un identifiant simple, p. ex. nums",
+        "duplicate": "Deux arguments portent ce nom",
+        "type": "Choisis un type pour chaque argument"
+      },
+      "example": {
+        "input": "Un exemple doit avoir une entrée",
+        "output": "Un exemple doit avoir une sortie"
+      },
+      "hint": {
+        "required": "Un indice ne peut pas être vide"
+      },
+      "testCase": {
+        "expected": "Chaque cas doit avoir une sortie attendue",
+        "lineCount": "Une ligne d'entrée par argument est attendue",
+        "length": "Ce cas est trop volumineux"
+      },
+      "editorial": {
+        "content": "Une solution rédigée demande une explication — ou désactive-la",
+        "solution": "Une solution de référence ne peut pas être vide"
+      },
+      "publish": {
+        "signature": "Un problème publié a besoin d'une signature de solution.",
+        "examples": "Un problème publié a besoin d'au moins un exemple.",
+        "testCases": "Un problème publié a besoin de cas de test.",
+        "samples": "Un problème publié a besoin d'au moins un cas visible sur lequel s'exécuter."
+      }
+    },
+    "tag": {
+      "name": {
+        "required": "Un nom de thème est requis",
+        "length": "Le nom de thème ne peut dépasser 64 caractères",
+        "format": "Un nom de thème doit contenir une lettre ou un chiffre",
+        "taken": "Ce thème existe déjà"
+      }
     }
   },
   "error": {
@@ -143,6 +220,11 @@
     },
     "interviewProblem": {
       "notFound": "Ce problème ne fait pas partie de cet entretien."
+    },
+    "problem": {
+      "notFound": "Ce problème n'existe pas.",
+      "hasSubmissions": "Des personnes ont soumis sur ce problème. Archive-le plutôt que de le supprimer.",
+      "usedByInterviews": "Ce problème a été posé en entretien. Archive-le plutôt que de le supprimer."
     }
   },
   "avatar": {
@@ -172,7 +254,8 @@
   "nav": {
     "problems": "Problèmes",
     "interviews": "Entretien",
-    "home": "Accueil"
+    "home": "Accueil",
+    "admin": "Rédaction"
   },
   "difficulty": {
     "easy": "Facile",
@@ -385,5 +468,150 @@
     "runtimeError": "Erreur d'exécution",
     "compileError": "Erreur de compilation",
     "internalError": "Erreur du juge"
+  },
+  "admin": {
+    "state": {
+      "draft": "Brouillon",
+      "published": "Publié",
+      "archived": "Archivé"
+    },
+    "list": {
+      "title": "Problèmes",
+      "subtitle": "Écrire, relire et publier le catalogue.",
+      "searchPlaceholder": "Rechercher par titre ou slug…",
+      "newProblem": "Nouveau problème",
+      "state": "État",
+      "anyState": "Tous les états",
+      "cases": "Cas de test",
+      "caseCounts": "{{samples}} visibles · {{hidden}} cachés",
+      "submissions": "Soumissions",
+      "updated": "Modifié",
+      "actions": "Actions",
+      "edit": "Modifier",
+      "preview": "Ouvrir dans l'éditeur",
+      "duplicate": "Dupliquer",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "archive": "Archiver",
+      "restore": "Restaurer",
+      "delete": "Supprimer",
+      "hasEditorial": "A une solution rédigée",
+      "editorialShort": "Solution",
+      "notSolvable": "Pas encore de signature — ce problème ne peut pas être ouvert dans l'éditeur.",
+      "emptyTitle": "Aucun problème",
+      "emptyBody": "Change les filtres, ou écris le premier.",
+      "deleteTitle": "Supprimer ce problème ?",
+      "deleteBody": "« {{title}} » sera supprimé définitivement, avec ses exemples, indices, cas de test et sa solution rédigée. Archive-le plutôt s'il peut encore servir.",
+      "publishRefused": "« {{title}} » n'est pas prêt à être publié :",
+      "publishedNotice": "« {{title}} » est maintenant dans le catalogue.",
+      "unpublishedNotice": "« {{title}} » est redevenu un brouillon.",
+      "archivedNotice": "« {{title}} » a été archivé.",
+      "restoredNotice": "« {{title}} » a été restauré.",
+      "deletedNotice": "« {{title}} » a été supprimé."
+    },
+    "form": {
+      "newTitle": "Nouveau problème",
+      "untitled": "Problème sans titre",
+      "newSubtitle": "Tout ce qui suit part en un seul enregistrement. Un brouillon peut rester aussi incomplet que tu veux.",
+      "editSubtitle": "Tout ce qui suit part en un seul enregistrement.",
+      "editThisProblem": "Modifier le problème",
+      "backToList": "Retour à la rédaction",
+      "openInSolver": "Ouvrir dans l'éditeur",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "cancel": "Annuler",
+      "create": "Créer",
+      "unsaved": "Modifications non enregistrées",
+      "upToDate": "Tout est enregistré",
+      "leaveTitle": "Quitter sans enregistrer ?",
+      "leaveBody": "Tes modifications sur ce problème seront perdues.",
+      "keepEditing": "Continuer",
+      "discard": "Abandonner les modifications",
+      "preview": "Aperçu",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "remove": "Supprimer",
+      "hasHistory_one": "Ce problème a {{count}} soumission. Modifier ses cas de test change ce sur quoi les solutions passées ont été jugées.",
+      "hasHistory_other": "Ce problème a {{count}} soumissions. Modifier ses cas de test change ce sur quoi les solutions passées ont été jugées.",
+      "basics": "Généralités",
+      "basicsHelp": "Le nom du problème, son adresse, et qui peut le voir.",
+      "title": "Titre",
+      "slug": "Slug d'URL",
+      "slugHelp": "Le problème vivra à /problems/{{slug}}",
+      "slugLock": "Détacher le slug du titre",
+      "slugUnlock": "Laisser le slug suivre le titre",
+      "difficulty": "Difficulté",
+      "state": "État",
+      "stateHelpDraft": "Invisible pour ceux qui résolvent. Toi seul peux l'ouvrir.",
+      "stateHelpPublished": "En ligne dans le catalogue.",
+      "stateHelpArchived": "Retiré du catalogue ; les soumissions passées restent consultables.",
+      "publishBlocked": "Ce problème ne peut pas encore être publié :",
+      "topics": "Thèmes",
+      "topicsPlaceholder": "Arrays, Hash Table…",
+      "newTopic": "Nouveau thème",
+      "topicName": "Nom du thème",
+      "statement": "Énoncé",
+      "statementHelp": "Markdown. C'est le problème tel qu'il sera lu.",
+      "description": "Description",
+      "descriptionPlaceholder": "Étant donné un tableau `nums`…",
+      "constraints": "Contraintes",
+      "constraintsHelp": "Elles doivent rester fidèles aux cas cachés sur lesquels une soumission est jugée.",
+      "constraintsPlaceholder": "- `1 <= nums.length <= 10^4`",
+      "examples": "Exemples",
+      "examplesHelp": "Les exemples imprimés dans l'énoncé. Du texte, pas des données — le juge ne les lit jamais.",
+      "addExample": "Ajouter un exemple",
+      "noExamples": "Aucun exemple. Un problème publié en demande au moins un.",
+      "explanationHelp": "Facultatif. Pourquoi cette entrée donne cette sortie.",
+      "hints": "Indices",
+      "hintsHelp": "Révélés un par un, dans cet ordre. Le premier oriente ; le dernier peut donner l'approche.",
+      "addHint": "Ajouter un indice",
+      "noHints": "Aucun indice. C'est parfaitement normal.",
+      "signature": "Signature de la solution",
+      "signatureHelp": "La fonction à implémenter. Elle produit le code de départ, le harnais qui lit stdin et la forme imprimée du retour — les cas de test ci-dessous sont écrits pour elle.",
+      "noSignature": "Sans signature, ce problème n'a pas d'éditeur où le résoudre, et ne peut pas être publié.",
+      "previewStarter": "Voir le code de départ",
+      "functionName": "Nom de la fonction",
+      "functionNameHelp": "Tel quel dans les quatre langages, p. ex. twoSum",
+      "returnType": "Type de retour",
+      "noReturnType": "Aucun pour l'instant",
+      "parameters": "Arguments",
+      "addParameter": "Ajouter un argument",
+      "noParameters": "Aucun argument. L'entrée d'un cas de test restera vide.",
+      "argument": "Argument {{index}}",
+      "argumentName": "Nom",
+      "argumentType": "Type",
+      "testCases": "Cas de test",
+      "testCasesHelp": "Les cas visibles sont montrés et servent à « Exécuter ». Les cas cachés sont la barre qu'une soumission doit franchir.",
+      "testCasesNoSignature": "Déclare une signature ci-dessus et chaque cas sera vérifié sur le nombre de lignes d'entrée.",
+      "addTestCase": "Ajouter un cas",
+      "hidden": "Caché",
+      "stdin": "Entrée (stdin)",
+      "sampleCount_one": "{{count}} visible",
+      "sampleCount_other": "{{count}} visibles",
+      "hiddenCount_one": "{{count}} caché",
+      "hiddenCount_other": "{{count}} cachés",
+      "inputShape_one": "Une ligne par argument : {{names}}",
+      "inputShape_other": "{{count}} lignes par cas, dans cet ordre : {{names}}",
+      "actualOutput": "Réellement imprimé",
+      "useActual": "Adopter comme sortie attendue",
+      "useAllActual_one": "Adopter {{count}} sortie",
+      "useAllActual_other": "Adopter les {{count}} sorties",
+      "verify": "Vérifier avec une solution de référence",
+      "verifyHelp": "Exécute une solution correcte sur chaque cas enregistré, cachés compris. Rien n'est enregistré, aucune soumission n'est créée.",
+      "verifyUnsaved": "Enregistre d'abord le problème — la vérification porte sur les cas enregistrés.",
+      "verifyDirty": "Il y a des modifications non enregistrées. La vérification porte sur les derniers cas enregistrés.",
+      "verifying": "Évaluation de tous les cas…",
+      "loadStub": "Charger le code de départ",
+      "runReference": "Exécuter sur tous les cas",
+      "verifyPassed": "Chaque cas correspond à sa sortie attendue.",
+      "editorial": "Solution rédigée",
+      "editorialHelp": "La solution écrite : l'approche, pourquoi la tentative évidente ne suffit pas, et du code qui marche.",
+      "hasEditorial": "Ce problème a une solution rédigée",
+      "noEditorial": "Aucune solution rédigée. L'onglet reste désactivé.",
+      "walkthrough": "Explication",
+      "walkthroughPlaceholder": "### Approche\n\nLa force brute est en O(n²)…",
+      "complexityHelp": "Forme courte, p. ex. O(n log n)"
+    }
   }
 }

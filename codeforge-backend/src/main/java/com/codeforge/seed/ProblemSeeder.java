@@ -7,6 +7,7 @@ import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemExample;
 import com.codeforge.domain.ProblemHint;
 import com.codeforge.domain.ProblemParameter;
+import com.codeforge.domain.Slugs;
 import com.codeforge.domain.Tag;
 import com.codeforge.domain.TestCase;
 import com.codeforge.repository.EditorialRepository;
@@ -19,7 +20,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -220,7 +220,7 @@ public class ProblemSeeder implements ApplicationRunner {
     }
 
     static String slugify(String value) {
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        return Slugs.slugify(value);
     }
 
     /** Attaches an example to a problem, keeping both sides of the association in step. */

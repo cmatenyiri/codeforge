@@ -250,6 +250,143 @@ export type UserStats = {
 
 export type DifficultyProgress = { difficulty: Difficulty; solved: number; total: number };
 
+/* ------------------------------------------------------------------------- */
+/* Authoring (admin only)                                                     */
+/* ------------------------------------------------------------------------- */
+
+/** Where a problem is in its authoring life. Mirrors `com.codeforge.domain.ProblemState`. */
+export type ProblemState = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+/**
+ * The value shapes a solution signature can be built from.
+ *
+ * Mirrors `com.codeforge.domain.DataType`. Deliberately small: every member has
+ * to be expressible in all four languages, parseable from one line of a test
+ * case's input, and printable in one canonical form.
+ */
+export type DataType =
+  | 'INT'
+  | 'LONG'
+  | 'DOUBLE'
+  | 'BOOLEAN'
+  | 'STRING'
+  | 'INT_ARRAY'
+  | 'LONG_ARRAY'
+  | 'DOUBLE_ARRAY'
+  | 'STRING_ARRAY'
+  | 'INT_MATRIX';
+
+/** One argument of the function a solver implements. Order is argument order. */
+export type ProblemParameterPayload = { name: string; type: DataType };
+
+/** `id` is the stored row this replaces, so an edit keeps it instead of recreating it. */
+export type ProblemExamplePayload = {
+  id?: number | null;
+  input: string;
+  output: string;
+  explanation?: string | null;
+};
+
+export type TestCasePayload = {
+  id?: number | null;
+  /** One line per argument, in signature order. */
+  input: string;
+  expectedOutput: string;
+  /** Graded but never shown; only a submission is judged against it. */
+  hidden: boolean;
+};
+
+export type EditorialPayload = {
+  contentMarkdown: string;
+  timeComplexity?: string | null;
+  spaceComplexity?: string | null;
+  solutions: Partial<Record<Language, string>>;
+};
+
+/**
+ * A whole problem, as one write. Mirrors `ProblemUpsertRequest`.
+ *
+ * Create and edit send the same shape, and the shape is the complete document
+ * rather than a patch: the alternative makes "I removed the last example"
+ * indistinguishable from "I did not touch the examples".
+ */
+export type ProblemUpsertPayload = {
+  title: string;
+  /** Blank derives one from the title, which is what an author wants until a rename would break links. */
+  slug: string;
+  difficulty: Difficulty;
+  description: string;
+  constraintsMarkdown?: string | null;
+  published: boolean;
+  archived: boolean;
+  tagIds: number[];
+  functionName?: string | null;
+  returnType?: DataType | null;
+  parameters: ProblemParameterPayload[];
+  examples: ProblemExamplePayload[];
+  hints: string[];
+  testCases: TestCasePayload[];
+  /** null leaves the problem without a written solution, or deletes the one it has. */
+  editorial: EditorialPayload | null;
+};
+
+/** One row in the authoring catalogue. Mirrors `AdminProblemSummaryResponse`. */
+export type AdminProblemSummary = {
+  id: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  state: ProblemState;
+  tags: Tag[];
+  testCaseCount: number;
+  sampleTestCaseCount: number;
+  hasEditorial: boolean;
+  /** Whether a signature has been authored — without one the problem cannot be opened in the editor. */
+  solvable: boolean;
+  totalSubmissions: number;
+  acceptanceRate?: number;
+  updatedAt: string;
+};
+
+/**
+ * A problem in full, for the form. Mirrors `AdminProblemDetailResponse`.
+ *
+ * The one response that carries the hidden test cases — an author has to see
+ * what submissions are judged against.
+ */
+export type AdminProblemDetail = {
+  id: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  description: string;
+  constraintsMarkdown?: string;
+  state: ProblemState;
+  published: boolean;
+  archived: boolean;
+  tags: Tag[];
+  functionName?: string;
+  returnType?: DataType;
+  parameters: ProblemParameterPayload[];
+  examples: ProblemExamplePayload[];
+  hints: string[];
+  testCases: TestCasePayload[];
+  editorial?: EditorialPayload;
+  /** Generated from the stored signature, so the author sees the stub a solver gets. */
+  starterCode: Partial<Record<Language, string>>;
+  totalSubmissions: number;
+  acceptedSubmissions: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** A signature to render starter code for, before it has been saved. */
+export type SignaturePreviewPayload = {
+  functionName: string;
+  returnType: DataType;
+  parameters: ProblemParameterPayload[];
+};
+
 export type PageResponse<T> = {
   content: T[];
   page: number;

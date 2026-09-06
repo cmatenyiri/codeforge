@@ -15,6 +15,9 @@ export const paths = {
   interviews: '/interview',
   interviewSession: '/interview/:id',
   interviewReport: '/interview/:id/report',
+  adminProblems: '/admin/problems',
+  adminProblemNew: '/admin/problems/new',
+  adminProblemEdit: '/admin/problems/:id/edit',
   /** Design-system reference; delete along with `src/components/preview`. */
   themePreview: '/theme-preview',
 } as const;
@@ -27,3 +30,6 @@ export const problemPath = (slug: string) => `${paths.problems}/${slug}`;
 export const interviewSessionPath = (id: number) => `${paths.interviews}/${id}`;
 
 export const interviewReportPath = (id: number) => `${paths.interviews}/${id}/report`;
+
+/** The authoring form for one problem. */
+export const adminProblemEditPath = (id: number) => `${paths.adminProblems}/${id}/edit`;

@@ -9,7 +9,9 @@ export type RouteAccess =
   /** Signed-in callers only; others are sent to the login page. */
   | 'authenticated'
   /** Signed-out callers only — login and register, which a signed-in user should skip. */
-  | 'guestOnly';
+  | 'guestOnly'
+  /** Administrators only. The server enforces this too; the guard only spares everyone else a wall of 403s. */
+  | 'admin';
 
 export type AppRoute = {
   path: string;
@@ -90,6 +92,31 @@ export const routes: AppRoute[] = [
     ),
     titleKey: 'pageTitle.interviewReport',
     access: 'authenticated',
+  },
+  {
+    // Declared before the edit route only for readability — the router matches
+    // on specificity, and "/admin/problems/new" is more specific than the
+    // template it would otherwise fall into.
+    path: paths.adminProblems,
+    component: lazy(() => import('../pages/AdminProblems').then((module) => ({ default: module.AdminProblemsPage }))),
+    titleKey: 'pageTitle.adminProblems',
+    access: 'admin',
+  },
+  {
+    path: paths.adminProblemNew,
+    component: lazy(() =>
+      import('../pages/AdminProblemEditor').then((module) => ({ default: module.AdminProblemEditorPage })),
+    ),
+    titleKey: 'pageTitle.adminProblemNew',
+    access: 'admin',
+  },
+  {
+    path: paths.adminProblemEdit,
+    component: lazy(() =>
+      import('../pages/AdminProblemEditor').then((module) => ({ default: module.AdminProblemEditorPage })),
+    ),
+    titleKey: 'pageTitle.adminProblemEdit',
+    access: 'admin',
   },
   {
     path: paths.themePreview,

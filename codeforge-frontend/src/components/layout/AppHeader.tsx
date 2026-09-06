@@ -2,6 +2,7 @@ import TerminalRounded from '@mui/icons-material/TerminalRounded';
 import { AppBar, Box, Tab, Tabs, Toolbar, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
+import { useAuth } from '../../auth/use-auth';
 import { paths } from '../../routes/paths';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { UserMenu } from '../user/UserMenu';
@@ -13,20 +14,23 @@ const NAV = [
   { to: paths.home, labelKey: 'nav.home' },
 ] as const;
 
+/** Only ever rendered for an administrator; the route and the API refuse everyone else. */
+const ADMIN_NAV = { to: paths.adminProblems, labelKey: 'nav.admin' } as const;
+
 /** The signed-in chrome: brand, primary nav, language and the account menu. */
 export const AppHeader = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const { user } = useAuth();
 
-  // Matched by prefix so the solving page and the interview workspace keep
-  // their section highlighted, rather than dropping the indicator on a subpage.
-  const value = location.pathname.startsWith(paths.problems)
-    ? 0
-    : location.pathname.startsWith(paths.interviews)
-      ? 1
-      : location.pathname === paths.home
-        ? 2
-        : false;
+  const items = user?.role === 'ADMIN' ? [...NAV, ADMIN_NAV] : [...NAV];
+
+  // Matched by prefix so the solving page and the interview workspace keep their
+  // section highlighted rather than dropping the indicator on a subpage. Home is
+  // the exception: every path starts with "/".
+  const active = items.find((item) =>
+    item.to === paths.home ? location.pathname === paths.home : location.pathname.startsWith(item.to),
+  );
 
   return (
     <AppBar position="sticky">
@@ -57,9 +61,9 @@ export const AppHeader = () => {
           </Typography>
         </Box>
 
-        <Tabs value={value} sx={{ alignSelf: 'stretch', display: { xs: 'none', sm: 'flex' } }}>
-          {NAV.map((item) => (
-            <Tab key={item.to} component={Link} to={item.to} label={t(item.labelKey)} />
+        <Tabs value={active?.to ?? false} sx={{ alignSelf: 'stretch', display: { xs: 'none', sm: 'flex' } }}>
+          {items.map((item) => (
+            <Tab key={item.to} value={item.to} component={Link} to={item.to} label={t(item.labelKey)} />
           ))}
         </Tabs>
 

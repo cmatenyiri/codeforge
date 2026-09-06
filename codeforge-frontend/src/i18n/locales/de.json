@@ -23,7 +23,10 @@
     "solve": "Lösen",
     "interviews": "Mock-Interview",
     "interviewSession": "Interview läuft",
-    "interviewReport": "Auswertung"
+    "interviewReport": "Auswertung",
+    "adminProblems": "Redaktion",
+    "adminProblemNew": "Neue Aufgabe",
+    "adminProblemEdit": "Aufgabe bearbeiten"
   },
   "auth": {
     "login": {
@@ -98,6 +101,80 @@
     },
     "newPassword": {
       "unchanged": "Wähle ein Passwort, das du hier noch nicht verwendet hast"
+    },
+    "problem": {
+      "title": {
+        "required": "Ein Titel ist erforderlich",
+        "length": "Der Titel darf höchstens 160 Zeichen haben",
+        "taken": "Eine andere Aufgabe hat diesen Titel bereits"
+      },
+      "slug": {
+        "required": "Ein URL-Slug ist erforderlich",
+        "length": "Der Slug darf höchstens 180 Zeichen haben",
+        "format": "Nur Kleinbuchstaben, Ziffern und einzelne Bindestriche",
+        "reserved": "Dieser Slug ist reserviert",
+        "taken": "Eine andere Aufgabe nutzt diesen Slug bereits"
+      },
+      "difficulty": {
+        "required": "Wähle eine Schwierigkeit"
+      },
+      "description": {
+        "required": "Eine Beschreibung ist erforderlich"
+      },
+      "markdown": {
+        "length": "Dieser Text ist zu lang"
+      },
+      "complexity": {
+        "length": "Nutze eine Kurzform wie O(n log n)"
+      },
+      "tags": {
+        "unknown": "Eines dieser Themen existiert nicht mehr"
+      },
+      "functionName": {
+        "required": "Ein Funktionsname ist erforderlich",
+        "length": "Der Funktionsname darf höchstens 64 Zeichen haben",
+        "format": "Nutze einen einfachen Bezeichner, z. B. twoSum"
+      },
+      "returnType": {
+        "required": "Wähle einen Rückgabetyp"
+      },
+      "parameter": {
+        "required": "Jedes Argument braucht einen Namen",
+        "length": "Der Argumentname darf höchstens 64 Zeichen haben",
+        "format": "Nutze einen einfachen Bezeichner, z. B. nums",
+        "duplicate": "Zwei Argumente haben denselben Namen",
+        "type": "Wähle für jedes Argument einen Typ"
+      },
+      "example": {
+        "input": "Ein Beispiel braucht eine Eingabe",
+        "output": "Ein Beispiel braucht eine Ausgabe"
+      },
+      "hint": {
+        "required": "Ein Hinweis darf nicht leer sein"
+      },
+      "testCase": {
+        "expected": "Jeder Fall braucht eine erwartete Ausgabe",
+        "lineCount": "Erwartet wird eine Eingabezeile je Argument",
+        "length": "Dieser Fall ist zu groß"
+      },
+      "editorial": {
+        "content": "Eine Musterlösung braucht eine Erklärung — oder schalte sie ab",
+        "solution": "Eine Referenzlösung darf nicht leer sein"
+      },
+      "publish": {
+        "signature": "Eine veröffentlichte Aufgabe braucht eine Lösungssignatur.",
+        "examples": "Eine veröffentlichte Aufgabe braucht mindestens ein Beispiel.",
+        "testCases": "Eine veröffentlichte Aufgabe braucht Testfälle.",
+        "samples": "Eine veröffentlichte Aufgabe braucht mindestens einen sichtbaren Fall zum Ausführen."
+      }
+    },
+    "tag": {
+      "name": {
+        "required": "Ein Themenname ist erforderlich",
+        "length": "Der Themenname darf höchstens 64 Zeichen haben",
+        "format": "Ein Themenname braucht einen Buchstaben oder eine Ziffer",
+        "taken": "Dieses Thema existiert bereits"
+      }
     }
   },
   "error": {
@@ -143,6 +220,11 @@
     },
     "interviewProblem": {
       "notFound": "Diese Aufgabe gehört nicht zu diesem Interview."
+    },
+    "problem": {
+      "notFound": "Diese Aufgabe existiert nicht.",
+      "hasSubmissions": "Zu dieser Aufgabe wurde bereits eingereicht. Archiviere sie, statt sie zu löschen.",
+      "usedByInterviews": "Diese Aufgabe wurde in einem Interview gestellt. Archiviere sie, statt sie zu löschen."
     }
   },
   "avatar": {
@@ -172,7 +254,8 @@
   "nav": {
     "problems": "Aufgaben",
     "interviews": "Interview",
-    "home": "Start"
+    "home": "Start",
+    "admin": "Redaktion"
   },
   "difficulty": {
     "easy": "Leicht",
@@ -385,5 +468,150 @@
     "runtimeError": "Laufzeitfehler",
     "compileError": "Kompilierfehler",
     "internalError": "Judge-Fehler"
+  },
+  "admin": {
+    "state": {
+      "draft": "Entwurf",
+      "published": "Veröffentlicht",
+      "archived": "Archiviert"
+    },
+    "list": {
+      "title": "Aufgaben",
+      "subtitle": "Den Katalog schreiben, prüfen und veröffentlichen.",
+      "searchPlaceholder": "Nach Titel oder Slug suchen…",
+      "newProblem": "Neue Aufgabe",
+      "state": "Status",
+      "anyState": "Beliebiger Status",
+      "cases": "Testfälle",
+      "caseCounts": "{{samples}} sichtbar · {{hidden}} verborgen",
+      "submissions": "Einreichungen",
+      "updated": "Geändert",
+      "actions": "Aktionen",
+      "edit": "Bearbeiten",
+      "preview": "Im Editor öffnen",
+      "duplicate": "Duplizieren",
+      "publish": "Veröffentlichen",
+      "unpublish": "Zurückziehen",
+      "archive": "Archivieren",
+      "restore": "Wiederherstellen",
+      "delete": "Löschen",
+      "hasEditorial": "Hat eine Musterlösung",
+      "editorialShort": "Lösung",
+      "notSolvable": "Noch keine Signatur — diese Aufgabe lässt sich im Editor nicht öffnen.",
+      "emptyTitle": "Keine Aufgaben",
+      "emptyBody": "Ändere die Filter oder schreib die erste.",
+      "deleteTitle": "Diese Aufgabe löschen?",
+      "deleteBody": "„{{title}}“ wird mit Beispielen, Hinweisen, Testfällen und Musterlösung endgültig entfernt. Archiviere sie stattdessen, wenn sie noch gebraucht werden könnte.",
+      "publishRefused": "„{{title}}“ ist noch nicht bereit zur Veröffentlichung:",
+      "publishedNotice": "„{{title}}“ ist jetzt im Katalog.",
+      "unpublishedNotice": "„{{title}}“ ist wieder ein Entwurf.",
+      "archivedNotice": "„{{title}}“ wurde archiviert.",
+      "restoredNotice": "„{{title}}“ wurde wiederhergestellt.",
+      "deletedNotice": "„{{title}}“ wurde gelöscht."
+    },
+    "form": {
+      "newTitle": "Neue Aufgabe",
+      "untitled": "Aufgabe ohne Titel",
+      "newSubtitle": "Alles unten ist ein einziges Speichern. Ein Entwurf darf so unfertig sein, wie du möchtest.",
+      "editSubtitle": "Alles unten ist ein einziges Speichern.",
+      "editThisProblem": "Aufgabe bearbeiten",
+      "backToList": "Zurück zur Redaktion",
+      "openInSolver": "Im Editor öffnen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "saved": "Gespeichert",
+      "cancel": "Abbrechen",
+      "create": "Anlegen",
+      "unsaved": "Ungespeicherte Änderungen",
+      "upToDate": "Alle Änderungen gespeichert",
+      "leaveTitle": "Ohne Speichern verlassen?",
+      "leaveBody": "Deine Änderungen an dieser Aufgabe gehen verloren.",
+      "keepEditing": "Weiter bearbeiten",
+      "discard": "Änderungen verwerfen",
+      "preview": "Vorschau",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "remove": "Entfernen",
+      "hasHistory_one": "Diese Aufgabe hat {{count}} Einreichung. Geänderte Testfälle ändern, woran bisherige Lösungen gemessen wurden.",
+      "hasHistory_other": "Diese Aufgabe hat {{count}} Einreichungen. Geänderte Testfälle ändern, woran bisherige Lösungen gemessen wurden.",
+      "basics": "Grunddaten",
+      "basicsHelp": "Wie die Aufgabe heißt, wo sie liegt und wer sie sieht.",
+      "title": "Titel",
+      "slug": "URL-Slug",
+      "slugHelp": "Die Aufgabe liegt unter /problems/{{slug}}",
+      "slugLock": "Slug nicht mehr dem Titel folgen lassen",
+      "slugUnlock": "Slug wieder dem Titel folgen lassen",
+      "difficulty": "Schwierigkeit",
+      "state": "Status",
+      "stateHelpDraft": "Für Lösende unsichtbar. Nur du kannst sie öffnen.",
+      "stateHelpPublished": "Live im Katalog.",
+      "stateHelpArchived": "Aus dem Katalog genommen; frühere Einreichungen bleiben auflösbar.",
+      "publishBlocked": "Diese Aufgabe kann noch nicht veröffentlicht werden:",
+      "topics": "Themen",
+      "topicsPlaceholder": "Arrays, Hash Table…",
+      "newTopic": "Neues Thema",
+      "topicName": "Themenname",
+      "statement": "Aufgabenstellung",
+      "statementHelp": "Markdown. So liest die Aufgabe, wer sie löst.",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Gegeben ist ein Array `nums`…",
+      "constraints": "Randbedingungen",
+      "constraintsHelp": "Sie müssen zu den verborgenen Fällen passen, gegen die eingereicht wird.",
+      "constraintsPlaceholder": "- `1 <= nums.length <= 10^4`",
+      "examples": "Beispiele",
+      "examplesHelp": "Die Beispiele in der Aufgabenstellung. Text, keine Daten — der Judge liest sie nie.",
+      "addExample": "Beispiel hinzufügen",
+      "noExamples": "Noch keine Beispiele. Eine veröffentlichte Aufgabe braucht mindestens eines.",
+      "explanationHelp": "Optional. Warum diese Eingabe diese Ausgabe ergibt.",
+      "hints": "Hinweise",
+      "hintsHelp": "Werden einzeln in dieser Reihenfolge aufgedeckt. Der erste stupst an, der letzte darf den Ansatz verraten.",
+      "addHint": "Hinweis hinzufügen",
+      "noHints": "Keine Hinweise. Völlig normal.",
+      "signature": "Lösungssignatur",
+      "signatureHelp": "Die Funktion, die implementiert wird. Sie erzeugt den Startcode, den Harness für stdin und die Ausgabeform des Rückgabewerts — die Testfälle unten sind dagegen geschrieben.",
+      "noSignature": "Ohne Signatur gibt es keinen Editor für diese Aufgabe, und sie kann nicht veröffentlicht werden.",
+      "previewStarter": "Startcode ansehen",
+      "functionName": "Funktionsname",
+      "functionNameHelp": "So wie in jeder Sprache, z. B. twoSum",
+      "returnType": "Rückgabetyp",
+      "noReturnType": "Noch keiner",
+      "parameters": "Argumente",
+      "addParameter": "Argument hinzufügen",
+      "noParameters": "Keine Argumente. Die Eingabe eines Testfalls bleibt leer.",
+      "argument": "Argument {{index}}",
+      "argumentName": "Name",
+      "argumentType": "Typ",
+      "testCases": "Testfälle",
+      "testCasesHelp": "Sichtbare Fälle sieht die lösende Person, gegen sie läuft „Ausführen“. Verborgene Fälle sind die Hürde für eine Einreichung.",
+      "testCasesNoSignature": "Lege oben eine Signatur an, dann wird jeder Fall auf die richtige Zahl von Eingabezeilen geprüft.",
+      "addTestCase": "Testfall hinzufügen",
+      "hidden": "Verborgen",
+      "stdin": "Eingabe (stdin)",
+      "sampleCount_one": "{{count}} sichtbar",
+      "sampleCount_other": "{{count}} sichtbar",
+      "hiddenCount_one": "{{count}} verborgen",
+      "hiddenCount_other": "{{count}} verborgen",
+      "inputShape_one": "Eine Zeile je Argument: {{names}}",
+      "inputShape_other": "{{count}} Zeilen je Fall, in dieser Reihenfolge: {{names}}",
+      "actualOutput": "Tatsächlich ausgegeben",
+      "useActual": "Als erwartete Ausgabe übernehmen",
+      "useAllActual_one": "{{count}} Ausgabe übernehmen",
+      "useAllActual_other": "Alle {{count}} Ausgaben übernehmen",
+      "verify": "Mit einer Referenzlösung prüfen",
+      "verifyHelp": "Führt eine korrekte Lösung gegen jeden gespeicherten Fall aus, verborgene eingeschlossen. Nichts wird gespeichert, keine Einreichung entsteht.",
+      "verifyUnsaved": "Speichere die Aufgabe zuerst — geprüft werden die gespeicherten Testfälle.",
+      "verifyDirty": "Es gibt ungespeicherte Änderungen. Geprüft werden die zuletzt gespeicherten Testfälle.",
+      "verifying": "Alle Fälle werden bewertet…",
+      "loadStub": "Startcode laden",
+      "runReference": "Gegen alle Fälle ausführen",
+      "verifyPassed": "Jeder Fall stimmt mit seiner erwarteten Ausgabe überein.",
+      "editorial": "Musterlösung",
+      "editorialHelp": "Die geschriebene Lösung: der Ansatz, warum der naheliegende Versuch nicht reicht, und Code, der funktioniert.",
+      "hasEditorial": "Diese Aufgabe hat eine Musterlösung",
+      "noEditorial": "Keine Musterlösung. Der Tab bleibt deaktiviert.",
+      "walkthrough": "Erklärung",
+      "walkthroughPlaceholder": "### Ansatz\n\nDer naive Weg ist O(n²)…",
+      "complexityHelp": "Kurzform, z. B. O(n log n)"
+    }
   }
 }

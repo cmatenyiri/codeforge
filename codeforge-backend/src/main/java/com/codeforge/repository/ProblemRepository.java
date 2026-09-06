@@ -21,6 +21,16 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
     boolean existsBySlug(String slug);
 
     /**
+     * The same uniqueness checks, ignoring one row.
+     *
+     * <p>What an edit needs: a problem keeping its own title must not collide
+     * with itself, which is exactly what a plain {@code existsBy…} would report.
+     */
+    boolean existsByTitleIgnoreCaseAndIdNot(String title, Long id);
+
+    boolean existsBySlugAndIdNot(String slug, Long id);
+
+    /**
      * Catalogue search. Every filter is optional — a null argument means "do not
      * narrow by this", which keeps one query serving the unfiltered list and
      * every combination of filters.
@@ -38,6 +48,7 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
             select distinct p from Problem p
             left join p.tags t
             where p.archived = false
+              and p.published = true
               and (:search is null or lower(p.title) like lower(concat('%', :search, '%')))
               and (:difficulty is null or p.difficulty = :difficulty)
               and (:tagSlug is null or t.slug = :tagSlug)
@@ -67,7 +78,7 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
     /** How many live problems there are at each difficulty, for the progress rings. */
     @Query("""
             select p.difficulty as difficulty, count(p) as total from Problem p
-            where p.archived = false
+            where p.archived = false and p.published = true
             group by p.difficulty
             """)
     List<DifficultyTotal> countByDifficulty();
@@ -120,6 +131,7 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
                    end as familiarity
             from Problem p
             where p.archived = false
+              and p.published = true
               and p.difficulty = :difficulty
               and p.functionName is not null
               and p.returnType is not null
@@ -134,6 +146,50 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
     /** How many hints a problem has, so a reveal can stop at the last one. */
     @Query("select count(h) from Problem p join p.hints h where p.id = :id")
     long countHints(@Param("id") Long id);
+
+    /**
+     * The authoring catalogue: every problem, whatever its state.
+     *
+     * <p>Deliberately a separate query from {@link #search} rather than the same
+     * one with the visibility predicates made optional. The two have opposite
+     * defaults — a solver must never be shown a draft, an author must never lose
+     * one — and a single query with a "show hidden" flag is one bug away from
+     * leaking every unfinished problem into the public list.
+     *
+     * <p>Search matches the slug as well as the title: an author looking for a
+     * problem generally remembers the URL they were last testing against.
+     *
+     * @param state null for any, otherwise DRAFT, PUBLISHED or ARCHIVED
+     */
+    @Query(
+            """
+            select distinct p from Problem p
+            left join p.tags t
+            where (:search is null
+                   or lower(p.title) like lower(concat('%', :search, '%'))
+                   or lower(p.slug) like lower(concat('%', :search, '%')))
+              and (:difficulty is null or p.difficulty = :difficulty)
+              and (:tagSlug is null or t.slug = :tagSlug)
+              and (:state is null
+                   or (:state = 'ARCHIVED' and p.archived = true)
+                   or (:state = 'PUBLISHED' and p.archived = false and p.published = true)
+                   or (:state = 'DRAFT' and p.archived = false and p.published = false))
+            """)
+    Page<Problem> searchForAuthor(
+            @Param("search") String search,
+            @Param("difficulty") Difficulty difficulty,
+            @Param("tagSlug") String tagSlug,
+            @Param("state") String state,
+            Pageable pageable);
+
+    /**
+     * Whether any interview has ever drawn this problem.
+     *
+     * <p>Consulted before a delete: an interview report names the problems it
+     * asked, and removing one would leave a debrief pointing at nothing.
+     */
+    @Query("select count(ip) > 0 from InterviewProblem ip where ip.problem.id = :id")
+    boolean isUsedByInterviews(@Param("id") Long id);
 
     /** Projection for {@link #findInterviewCandidates}. */
     interface InterviewCandidate {

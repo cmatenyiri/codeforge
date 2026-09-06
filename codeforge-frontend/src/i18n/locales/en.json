@@ -23,7 +23,10 @@
     "solve": "Solve",
     "interviews": "Mock interview",
     "interviewSession": "Interview in progress",
-    "interviewReport": "Debrief"
+    "interviewReport": "Debrief",
+    "adminProblems": "Authoring",
+    "adminProblemNew": "New problem",
+    "adminProblemEdit": "Edit problem"
   },
   "auth": {
     "login": {
@@ -98,6 +101,80 @@
     },
     "newPassword": {
       "unchanged": "Choose a password you have not used here"
+    },
+    "problem": {
+      "title": {
+        "required": "A title is required",
+        "length": "Title must be at most 160 characters",
+        "taken": "Another problem already has that title"
+      },
+      "slug": {
+        "required": "A URL slug is required",
+        "length": "Slug must be at most 180 characters",
+        "format": "Use lowercase letters, digits and single hyphens",
+        "reserved": "That slug is reserved",
+        "taken": "Another problem already uses that slug"
+      },
+      "difficulty": {
+        "required": "Choose a difficulty"
+      },
+      "description": {
+        "required": "A description is required"
+      },
+      "markdown": {
+        "length": "That text is too long"
+      },
+      "complexity": {
+        "length": "Use a short form such as O(n log n)"
+      },
+      "tags": {
+        "unknown": "One of those topics no longer exists"
+      },
+      "functionName": {
+        "required": "A function name is required",
+        "length": "Function name must be at most 64 characters",
+        "format": "Use a plain identifier, e.g. twoSum"
+      },
+      "returnType": {
+        "required": "Choose a return type"
+      },
+      "parameter": {
+        "required": "Every argument needs a name",
+        "length": "Argument name must be at most 64 characters",
+        "format": "Use a plain identifier, e.g. nums",
+        "duplicate": "Two arguments share that name",
+        "type": "Choose a type for every argument"
+      },
+      "example": {
+        "input": "An example needs an input",
+        "output": "An example needs an output"
+      },
+      "hint": {
+        "required": "A hint cannot be empty"
+      },
+      "testCase": {
+        "expected": "Every case needs an expected output",
+        "lineCount": "Expected one input line per argument",
+        "length": "That case is too large"
+      },
+      "editorial": {
+        "content": "An editorial needs a walkthrough, or switch it off",
+        "solution": "A reference solution cannot be empty"
+      },
+      "publish": {
+        "signature": "A published problem needs a solution signature.",
+        "examples": "A published problem needs at least one example.",
+        "testCases": "A published problem needs test cases.",
+        "samples": "A published problem needs at least one sample case to run against."
+      }
+    },
+    "tag": {
+      "name": {
+        "required": "A topic name is required",
+        "length": "Topic name must be at most 64 characters",
+        "format": "A topic name needs a letter or a digit",
+        "taken": "That topic already exists"
+      }
     }
   },
   "error": {
@@ -143,6 +220,11 @@
     },
     "interviewProblem": {
       "notFound": "That problem is not part of this interview."
+    },
+    "problem": {
+      "notFound": "That problem does not exist.",
+      "hasSubmissions": "People have submitted to this problem. Archive it instead of deleting it.",
+      "usedByInterviews": "This problem has been asked in an interview. Archive it instead of deleting it."
     }
   },
   "avatar": {
@@ -172,7 +254,8 @@
   "nav": {
     "problems": "Problems",
     "interviews": "Interview",
-    "home": "Home"
+    "home": "Home",
+    "admin": "Authoring"
   },
   "difficulty": {
     "easy": "Easy",
@@ -385,5 +468,150 @@
     "runtimeError": "Runtime Error",
     "compileError": "Compile Error",
     "internalError": "Judge Error"
+  },
+  "admin": {
+    "state": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "list": {
+      "title": "Problems",
+      "subtitle": "Write, review and release the catalogue.",
+      "searchPlaceholder": "Search by title or slug…",
+      "newProblem": "New problem",
+      "state": "State",
+      "anyState": "Any state",
+      "cases": "Test cases",
+      "caseCounts": "{{samples}} shown · {{hidden}} hidden",
+      "submissions": "Submissions",
+      "updated": "Updated",
+      "actions": "Actions",
+      "edit": "Edit",
+      "preview": "Open in solver",
+      "duplicate": "Duplicate",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "archive": "Archive",
+      "restore": "Restore",
+      "delete": "Delete",
+      "hasEditorial": "Has an editorial",
+      "editorialShort": "Editorial",
+      "notSolvable": "No solution signature yet — this problem cannot be opened in the editor.",
+      "emptyTitle": "No problems here",
+      "emptyBody": "Change the filters, or write the first one.",
+      "deleteTitle": "Delete this problem?",
+      "deleteBody": "“{{title}}” and its examples, hints, test cases and editorial will be removed for good. Archive it instead if anyone may still want it.",
+      "publishRefused": "“{{title}}” is not ready to publish:",
+      "publishedNotice": "“{{title}}” is now in the catalogue.",
+      "unpublishedNotice": "“{{title}}” is back to a draft.",
+      "archivedNotice": "“{{title}}” was archived.",
+      "restoredNotice": "“{{title}}” was restored.",
+      "deletedNotice": "“{{title}}” was deleted."
+    },
+    "form": {
+      "newTitle": "New problem",
+      "untitled": "Untitled problem",
+      "newSubtitle": "Everything below is one save. A draft may be as incomplete as you like.",
+      "editSubtitle": "Everything below is one save.",
+      "editThisProblem": "Edit problem",
+      "backToList": "Back to authoring",
+      "openInSolver": "Open in solver",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "cancel": "Cancel",
+      "create": "Create",
+      "unsaved": "Unsaved changes",
+      "upToDate": "All changes saved",
+      "leaveTitle": "Leave without saving?",
+      "leaveBody": "Your changes to this problem will be lost.",
+      "keepEditing": "Keep editing",
+      "discard": "Discard changes",
+      "preview": "Preview",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "hasHistory_one": "This problem has {{count}} submission. Changing its test cases changes what past solvers were judged against.",
+      "hasHistory_other": "This problem has {{count}} submissions. Changing its test cases changes what past solvers were judged against.",
+      "basics": "Basics",
+      "basicsHelp": "What the problem is called, where it lives, and who can see it.",
+      "title": "Title",
+      "slug": "URL slug",
+      "slugHelp": "The problem will live at /problems/{{slug}}",
+      "slugLock": "Stop the slug following the title",
+      "slugUnlock": "Let the slug follow the title again",
+      "difficulty": "Difficulty",
+      "state": "State",
+      "stateHelpDraft": "Invisible to solvers. Only you can open it.",
+      "stateHelpPublished": "Live in the catalogue.",
+      "stateHelpArchived": "Out of the catalogue; past submissions still resolve.",
+      "publishBlocked": "This problem cannot be published yet:",
+      "topics": "Topics",
+      "topicsPlaceholder": "Arrays, Hash Table…",
+      "newTopic": "New topic",
+      "topicName": "Topic name",
+      "statement": "Statement",
+      "statementHelp": "Markdown. This is the problem as a solver reads it.",
+      "description": "Description",
+      "descriptionPlaceholder": "Given an array of integers `nums`…",
+      "constraints": "Constraints",
+      "constraintsHelp": "Keep these honest about the hidden cases a submission is judged against.",
+      "constraintsPlaceholder": "- `1 <= nums.length <= 10^4`",
+      "examples": "Examples",
+      "examplesHelp": "The worked examples printed in the statement. Prose, not data — the judge never reads these.",
+      "addExample": "Add example",
+      "noExamples": "No examples yet. A published problem needs at least one.",
+      "explanationHelp": "Optional. Why that input gives that output.",
+      "hints": "Hints",
+      "hintsHelp": "Revealed one at a time, in this order. The first should nudge; the last may give the approach away.",
+      "addHint": "Add hint",
+      "noHints": "No hints. Perfectly normal.",
+      "signature": "Solution signature",
+      "signatureHelp": "The function a solver implements. It drives the starter code, the harness that reads stdin, and how a return value is printed — so the test cases below are written against it.",
+      "noSignature": "Without a signature this problem has no editor to solve it in, and cannot be published.",
+      "previewStarter": "Preview starter code",
+      "functionName": "Function name",
+      "functionNameHelp": "As it appears in every language, e.g. twoSum",
+      "returnType": "Return type",
+      "noReturnType": "None yet",
+      "parameters": "Arguments",
+      "addParameter": "Add argument",
+      "noParameters": "No arguments. A test case's input will be empty.",
+      "argument": "Argument {{index}}",
+      "argumentName": "Name",
+      "argumentType": "Type",
+      "testCases": "Test cases",
+      "testCasesHelp": "Samples are shown to the solver and are what “Run” judges. Hidden cases are the bar a submission has to clear.",
+      "testCasesNoSignature": "Declare a signature above and each case will be checked for the right number of input lines.",
+      "addTestCase": "Add test case",
+      "hidden": "Hidden",
+      "stdin": "Input (stdin)",
+      "sampleCount_one": "{{count}} sample",
+      "sampleCount_other": "{{count}} samples",
+      "hiddenCount_one": "{{count}} hidden",
+      "hiddenCount_other": "{{count}} hidden",
+      "inputShape_one": "One line per argument: {{names}}",
+      "inputShape_other": "{{count}} lines per case, in this order: {{names}}",
+      "actualOutput": "Actually printed",
+      "useActual": "Use this as expected",
+      "useAllActual_one": "Adopt {{count}} actual output",
+      "useAllActual_other": "Adopt all {{count}} actual outputs",
+      "verify": "Verify with a reference solution",
+      "verifyHelp": "Runs a correct solution against every stored case, hidden ones included. Nothing is recorded and no submission is made.",
+      "verifyUnsaved": "Save the problem first — this runs against the stored test cases.",
+      "verifyDirty": "There are unsaved changes. This runs against the last saved test cases.",
+      "verifying": "Judging every case…",
+      "loadStub": "Load the starter code",
+      "runReference": "Run against all cases",
+      "verifyPassed": "Every case matches its expected output.",
+      "editorial": "Editorial",
+      "editorialHelp": "The written solution: the approach, why the obvious attempt falls short, and code that works.",
+      "hasEditorial": "This problem has an editorial",
+      "noEditorial": "No editorial. The reader's tab stays disabled.",
+      "walkthrough": "Walkthrough",
+      "walkthroughPlaceholder": "### Approach\n\nThe brute force is O(n²)…",
+      "complexityHelp": "Short form, e.g. O(n log n)"
+    }
   }
 }
