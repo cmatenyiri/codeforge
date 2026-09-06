@@ -257,3 +257,185 @@ export type PageResponse<T> = {
   totalElements: number;
   totalPages: number;
 };
+
+/* ------------------------------------------------------------------------- */
+/* Mock interviews                                                            */
+/* ------------------------------------------------------------------------- */
+
+/** Mirrors `com.codeforge.domain.InterviewFormat`. */
+export type InterviewFormat = 'WARM_UP' | 'STANDARD' | 'HARD';
+
+/** Mirrors `com.codeforge.domain.InterviewStatus`. */
+export type InterviewStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+
+/** The band a finished round lands in. Mirrors `InterviewOutcome`. */
+export type InterviewOutcome = 'NO_SOLVE' | 'PARTIAL' | 'SOLID' | 'STRONG';
+
+/**
+ * A process observation on the report. Mirrors `InterviewInsight`.
+ *
+ * Sent as a code and translated here like every other string, which is why the
+ * backend never returns prose.
+ */
+export type InterviewInsight =
+  | 'NO_SUBMISSION'
+  | 'ALL_SOLVED'
+  | 'CLEAN_RUN'
+  | 'FINISHED_EARLY'
+  | 'RAN_OUT_OF_TIME'
+  | 'SLOW_WARM_UP'
+  | 'HINTS_USED'
+  | 'MANY_ATTEMPTS'
+  | 'SKIPPED_PROBLEM';
+
+/** One format on the lobby screen. Mirrors `InterviewFormatResponse`. */
+export type InterviewFormatOption = {
+  format: InterviewFormat;
+  durationMinutes: number;
+  problemCount: number;
+  /** The difficulty wanted at each position, warm-up first. */
+  slots: Difficulty[];
+};
+
+/**
+ * One problem's place in a running round. Mirrors `InterviewSlotResponse`.
+ *
+ * Carries no description: the problem itself is fetched a slot at a time, which
+ * is also what starts its clock.
+ */
+export type InterviewSlot = {
+  position: number;
+  problemId: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  /** The gentler opener of a two-problem round. */
+  warmUp: boolean;
+  /** Not reached yet: the round is sequential, so this problem cannot be opened. */
+  locked: boolean;
+  /** Solved or skipped, and read-only from here on. */
+  resolved: boolean;
+  solved: boolean;
+  skipped: boolean;
+  attempts: number;
+  hintsRevealed: number;
+};
+
+/**
+ * A running interview. Mirrors `InterviewSessionResponse`.
+ *
+ * `remainingSeconds` is the server's answer and the only one that counts; the
+ * screen ticks down from it between polls purely so the clock moves.
+ */
+export type InterviewSession = {
+  id: number;
+  format: InterviewFormat;
+  status: InterviewStatus;
+  startedAt: string;
+  durationMinutes: number;
+  remainingSeconds: number;
+  /** The problem the round is on; absent once every one is solved or skipped. */
+  activePosition?: number;
+  problems: InterviewSlot[];
+};
+
+/**
+ * A problem as it appears mid-round. Mirrors `InterviewProblemResponse`.
+ *
+ * Note what is not here, compared with `ProblemDetail`: no `hasEditorial`, no
+ * `solved`/`attempted` for the catalogue at large, and no topic tags — "sliding
+ * window" above the statement is the answer to most problems that have it. None
+ * of it is withheld by this client; the server does not send it.
+ */
+export type InterviewProblemDetail = {
+  id: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  description: string;
+  constraintsMarkdown?: string;
+  examples: ProblemExample[];
+  sampleTestCases: TestCase[];
+  hiddenTestCaseCount: number;
+  starterCode: Partial<Record<Language, string>>;
+  position: number;
+  warmUp: boolean;
+  /** Whether this slot has been solved in *this* round. */
+  solved: boolean;
+  skipped: boolean;
+  /**
+   * False once the round has moved past this problem. The statement stays
+   * readable; the editor goes read-only and the judge refuses it either way.
+   */
+  editable: boolean;
+  /**
+   * What a closed problem shows: the code the judge actually saw.
+   *
+   * Not the local draft — that keeps taking keystrokes while a submission is
+   * being judged, so an acceptance can arrive and lock the problem over text
+   * that was never submitted. Absent while the problem is open, and for one
+   * skipped without a single attempt.
+   */
+  submittedSourceCode?: string;
+  submittedLanguage?: Language;
+  attempts: number;
+  /** How many the problem has, so the button can say how many are left. */
+  hintCount: number;
+  /** Only those revealed so far; each one was counted against the round. */
+  hints: string[];
+};
+
+/** Mirrors `InterviewHintResponse`. */
+export type InterviewHints = { hintCount: number; hintsRevealed: number; hints: string[] };
+
+/** How one problem went. Mirrors `InterviewProblemResultResponse`. */
+export type InterviewProblemResult = {
+  position: number;
+  problemId: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  warmUp: boolean;
+  solved: boolean;
+  skipped: boolean;
+  /** Measured from opening the problem, not from the start of the round. */
+  timeToSolveSeconds?: number;
+  attempts: number;
+  hintsRevealed: number;
+  submissionId?: number;
+};
+
+/** The debrief. Mirrors `InterviewReportResponse`. */
+export type InterviewReport = {
+  id: number;
+  format: InterviewFormat;
+  status: InterviewStatus;
+  /** Absent while the round is still running, and for an abandoned one. */
+  outcome?: InterviewOutcome;
+  startedAt: string;
+  endedAt?: string;
+  durationMinutes: number;
+  elapsedSeconds: number;
+  solved: number;
+  total: number;
+  attempts: number;
+  hintsRevealed: number;
+  /** The candidate's own answer; absent means they have not said. */
+  usedOutsideHelp?: boolean;
+  problems: InterviewProblemResult[];
+  insights: InterviewInsight[];
+};
+
+/** One row in the interview history. Mirrors `InterviewSummaryResponse`. */
+export type InterviewSummary = {
+  id: number;
+  format: InterviewFormat;
+  status: InterviewStatus;
+  outcome?: InterviewOutcome;
+  startedAt: string;
+  endedAt?: string;
+  durationMinutes: number;
+  /** Solved problems; absent for a round that never finished. */
+  score?: number;
+  total: number;
+};

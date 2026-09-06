@@ -22,9 +22,22 @@ type CodeEditorProps = {
   onRun: () => void;
   /** Model identity: combined with the language to name the model's file. */
   path: string;
+  /**
+   * Locks the buffer. Used by the interview for a problem already moved on
+   * from, where the code should stay legible but must not change.
+   */
+  readOnly?: boolean;
 };
 
-export const CodeEditor = ({ value, language, settings, onChange, onRun, path }: CodeEditorProps) => {
+export const CodeEditor = ({
+  value,
+  language,
+  settings,
+  onChange,
+  onRun,
+  path,
+  readOnly = false,
+}: CodeEditorProps) => {
   const { mode, systemMode } = useColorScheme();
 
   // Held in a ref so the keybinding registered on mount always calls the current
@@ -163,6 +176,10 @@ export const CodeEditor = ({ value, language, settings, onChange, onRun, path }:
           tabCompletion: 'on',
           suggestSelection: 'first',
           fixedOverflowWidgets: true,
+          readOnly,
+          // A caret in a buffer that cannot be typed into reads as a bug.
+          domReadOnly: readOnly,
+          renderValidationDecorations: readOnly ? 'off' : 'editable',
         }}
       />
     </Box>

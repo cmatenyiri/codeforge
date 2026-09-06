@@ -9,6 +9,7 @@ import { ColorModeToggle } from './ColorModeToggle';
 
 const NAV = [
   { to: paths.problems, labelKey: 'nav.problems' },
+  { to: paths.interviews, labelKey: 'nav.interviews' },
   { to: paths.home, labelKey: 'nav.home' },
 ] as const;
 
@@ -17,7 +18,15 @@ export const AppHeader = () => {
   const { t } = useTranslation();
   const location = useLocation();
 
-  const value = location.pathname.startsWith(paths.problems) ? 0 : location.pathname === paths.home ? 1 : false;
+  // Matched by prefix so the solving page and the interview workspace keep
+  // their section highlighted, rather than dropping the indicator on a subpage.
+  const value = location.pathname.startsWith(paths.problems)
+    ? 0
+    : location.pathname.startsWith(paths.interviews)
+      ? 1
+      : location.pathname === paths.home
+        ? 2
+        : false;
 
   return (
     <AppBar position="sticky">

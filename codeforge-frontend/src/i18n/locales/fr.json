@@ -20,7 +20,10 @@
     "themePreview": "Aperçu du thème",
     "profile": "Profil",
     "problems": "Problèmes",
-    "solve": "Résoudre"
+    "solve": "Résoudre",
+    "interviews": "Entretien blanc",
+    "interviewSession": "Entretien en cours",
+    "interviewReport": "Débrief"
   },
   "auth": {
     "login": {
@@ -127,6 +130,19 @@
     },
     "editorial": {
       "notFound": "Aucune solution rédigée n’existe pour ce problème."
+    },
+    "interview": {
+      "notFound": "Cet entretien n'existe pas.",
+      "alreadyRunning": "Vous avez déjà un entretien en cours.",
+      "finished": "Cet entretien est terminé.",
+      "notRunning": "Cet entretien n'est pas en cours.",
+      "abandoned": "Cet entretien a été abandonné.",
+      "noMoreHints": "Il n'y a plus d'indice pour ce problème.",
+      "alreadySolved": "Vous avez déjà résolu ce problème.",
+      "noProblems": "Le catalogue ne contient pas encore assez de problèmes utilisables pour construire un entretien."
+    },
+    "interviewProblem": {
+      "notFound": "Ce problème ne fait pas partie de cet entretien."
     }
   },
   "avatar": {
@@ -155,6 +171,7 @@
   },
   "nav": {
     "problems": "Problèmes",
+    "interviews": "Entretien",
     "home": "Accueil"
   },
   "difficulty": {
@@ -253,6 +270,110 @@
     "referenceSolution": "Solution de référence",
     "noEditorial": "Pas encore de solution rédigée",
     "noEditorialBody": "Aucune solution rédigée n’a été ajoutée pour ce problème."
+  },
+  "interview": {
+    "title": "Entretien blanc",
+    "subtitle": "Un ou deux problèmes, un chronomètre, et aucun moyen de chercher la réponse. Puis le débrief.",
+    "format": {
+      "label": "Format",
+      "warmUp": "Échauffement",
+      "standard": "Tour standard",
+      "hard": "Tour difficile"
+    },
+    "formatBlurb": {
+      "warmUp": "Une seule question, la durée d'une présélection rapide. Parfait pour se remettre dedans.",
+      "standard": "Celui qu'il faut travailler. Une mise en route plus facile, puis la vraie question — la forme de la plupart des entretiens techniques.",
+      "hard": "La même forme, relevée d'un cran : un moyen pour commencer, puis un difficile. Pour le tour d'après."
+    },
+    "formatShape_one": "{{minutes}} minutes · {{count}} problème",
+    "formatShape_other": "{{minutes}} minutes · {{count}} problèmes",
+    "start": "Commencer",
+    "resumeTitle": "Vous avez un tour en cours",
+    "resumeBody": "{{format}} · {{time}} au chronomètre.",
+    "resume": "Reprendre",
+    "rulesTitle": "Comment ça marche",
+    "rulesClock": "Le chronomètre tourne sur le serveur. Fermer l'onglet ne le met pas en pause, et le tour s'arrête à zéro.",
+    "rulesSequence": "Un problème à la fois. Le suivant s'ouvre quand vous résolvez celui en cours ou décidez de passer à la suite — et ce choix est définitif.",
+    "rulesEditorial": "Les solutions rédigées et les thèmes restent masqués jusqu'à la fin du tour. Ensuite, chaque problème renvoie directement à sa solution.",
+    "rulesHints": "Les indices sont là si vous en avez besoin, et chacun est noté dans le débrief. Rien n'est retiré — c'est simplement dit.",
+    "rulesUnseen": "Les problèmes que vous n'avez jamais tentés passent en premier, et tout ce qui vient de vos deux dernières semaines d'entretiens est écarté.",
+    "rulesPrivate": "Vos résultats sont les vôtres. Rien n'est partagé, classé ni comparé à qui que ce soit.",
+    "pastRounds": "Tours précédents",
+    "round": "Tour",
+    "noHistory": "Aucun entretien pour l'instant",
+    "noHistoryBody": "Passez-en un et le débrief apparaîtra ici.",
+    "outcome": {
+      "label": "Résultat",
+      "noSolve": "Rien de résolu",
+      "partial": "Partiellement résolu",
+      "solid": "Résolu",
+      "strong": "Tour solide"
+    },
+    "outcomeBlurb": {
+      "noSolve": "Rien n'est passé cette fois. Lisez les deux solutions, puis refaites le même format dans un jour ou deux.",
+      "partial": "Une partie est passée. Celui que vous n'avez pas eu est celui qu'il vaut la peine de travailler.",
+      "solid": "Vous avez bouclé la série — avec un indice, ou avec le chronomètre qui se referme. Les deux passent très bien dans un vrai tour.",
+      "strong": "Tout résolu, sans aide, avec du temps de reste. C'est le tour qu'on veut avoir."
+    },
+    "statusAbandoned": "Abandonné",
+    "statusRunning": "En cours",
+    "timeLeft": "Temps restant",
+    "solvedOf": "{{solved}} sur {{total}} résolus",
+    "problemNumber": "Problème {{index}}",
+    "warmUp": "Échauffement",
+    "skipped": "Passé",
+    "skip": "Passer",
+    "finish": "Terminer",
+    "finishTitle": "Terminer l'entretien ?",
+    "finishBody": "Le tour s'arrête maintenant et vous passez au débrief. Ce qui n'est pas résolu le reste.",
+    "finishBodySolved": "Vous avez tout résolu. Terminer maintenant enregistre le temps qu'il vous a fallu.",
+    "abandon": "Abandonner",
+    "abandonTitle": "Abandonner cet entretien ?",
+    "abandonBody": "Le tour est jeté plutôt que noté. Il reste dans votre historique comme abandonné.",
+    "keepGoing": "Continuer",
+    "sessionNotFound": "Cet entretien n'existe pas.",
+    "revealHint_one": "Afficher un indice ({{count}} restant)",
+    "revealHint_other": "Afficher un indice ({{count}} restants)",
+    "hintCost": "Un indice affiché est noté dans le débrief. Il ne vous coûte aucun point.",
+    "editorialLocked": "La solution rédigée et les thèmes sont verrouillés jusqu'à la fin du tour.",
+    "reportTitle": "Débrief",
+    "startAnother": "Nouveau tour",
+    "abandonedTitle": "Tour abandonné",
+    "abandonedBody": "Vous êtes sorti de celui-ci, il n'a donc pas de résultat. Ce n'est pas la même chose qu'un échec.",
+    "stillRunningTitle": "Toujours en cours",
+    "stillRunningBody": "Ce tour n'est pas terminé. Retournez-y, ou terminez-le pour obtenir un résultat.",
+    "solved": "Résolus",
+    "timeUsed": "Temps utilisé",
+    "ofBudget": "sur {{budget}}",
+    "attempts": "Soumissions",
+    "hints": "Indices",
+    "notes": "Remarques",
+    "breakdown": "Problème par problème",
+    "timeToSolve": "Temps",
+    "resultSolved": "Résolu",
+    "resultSkipped": "Passé",
+    "resultUnsolved": "Non résolu",
+    "usedOutsideHelp": "J'ai cherché quelque chose pendant ce tour",
+    "usedOutsideHelpHint": "Cocher ne change rien. C'est là pour que les chiffres ci-dessus valent encore quelque chose plus tard.",
+    "reviewInCatalogue": "Revoir dans le catalogue",
+    "insight": {
+      "noSubmission": "Rien n'a été soumis. Même une solution naïve vaut mieux qu'un éditeur vide — dans un vrai tour, c'est sur elle que la discussion se construit.",
+      "allSolved": "Vous avez résolu toute la série dans le temps imparti.",
+      "cleanRun": "Tout résolu, une soumission chacun, aucun indice. On ne fait pas plus net.",
+      "finishedEarly": "Vous avez fini avec une bonne partie du chronomètre inutilisée — de la place qu'un vrai examinateur remplirait de questions de suivi.",
+      "ranOutOfTime": "Le temps s'est écoulé avec des problèmes encore ouverts. Repérez le moment où une solution naïve qui tourne vaut mieux qu'une solution optimale inachevée.",
+      "slowWarmUp": "L'échauffement a pris l'essentiel du tour. Il est censé être le moins cher, et le boucler vite est ce qui achète du temps pour la question difficile.",
+      "hintsUsed": "Vous avez pris un indice. Cela vaut la peine de relire la solution de ce problème pour voir ce qu'il visait.",
+      "manyAttempts": "Plusieurs soumissions par problème résolu. Relire son propre code une fois avant de soumettre va plus vite que le juge.",
+      "skippedProblem": "Vous êtes passé à autre chose. Bon réflexe si c'était délibéré — un vrai tour le récompense."
+    },
+    "skipTitle": "Passer à la suite ?",
+    "skipBody": "Vous ne pourrez pas y revenir. C'est le principe : savoir quand renoncer, c'est la moitié de ce qu'un tour à deux problèmes évalue.",
+    "skipConfirm": "Passer à la suite",
+    "problemClosed": "Vous êtes passé à la suite. Ce problème reste consultable, mais il ne peut plus être modifié ni soumis.",
+    "showingSubmitted": "Voici le code que vous avez soumis, exactement tel qu'il a été évalué. Le problème est clos et ne peut plus être modifié.",
+    "locked": "Verrouillé",
+    "lockedHint": "Résolvez le problème en cours ou passez à la suite pour ouvrir celui-ci."
   },
   "verdict": {
     "pending": "En attente",

@@ -20,7 +20,10 @@
     "themePreview": "Theme preview",
     "profile": "Profile",
     "problems": "Problems",
-    "solve": "Solve"
+    "solve": "Solve",
+    "interviews": "Mock interview",
+    "interviewSession": "Interview in progress",
+    "interviewReport": "Debrief"
   },
   "auth": {
     "login": {
@@ -127,6 +130,19 @@
     },
     "editorial": {
       "notFound": "No editorial has been written for this problem."
+    },
+    "interview": {
+      "notFound": "That interview does not exist.",
+      "alreadyRunning": "You already have an interview in progress.",
+      "finished": "That interview has finished.",
+      "notRunning": "That interview is not running.",
+      "abandoned": "That interview was abandoned.",
+      "noMoreHints": "There are no further hints for this problem.",
+      "alreadySolved": "You have already solved that problem.",
+      "noProblems": "There are not enough usable problems in the catalogue to build an interview yet."
+    },
+    "interviewProblem": {
+      "notFound": "That problem is not part of this interview."
     }
   },
   "avatar": {
@@ -155,6 +171,7 @@
   },
   "nav": {
     "problems": "Problems",
+    "interviews": "Interview",
     "home": "Home"
   },
   "difficulty": {
@@ -253,6 +270,110 @@
     "referenceSolution": "Reference solution",
     "noEditorial": "No editorial yet",
     "noEditorialBody": "A written solution has not been added for this problem."
+  },
+  "interview": {
+    "title": "Mock interview",
+    "subtitle": "One or two problems, a clock, and no way to look up the answer. Then a debrief.",
+    "format": {
+      "label": "Format",
+      "warmUp": "Warm-up",
+      "standard": "Standard round",
+      "hard": "Hard round"
+    },
+    "formatBlurb": {
+      "warmUp": "A single question, the length of a quick screen. Good for shaking off the rust.",
+      "standard": "The one to practise. An easier opener, then the real question — the shape of most technical screens.",
+      "hard": "The same shape pitched higher: a medium to open, then a hard one. For the round after the screen."
+    },
+    "formatShape_one": "{{minutes}} minutes · {{count}} problem",
+    "formatShape_other": "{{minutes}} minutes · {{count}} problems",
+    "start": "Start",
+    "resumeTitle": "You have a round in progress",
+    "resumeBody": "{{format}} · {{time}} left on the clock.",
+    "resume": "Resume",
+    "rulesTitle": "How it works",
+    "rulesClock": "The clock runs on the server. Closing the tab does not pause it, and the round ends when it reaches zero.",
+    "rulesSequence": "One problem at a time. The next opens when you solve the current one, or decide to move on from it — and moving on is final.",
+    "rulesEditorial": "Editorials and topic tags stay hidden until the round is over. Afterwards every problem links straight to its write-up.",
+    "rulesHints": "Hints are there if you need them, and each one is noted in the debrief. Nothing is deducted — it just gets said.",
+    "rulesUnseen": "Problems you have never attempted come up first, and anything from your last two weeks of interviews is skipped.",
+    "rulesPrivate": "Your results are yours. Nothing here is shared, ranked or compared with anybody else.",
+    "pastRounds": "Past rounds",
+    "round": "Round",
+    "noHistory": "No interviews yet",
+    "noHistoryBody": "Sit one and the debrief will show up here.",
+    "outcome": {
+      "label": "Outcome",
+      "noSolve": "Nothing solved",
+      "partial": "Partly solved",
+      "solid": "Solved",
+      "strong": "Strong round"
+    },
+    "outcomeBlurb": {
+      "noSolve": "Nothing went in this time. Read both editorials, then sit the same format again in a day or two.",
+      "partial": "Some of it went in. The one you did not get is the one worth reading up on.",
+      "solid": "You got through the set — with a hint, or with the clock closing in. Both are fine in a real round.",
+      "strong": "Everything solved, unaided, with time to spare. That is the round you want to have."
+    },
+    "statusAbandoned": "Abandoned",
+    "statusRunning": "In progress",
+    "timeLeft": "Time left",
+    "solvedOf": "{{solved}} of {{total}} solved",
+    "problemNumber": "Problem {{index}}",
+    "warmUp": "Warm-up",
+    "skipped": "Skipped",
+    "skip": "Skip",
+    "finish": "Finish",
+    "finishTitle": "Finish the interview?",
+    "finishBody": "The round ends now and you go to the debrief. Anything unsolved stays unsolved.",
+    "finishBodySolved": "You have solved everything. Finishing now records the time you did it in.",
+    "abandon": "Abandon",
+    "abandonTitle": "Abandon this interview?",
+    "abandonBody": "The round is thrown away rather than scored. It stays in your history as abandoned.",
+    "keepGoing": "Keep going",
+    "sessionNotFound": "That interview does not exist.",
+    "revealHint_one": "Reveal a hint ({{count}} left)",
+    "revealHint_other": "Reveal a hint ({{count}} left)",
+    "hintCost": "Revealing a hint is noted in the debrief. It costs you no points.",
+    "editorialLocked": "The editorial and the topic tags are locked until the round is over.",
+    "reportTitle": "Debrief",
+    "startAnother": "Start another",
+    "abandonedTitle": "Round abandoned",
+    "abandonedBody": "You walked out of this one, so it has no result. That is not the same as failing it.",
+    "stillRunningTitle": "Still running",
+    "stillRunningBody": "This round has not finished yet. Go back to it, or finish it to get a result.",
+    "solved": "Solved",
+    "timeUsed": "Time used",
+    "ofBudget": "of {{budget}}",
+    "attempts": "Submissions",
+    "hints": "Hints",
+    "notes": "Notes",
+    "breakdown": "Problem by problem",
+    "timeToSolve": "Time",
+    "resultSolved": "Solved",
+    "resultSkipped": "Skipped",
+    "resultUnsolved": "Unsolved",
+    "usedOutsideHelp": "I looked something up during this round",
+    "usedOutsideHelpHint": "Nothing changes if you tick this. It is here so the numbers above are still worth reading later.",
+    "reviewInCatalogue": "Review these in the catalogue",
+    "insight": {
+      "noSubmission": "Nothing was submitted. Even a brute force beats an empty editor — in a real round it is what the conversation is built on.",
+      "allSolved": "You solved the whole set inside the time.",
+      "cleanRun": "Everything solved, one submission each, no hints. That is as clean as a round gets.",
+      "finishedEarly": "You finished with a good part of the clock unspent — room a real interviewer would fill with follow-ups.",
+      "ranOutOfTime": "The clock ran out with problems still open. Watch for the point where a working brute force beats an unfinished optimal one.",
+      "slowWarmUp": "The warm-up took most of the round. It is meant to be the cheap one, and banking it quickly is what buys time for the hard question.",
+      "hintsUsed": "You took a hint. Worth re-reading that problem's editorial to see what it was pointing at.",
+      "manyAttempts": "Several submissions per solve. Reading your own code once before submitting is faster than the judge is.",
+      "skippedProblem": "You moved on from a problem. Good instinct if it was deliberate — a real round rewards it."
+    },
+    "skipTitle": "Move on from this problem?",
+    "skipBody": "You will not be able to come back to it. That is the point: knowing when to cut your losses is half of what a two-problem round tests.",
+    "skipConfirm": "Move on",
+    "problemClosed": "You have moved on from this problem. It stays here to read, but it can no longer be edited or submitted.",
+    "showingSubmitted": "This is the code you submitted, exactly as it was judged. The problem is closed, so it can no longer be edited.",
+    "locked": "Locked",
+    "lockedHint": "Solve or move on from the current problem to open this one."
   },
   "verdict": {
     "pending": "Pending",

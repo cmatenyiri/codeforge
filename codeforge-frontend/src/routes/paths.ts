@@ -12,6 +12,9 @@ export const paths = {
   profile: '/profile',
   problems: '/problems',
   solve: '/problems/:slug',
+  interviews: '/interview',
+  interviewSession: '/interview/:id',
+  interviewReport: '/interview/:id/report',
   /** Design-system reference; delete along with `src/components/preview`. */
   themePreview: '/theme-preview',
 } as const;
@@ -20,3 +23,7 @@ export type AppPath = (typeof paths)[keyof typeof paths];
 
 /** Builds the solving-page URL for a problem. */
 export const problemPath = (slug: string) => `${paths.problems}/${slug}`;
+
+export const interviewSessionPath = (id: number) => `${paths.interviews}/${id}`;
+
+export const interviewReportPath = (id: number) => `${paths.interviews}/${id}/report`;

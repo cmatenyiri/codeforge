@@ -35,6 +35,12 @@ type EditorToolbarProps = {
   running: boolean;
   submitting: boolean;
   canRun: boolean;
+  /**
+   * Locks the controls that would change the buffer. Used where the editor is
+   * showing a recorded submission rather than a draft, so resetting it to the
+   * stub or relabelling it as another language would both be lies.
+   */
+  readOnly?: boolean;
 };
 
 const SettingsPopover = ({
@@ -150,6 +156,7 @@ export const EditorToolbar = ({
   running,
   submitting,
   canRun,
+  readOnly = false,
 }: EditorToolbarProps) => {
   const { t } = useTranslation();
   // Either judge occupies the sandbox, so neither button may start a second one.
@@ -178,6 +185,7 @@ export const EditorToolbar = ({
         // "Language" for the interface language, and two identically labelled
         // comboboxes on one page are indistinguishable to a screen reader.
         inputProps={{ 'aria-label': t('solve.programmingLanguage') }}
+        disabled={readOnly}
         sx={{ width: 140 }}
       >
         {languages.map((option) => (
@@ -193,7 +201,12 @@ export const EditorToolbar = ({
         {/* The span is what lets a disabled button still show a tooltip, but it
             is also what Tooltip labels — so the button needs its own name. */}
         <span>
-          <IconButton size="small" onClick={onReset} disabled={busy} aria-label={t('solve.resetCode')}>
+          <IconButton
+            size="small"
+            onClick={onReset}
+            disabled={busy || readOnly}
+            aria-label={t('solve.resetCode')}
+          >
             <RefreshRounded fontSize="small" />
           </IconButton>
         </span>

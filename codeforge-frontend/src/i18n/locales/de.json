@@ -20,7 +20,10 @@
     "themePreview": "Theme-Vorschau",
     "profile": "Profil",
     "problems": "Aufgaben",
-    "solve": "Lösen"
+    "solve": "Lösen",
+    "interviews": "Mock-Interview",
+    "interviewSession": "Interview läuft",
+    "interviewReport": "Auswertung"
   },
   "auth": {
     "login": {
@@ -127,6 +130,19 @@
     },
     "editorial": {
       "notFound": "Für diese Aufgabe wurde keine Erläuterung geschrieben."
+    },
+    "interview": {
+      "notFound": "Dieses Interview existiert nicht.",
+      "alreadyRunning": "Du hast bereits ein laufendes Interview.",
+      "finished": "Dieses Interview ist beendet.",
+      "notRunning": "Dieses Interview läuft nicht.",
+      "abandoned": "Dieses Interview wurde abgebrochen.",
+      "noMoreHints": "Für diese Aufgabe gibt es keine weiteren Hinweise.",
+      "alreadySolved": "Diese Aufgabe hast du bereits gelöst.",
+      "noProblems": "Im Katalog gibt es noch nicht genug verwendbare Aufgaben für ein Interview."
+    },
+    "interviewProblem": {
+      "notFound": "Diese Aufgabe gehört nicht zu diesem Interview."
     }
   },
   "avatar": {
@@ -155,6 +171,7 @@
   },
   "nav": {
     "problems": "Aufgaben",
+    "interviews": "Interview",
     "home": "Start"
   },
   "difficulty": {
@@ -253,6 +270,110 @@
     "referenceSolution": "Musterlösung",
     "noEditorial": "Noch keine Erläuterung",
     "noEditorialBody": "Für diese Aufgabe wurde noch keine Lösung geschrieben."
+  },
+  "interview": {
+    "title": "Mock-Interview",
+    "subtitle": "Ein oder zwei Aufgaben, eine Uhr und keine Möglichkeit, die Lösung nachzuschlagen. Danach die Auswertung.",
+    "format": {
+      "label": "Format",
+      "warmUp": "Aufwärmen",
+      "standard": "Standardrunde",
+      "hard": "Schwere Runde"
+    },
+    "formatBlurb": {
+      "warmUp": "Eine einzelne Frage, so lang wie ein kurzer Screen. Gut, um wieder reinzukommen.",
+      "standard": "Das Format zum Üben. Ein leichterer Einstieg, dann die eigentliche Frage — so sind die meisten technischen Screens geschnitten.",
+      "hard": "Dieselbe Form, härter angesetzt: erst mittel, dann schwer. Für die Runde nach dem Screen."
+    },
+    "formatShape_one": "{{minutes}} Minuten · {{count}} Aufgabe",
+    "formatShape_other": "{{minutes}} Minuten · {{count}} Aufgaben",
+    "start": "Starten",
+    "resumeTitle": "Du hast eine laufende Runde",
+    "resumeBody": "{{format}} · noch {{time}} auf der Uhr.",
+    "resume": "Fortsetzen",
+    "rulesTitle": "So läuft es ab",
+    "rulesClock": "Die Uhr läuft auf dem Server. Den Tab zu schließen pausiert sie nicht, und bei null ist die Runde vorbei.",
+    "rulesSequence": "Eine Aufgabe nach der anderen. Die nächste öffnet sich, wenn du die aktuelle löst oder hinter dir lässt — und das ist endgültig.",
+    "rulesEditorial": "Musterlösungen und Themen-Tags bleiben bis zum Ende der Runde verborgen. Danach führt jede Aufgabe direkt zu ihrer Lösung.",
+    "rulesHints": "Hinweise stehen bereit, wenn du sie brauchst, und jeder wird in der Auswertung vermerkt. Abgezogen wird nichts — es wird nur gesagt.",
+    "rulesUnseen": "Aufgaben, die du nie versucht hast, kommen zuerst; alles aus deinen letzten zwei Interviewwochen wird übersprungen.",
+    "rulesPrivate": "Deine Ergebnisse gehören dir. Nichts davon wird geteilt, gewertet oder mit anderen verglichen.",
+    "pastRounds": "Frühere Runden",
+    "round": "Runde",
+    "noHistory": "Noch keine Interviews",
+    "noHistoryBody": "Absolviere eines, dann erscheint die Auswertung hier.",
+    "outcome": {
+      "label": "Ergebnis",
+      "noSolve": "Nichts gelöst",
+      "partial": "Teilweise gelöst",
+      "solid": "Gelöst",
+      "strong": "Starke Runde"
+    },
+    "outcomeBlurb": {
+      "noSolve": "Diesmal ging nichts durch. Lies beide Musterlösungen und wiederhole dasselbe Format in ein, zwei Tagen.",
+      "partial": "Ein Teil ging durch. Die Aufgabe, die du nicht geschafft hast, ist die, die sich zu lesen lohnt.",
+      "solid": "Du hast den Satz geschafft — mit einem Hinweis oder knapp vor Schluss. Beides ist in einer echten Runde in Ordnung.",
+      "strong": "Alles gelöst, ohne Hilfe, mit Zeit übrig. Genau so soll eine Runde laufen."
+    },
+    "statusAbandoned": "Abgebrochen",
+    "statusRunning": "Läuft",
+    "timeLeft": "Restzeit",
+    "solvedOf": "{{solved}} von {{total}} gelöst",
+    "problemNumber": "Aufgabe {{index}}",
+    "warmUp": "Aufwärmen",
+    "skipped": "Übersprungen",
+    "skip": "Überspringen",
+    "finish": "Beenden",
+    "finishTitle": "Interview beenden?",
+    "finishBody": "Die Runde endet jetzt und du gehst zur Auswertung. Was offen ist, bleibt offen.",
+    "finishBodySolved": "Du hast alles gelöst. Jetzt zu beenden hält die Zeit fest, in der du es geschafft hast.",
+    "abandon": "Abbrechen",
+    "abandonTitle": "Dieses Interview abbrechen?",
+    "abandonBody": "Die Runde wird verworfen statt gewertet. In deinem Verlauf bleibt sie als abgebrochen stehen.",
+    "keepGoing": "Weitermachen",
+    "sessionNotFound": "Dieses Interview existiert nicht.",
+    "revealHint_one": "Hinweis anzeigen (noch {{count}})",
+    "revealHint_other": "Hinweis anzeigen (noch {{count}})",
+    "hintCost": "Ein angezeigter Hinweis wird in der Auswertung vermerkt. Punkte kostet er dich nicht.",
+    "editorialLocked": "Musterlösung und Themen-Tags sind bis zum Ende der Runde gesperrt.",
+    "reportTitle": "Auswertung",
+    "startAnother": "Neue Runde",
+    "abandonedTitle": "Runde abgebrochen",
+    "abandonedBody": "Du bist hier ausgestiegen, deshalb gibt es kein Ergebnis. Das ist nicht dasselbe wie Scheitern.",
+    "stillRunningTitle": "Läuft noch",
+    "stillRunningBody": "Diese Runde ist noch nicht beendet. Geh zurück oder beende sie, um ein Ergebnis zu bekommen.",
+    "solved": "Gelöst",
+    "timeUsed": "Verbrauchte Zeit",
+    "ofBudget": "von {{budget}}",
+    "attempts": "Abgaben",
+    "hints": "Hinweise",
+    "notes": "Notizen",
+    "breakdown": "Aufgabe für Aufgabe",
+    "timeToSolve": "Zeit",
+    "resultSolved": "Gelöst",
+    "resultSkipped": "Übersprungen",
+    "resultUnsolved": "Ungelöst",
+    "usedOutsideHelp": "Ich habe während dieser Runde etwas nachgeschlagen",
+    "usedOutsideHelpHint": "Das ändert nichts. Es steht hier, damit die Zahlen oben später noch etwas wert sind.",
+    "reviewInCatalogue": "Im Katalog nacharbeiten",
+    "insight": {
+      "noSubmission": "Es wurde nichts abgegeben. Selbst eine Brute-Force-Lösung schlägt einen leeren Editor — in einer echten Runde ist sie die Grundlage des Gesprächs.",
+      "allSolved": "Du hast den ganzen Satz innerhalb der Zeit gelöst.",
+      "cleanRun": "Alles gelöst, jeweils mit der ersten Abgabe, ohne Hinweise. Sauberer geht eine Runde nicht.",
+      "finishedEarly": "Du warst fertig, als noch ein gutes Stück Zeit übrig war — Raum, den ein echter Interviewer mit Nachfragen füllen würde.",
+      "ranOutOfTime": "Die Zeit lief ab, während noch Aufgaben offen waren. Achte auf den Punkt, an dem eine laufende Brute-Force-Lösung mehr wert ist als eine unfertige optimale.",
+      "slowWarmUp": "Das Aufwärmen hat den Großteil der Runde gekostet. Es soll die günstige Aufgabe sein, und sie schnell einzusammeln kauft die Zeit für die schwere.",
+      "hintsUsed": "Du hast einen Hinweis genommen. Es lohnt sich, die Musterlösung dieser Aufgabe zu lesen und zu sehen, worauf er zielte.",
+      "manyAttempts": "Mehrere Abgaben pro Lösung. Den eigenen Code einmal zu lesen ist schneller als der Judge.",
+      "skippedProblem": "Du bist von einer Aufgabe weitergegangen. Gutes Gespür, wenn es Absicht war — in einer echten Runde zahlt sich das aus."
+    },
+    "skipTitle": "Diese Aufgabe hinter dir lassen?",
+    "skipBody": "Du kannst nicht zu ihr zurückkehren. Genau darum geht es: zu wissen, wann man aufhört, ist die halbe Prüfung einer Runde mit zwei Aufgaben.",
+    "skipConfirm": "Weitergehen",
+    "problemClosed": "Du hast diese Aufgabe hinter dir gelassen. Sie bleibt zum Nachlesen hier, lässt sich aber nicht mehr bearbeiten oder abgeben.",
+    "showingSubmitted": "Das ist der Code, den du abgegeben hast — genau so, wie er bewertet wurde. Die Aufgabe ist abgeschlossen und lässt sich nicht mehr bearbeiten.",
+    "locked": "Gesperrt",
+    "lockedHint": "Löse die aktuelle Aufgabe oder lass sie hinter dir, um diese zu öffnen."
   },
   "verdict": {
     "pending": "Ausstehend",

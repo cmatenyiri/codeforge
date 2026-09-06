@@ -68,6 +68,30 @@ export const routes: AppRoute[] = [
     access: 'authenticated',
   },
   {
+    path: paths.interviews,
+    component: lazy(() => import('../pages/Interview').then((module) => ({ default: module.InterviewPage }))),
+    titleKey: 'pageTitle.interviews',
+    access: 'authenticated',
+  },
+  {
+    // Declared before the report route only for readability — the router matches
+    // on specificity, not on order.
+    path: paths.interviewSession,
+    component: lazy(() =>
+      import('../pages/InterviewSession').then((module) => ({ default: module.InterviewSessionPage })),
+    ),
+    titleKey: 'pageTitle.interviewSession',
+    access: 'authenticated',
+  },
+  {
+    path: paths.interviewReport,
+    component: lazy(() =>
+      import('../pages/InterviewReport').then((module) => ({ default: module.InterviewReportPage })),
+    ),
+    titleKey: 'pageTitle.interviewReport',
+    access: 'authenticated',
+  },
+  {
     path: paths.themePreview,
     component: lazy(() => import('../pages/ThemePreview').then((module) => ({ default: module.ThemePreviewPage }))),
     titleKey: 'pageTitle.themePreview',
