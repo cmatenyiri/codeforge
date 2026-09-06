@@ -200,7 +200,9 @@
       "noSignature": "Ce problème ne peut pas encore être exécuté.",
       "emptySource": "Il n'y a aucun code à exécuter.",
       "sourceTooLong": "Cette solution est trop longue pour être exécutée.",
-      "noTestCases": "Ce problème n’a pas encore de cas de test."
+      "noTestCases": "Ce problème n’a pas encore de cas de test.",
+      "archived": "Ce problème a été retiré et n'accepte plus de soumissions.",
+      "draft": "Ce problème n'est pas encore publié et n'accepte aucune soumission."
     },
     "submission": {
       "notFound": "Cette soumission n’existe pas."
@@ -352,7 +354,12 @@
     "space": "Mémoire",
     "referenceSolution": "Solution de référence",
     "noEditorial": "Pas encore de solution rédigée",
-    "noEditorialBody": "Aucune solution rédigée n’a été ajoutée pour ce problème."
+    "noEditorialBody": "Aucune solution rédigée n’a été ajoutée pour ce problème.",
+    "retiredTitle": "Ce problème a été retiré",
+    "retiredBody": "Il ne fait plus partie du catalogue et ne compte plus dans ta progression. Tes soumissions passées sont conservées, et tu peux toujours lire l'énoncé et exécuter du code sur les cas visibles.",
+    "draftTitle": "Ce problème est un brouillon",
+    "draftBody": "Toi seul le vois. Il n'accepte aucune soumission et ne compte pour personne tant qu'il n'est pas publié — pour le vérifier, utilise « Vérifier avec une solution de référence » dans le formulaire de rédaction : il juge chaque cas et n'enregistre rien.",
+    "closedSubmitHint": "Ce problème n'est pas dans le catalogue et n'accepte plus de soumissions."
   },
   "interview": {
     "title": "Entretien blanc",

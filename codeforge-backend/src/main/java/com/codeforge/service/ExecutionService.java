@@ -128,9 +128,52 @@ public class ExecutionService {
      */
     @PreAuthorize("isAuthenticated()")
     public SubmissionResultResponse submit(String slug, Language language, String sourceCode) {
+        return submit(slug, language, sourceCode, true);
+    }
+
+    /**
+     * A submission from inside a running interview.
+     *
+     * <p>The one caller allowed to submit against a retired problem. An interview
+     * draws only from the live catalogue, but a round lasts an hour and a problem
+     * can be archived while a candidate is halfway through solving it — failing
+     * their submission at that point would cost them a slot for something that
+     * happened on the other side of the screen.
+     */
+    @PreAuthorize("isAuthenticated()")
+    public SubmissionResultResponse submitForInterview(String slug, Language language, String sourceCode) {
+        return submit(slug, language, sourceCode, false);
+    }
+
+    /**
+     * @param refuseRetired true for practice, where a submission is a claim on
+     *     the catalogue: a problem that is not in it — retired, or not released
+     *     yet — counts towards nobody's progress, so accepting the attempt and
+     *     then crediting nothing would be taking work the product has already
+     *     decided to ignore
+     */
+    private SubmissionResultResponse submit(
+            String slug, Language language, String sourceCode, boolean refuseRetired) {
         validate(sourceCode);
 
         Plan plan = plan(slug, language, sourceCode, true);
+
+        // Checked before the sandbox runs, so a refusal costs no judge time.
+        //
+        // The two closed states are reported apart because they mean opposite
+        // things to whoever hit them: an archived problem is over, a draft has
+        // not started. An author checking a draft wants the verification tool in
+        // the authoring form, which judges every case and records nothing —
+        // exactly what a submission would be for, minus the permanent record on a
+        // problem no solver has seen yet.
+        if (refuseRetired && plan.archived()) {
+            throw new BusinessRuleException(
+                    "error.execution.archived", "This problem has been retired and takes no new submissions");
+        }
+        if (refuseRetired && !plan.published()) {
+            throw new BusinessRuleException(
+                    "error.execution.draft", "This problem is not published yet and takes no submissions");
+        }
         if (plan.cases().isEmpty()) {
             throw new BusinessRuleException(
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
@@ -204,6 +247,8 @@ public class ExecutionService {
 
         return new Plan(
                 problem.getId(),
+                problem.isArchived(),
+                problem.isPublished(),
                 codeTemplateService.buildProgram(problem, language, sourceCode),
                 codeTemplateService.compilerOptions(language),
                 cases);
@@ -327,7 +372,13 @@ public class ExecutionService {
     }
 
     /** Everything needed to run, gathered while the entity was still attached. */
-    private record Plan(Long problemId, String program, String compilerOptions, List<JudgedCase> cases) {}
+    private record Plan(
+            Long problemId,
+            boolean archived,
+            boolean published,
+            String program,
+            String compilerOptions,
+            List<JudgedCase> cases) {}
 
     private record JudgedCase(Long id, String input, String expectedOutput, boolean hidden) {}
 

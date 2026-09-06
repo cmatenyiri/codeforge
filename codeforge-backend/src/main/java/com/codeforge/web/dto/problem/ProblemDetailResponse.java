@@ -18,6 +18,13 @@ import java.util.Map;
  *     is not the bar, and the count is not a hint about their content
  * @param hasEditorial whether a written solution exists, so the tab can be
  *     disabled rather than opening onto an apology
+ * @param published whether the problem has been released. An unpublished one is
+ *     visible only to its author and to anyone who submitted while it was live,
+ *     and like an archived one it takes no new submissions
+ * @param archived whether the problem has been retired from the catalogue. It
+ *     is still readable — a solver's own history links straight here — but it no
+ *     longer counts towards anyone's progress and takes no new submissions, and
+ *     the page has to say so rather than look like any other problem
  */
 public record ProblemDetailResponse(
         Long id,
@@ -33,6 +40,8 @@ public record ProblemDetailResponse(
         int hiddenTestCaseCount,
         Map<Language, String> starterCode,
         boolean hasEditorial,
+        boolean published,
+        boolean archived,
         boolean solved,
         boolean attempted,
         Double acceptanceRate,

@@ -55,6 +55,8 @@ public interface ProblemMapper {
     @Mapping(target = "sampleTestCases", source = "sampleTestCases")
     @Mapping(target = "hiddenTestCaseCount", source = "hiddenTestCaseCount")
     @Mapping(target = "hasEditorial", source = "hasEditorial")
+    @Mapping(target = "published", source = "problem.published")
+    @Mapping(target = "archived", source = "problem.archived")
     ProblemDetailResponse toDetail(
             Problem problem,
             boolean solved,

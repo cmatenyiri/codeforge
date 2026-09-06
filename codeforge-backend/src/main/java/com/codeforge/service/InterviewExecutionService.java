@@ -53,7 +53,7 @@ public class InterviewExecutionService {
             Long interviewId, int position, Language language, String sourceCode) {
 
         String slug = interviewService.requireRunningSlug(interviewId, position);
-        SubmissionResultResponse result = executionService.submit(slug, language, sourceCode);
+        SubmissionResultResponse result = executionService.submitForInterview(slug, language, sourceCode);
 
         interviewService.recordAttempt(
                 interviewId, position, result.submissionId(), result.status() == SubmissionStatus.ACCEPTED);

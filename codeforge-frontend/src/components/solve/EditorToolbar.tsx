@@ -36,6 +36,15 @@ type EditorToolbarProps = {
   submitting: boolean;
   canRun: boolean;
   /**
+   * The problem is not in the catalogue — retired, or not released yet.
+   *
+   * <p>Only Submit is withheld. Running still works — the page stays a record of
+   * work already done and a scratchpad for reading it back — but a submission is
+   * a claim on progress, and a problem outside the catalogue counts towards
+   * nobody's.
+   */
+  submissionsClosed?: boolean;
+  /**
    * Locks the controls that would change the buffer. Used where the editor is
    * showing a recorded submission rather than a draft, so resetting it to the
    * stub or relabelling it as another language would both be lies.
@@ -156,6 +165,7 @@ export const EditorToolbar = ({
   running,
   submitting,
   canRun,
+  submissionsClosed = false,
   readOnly = false,
 }: EditorToolbarProps) => {
   const { t } = useTranslation();
@@ -233,7 +243,7 @@ export const EditorToolbar = ({
 
       {/* Submitting judges every case, hidden ones included, and records the
           verdict — it is the only thing that can mark a problem solved. */}
-      <Tooltip title={t('solve.submitHint')}>
+      <Tooltip title={submissionsClosed ? t('solve.closedSubmitHint') : t('solve.submitHint')}>
         <span>
           <Button
             size="small"
@@ -241,7 +251,7 @@ export const EditorToolbar = ({
             color="success"
             startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : <CloudUploadRounded />}
             onClick={onSubmit}
-            disabled={busy || !canRun}
+            disabled={busy || !canRun || submissionsClosed}
             aria-label={t('solve.submit')}
           >
             {t('solve.submit')}

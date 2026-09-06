@@ -200,7 +200,9 @@
       "noSignature": "This problem cannot be run yet.",
       "emptySource": "There is no code to run.",
       "sourceTooLong": "That solution is too long to run.",
-      "noTestCases": "This problem has no test cases to judge against yet."
+      "noTestCases": "This problem has no test cases to judge against yet.",
+      "archived": "This problem has been retired and takes no new submissions.",
+      "draft": "This problem is not published yet and takes no submissions."
     },
     "submission": {
       "notFound": "That submission does not exist."
@@ -352,7 +354,12 @@
     "space": "Space",
     "referenceSolution": "Reference solution",
     "noEditorial": "No editorial yet",
-    "noEditorialBody": "A written solution has not been added for this problem."
+    "noEditorialBody": "A written solution has not been added for this problem.",
+    "retiredTitle": "This problem has been retired",
+    "retiredBody": "It is no longer in the catalogue and no longer counts towards your progress. Your past submissions are kept, and you can still read the problem and run code against the sample cases.",
+    "draftTitle": "This problem is a draft",
+    "draftBody": "Only you can see it. It takes no submissions and counts towards nobody's progress until you publish it — to check that it works, use “Verify with a reference solution” in the authoring form, which judges every case and records nothing.",
+    "closedSubmitHint": "This problem is not in the catalogue and takes no new submissions."
   },
   "interview": {
     "title": "Mock interview",

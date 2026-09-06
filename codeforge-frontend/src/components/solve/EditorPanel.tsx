@@ -121,6 +121,7 @@ const EditorWorkspace = ({ problem, languages, initialLanguage, onSubmitted }: E
         running={running}
         submitting={submitting}
         canRun={code.trim().length > 0}
+        submissionsClosed={problem.archived || !problem.published}
       />
 
       <CodeEditor

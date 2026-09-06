@@ -200,7 +200,9 @@
       "noSignature": "Diese Aufgabe kann noch nicht ausgeführt werden.",
       "emptySource": "Es gibt keinen Code zum Ausführen.",
       "sourceTooLong": "Diese Lösung ist zu lang zum Ausführen.",
-      "noTestCases": "Diese Aufgabe hat noch keine Testfälle."
+      "noTestCases": "Diese Aufgabe hat noch keine Testfälle.",
+      "archived": "Diese Aufgabe wurde zurückgezogen und nimmt keine neuen Einreichungen an.",
+      "draft": "Diese Aufgabe ist noch nicht veröffentlicht und nimmt keine Einreichungen an."
     },
     "submission": {
       "notFound": "Diese Einreichung existiert nicht."
@@ -352,7 +354,12 @@
     "space": "Speicher",
     "referenceSolution": "Musterlösung",
     "noEditorial": "Noch keine Erläuterung",
-    "noEditorialBody": "Für diese Aufgabe wurde noch keine Lösung geschrieben."
+    "noEditorialBody": "Für diese Aufgabe wurde noch keine Lösung geschrieben.",
+    "retiredTitle": "Diese Aufgabe wurde zurückgezogen",
+    "retiredBody": "Sie ist nicht mehr im Katalog und zählt nicht mehr für deinen Fortschritt. Deine bisherigen Einreichungen bleiben erhalten, und du kannst die Aufgabe weiterhin lesen und Code gegen die sichtbaren Fälle ausführen.",
+    "draftTitle": "Diese Aufgabe ist ein Entwurf",
+    "draftBody": "Nur du siehst sie. Sie nimmt keine Einreichungen an und zählt für niemanden, solange sie nicht veröffentlicht ist — nutze zum Prüfen „Mit einer Referenzlösung prüfen“ im Redaktionsformular: das bewertet jeden Fall und speichert nichts.",
+    "closedSubmitHint": "Diese Aufgabe ist nicht im Katalog und nimmt keine neuen Einreichungen an."
   },
   "interview": {
     "title": "Mock-Interview",

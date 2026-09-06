@@ -36,8 +36,17 @@ public final class ValidationRules {
     /** Generous for prose, small enough that no single field can fill the table. */
     public static final int MARKDOWN_MAX_LENGTH = 60_000;
 
-    /** One case's input or expected output. Well beyond any hand-written case. */
-    public static final int TEST_CASE_MAX_LENGTH = 64 * 1024;
+    /**
+     * One case's input or expected output.
+     *
+     * <p>Sized for generated stress cases, not for typing. A hidden case that
+     * sits at the top of a problem's constraints — 3·10^5 integers on one line —
+     * is already about 2 MB in the seeded catalogue, so a limit chosen for
+     * hand-written cases would make those problems unsaveable and unpublishable.
+     * The column is LONGTEXT; this is a bound on what one field can carry, well
+     * under MySQL's default 64 MB packet.
+     */
+    public static final int TEST_CASE_MAX_LENGTH = 4 * 1024 * 1024;
 
     /**
      * A name that is a legal identifier in all four supported languages.

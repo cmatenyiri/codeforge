@@ -139,6 +139,20 @@ export type ProblemDetail = {
   hiddenTestCaseCount: number;
   /** Whether a written solution exists — the Editorial tab is disabled without one. */
   hasEditorial: boolean;
+  /**
+   * Released to the catalogue.
+   *
+   * An unpublished problem reaches only its author and anyone who submitted
+   * while it was live; like an archived one it takes no new submissions.
+   */
+  published: boolean;
+  /**
+   * Retired from the catalogue.
+   *
+   * Still readable — a solver's own history links straight here — but it counts
+   * towards nobody's progress any more and takes no new submissions.
+   */
+  archived: boolean;
   solved: boolean;
   attempted: boolean;
   acceptanceRate?: number;

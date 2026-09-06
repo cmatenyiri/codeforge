@@ -1,5 +1,6 @@
 package com.codeforge.validation;
 
+import com.codeforge.domain.DataType;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Slugs;
 import com.codeforge.repository.ProblemRepository;
@@ -261,10 +262,17 @@ public class ProblemUpsertRequestValidator {
     /**
      * Cases are checked against the signature, not just for shape.
      *
-     * <p>An input's line count has to match the argument count exactly: the
-     * harness reads one line per argument, so a case with a line too few or too
-     * many does not fail as a wrong answer — it fails as a crash inside generated
-     * code the solver cannot see, on a case they may not be shown either.
+     * <p>The harness reads one line per argument, so a case carrying the wrong
+     * number of them does not fail as a wrong answer — it fails as a crash inside
+     * generated code the solver cannot see, on a case they may not even be shown.
+     *
+     * <p>Too many lines is always an error. Too few is only sometimes one: an
+     * empty line is a perfectly good STRING — the empty-string case is the first
+     * one worth writing for half the string problems in any catalogue — and
+     * trailing empty values leave no trace in stored text. So a shortfall is
+     * accepted exactly when every argument it would have supplied is a STRING,
+     * which keeps "you forgot a line" caught for every numeric signature without
+     * making the empty string unwritable.
      */
     private void validateTestCases(ProblemUpsertRequest request, ValidationErrors errors) {
         List<TestCasePayload> cases = nullToEmpty(request.testCases());
@@ -280,7 +288,7 @@ public class ProblemUpsertRequestValidator {
                         "testCases[%d].input".formatted(i),
                         "validation.problem.testCase.length",
                         "That input is too large");
-            } else if (signed && lineCount(input) != argumentCount) {
+            } else if (signed && !linesFit(lineCount(input), nullToEmpty(request.parameters()))) {
                 errors.add(
                         "testCases[%d].input".formatted(i),
                         "validation.problem.testCase.lineCount",
@@ -374,6 +382,24 @@ public class ProblemUpsertRequestValidator {
         return slug == null
                 ? Slugs.slugify(request.title() == null ? "" : request.title())
                 : slug.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Whether an input of {@code lines} lines can feed this argument list.
+     *
+     * <p>Exact, except that the arguments a shortfall would have supplied must
+     * all be STRINGs — the one type whose value can be an empty line, and so the
+     * one type a stored input cannot record the presence of.
+     */
+    private static boolean linesFit(int lines, List<ProblemParameterPayload> parameters) {
+        if (lines == parameters.size()) {
+            return true;
+        }
+        if (lines > parameters.size()) {
+            return false;
+        }
+        return parameters.subList(lines, parameters.size()).stream()
+                .allMatch(parameter -> parameter.type() == DataType.STRING);
     }
 
     /**

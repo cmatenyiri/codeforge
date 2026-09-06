@@ -1,6 +1,6 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import EditRounded from '@mui/icons-material/EditRounded';
-import { Alert, Box, CircularProgress, Divider, Link as MuiLink, Stack } from '@mui/material';
+import { Alert, AlertTitle, Box, CircularProgress, Divider, Link as MuiLink, Stack } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
@@ -75,6 +75,9 @@ export const SolvePage = () => {
     };
   }, [slug, refreshKey, message, t]);
 
+  // An unreleased problem, seen by the person who can release it.
+  const draft = user?.role === 'ADMIN' && problem !== null && !problem.published && !problem.archived;
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'surface.canvas' }}>
       <AppHeader />
@@ -111,42 +114,58 @@ export const SolvePage = () => {
           <Alert severity="error">{error}</Alert>
         </Box>
       ) : problem ? (
-        <Stack
-          direction={{ xs: 'column', lg: 'row' }}
-          divider={<Divider orientation="vertical" flexItem />}
-          sx={{ flex: 1, minHeight: 0, p: 2, pt: 1.5, gap: { xs: 2, lg: 0 } }}
-        >
-          <Box
-            sx={{
-              flex: { lg: '1 1 44%' },
-              minWidth: 0,
-              minHeight: 0,
-              border: 1,
-              borderColor: 'border.default',
-              borderRadius: 1.5,
-              backgroundColor: 'surface.paper',
-              overflow: 'hidden',
-            }}
-          >
-            <ProblemPanel problem={problem} refreshKey={refreshKey} />
-          </Box>
+        <>
+          {/* The one place a solver can find out why their solved count moved:
+              taking a problem out of the catalogue is otherwise invisible to the
+              people it affects. An author gets the authoring-side wording, since
+              for them an unreleased draft is a state to act on rather than a
+              disappointment. */}
+          {problem.archived || !problem.published ? (
+            <Box sx={{ px: 2, pt: 1.5 }}>
+              <Alert severity="info">
+                <AlertTitle>{t(draft ? 'solve.draftTitle' : 'solve.retiredTitle')}</AlertTitle>
+                {t(draft ? 'solve.draftBody' : 'solve.retiredBody')}
+              </Alert>
+            </Box>
+          ) : null}
 
-          <Box
-            sx={{
-              flex: { lg: '1 1 56%' },
-              minWidth: 0,
-              minHeight: 0,
-              ml: { lg: 2 },
-              border: 1,
-              borderColor: 'border.default',
-              borderRadius: 1.5,
-              backgroundColor: 'surface.paper',
-              overflow: 'hidden',
-            }}
+          <Stack
+            direction={{ xs: 'column', lg: 'row' }}
+            divider={<Divider orientation="vertical" flexItem />}
+            sx={{ flex: 1, minHeight: 0, p: 2, pt: 1.5, gap: { xs: 2, lg: 0 } }}
           >
-            <EditorPanel problem={problem} onSubmitted={refresh} />
-          </Box>
-        </Stack>
+            <Box
+              sx={{
+                flex: { lg: '1 1 44%' },
+                minWidth: 0,
+                minHeight: 0,
+                border: 1,
+                borderColor: 'border.default',
+                borderRadius: 1.5,
+                backgroundColor: 'surface.paper',
+                overflow: 'hidden',
+              }}
+            >
+              <ProblemPanel problem={problem} refreshKey={refreshKey} />
+            </Box>
+
+            <Box
+              sx={{
+                flex: { lg: '1 1 56%' },
+                minWidth: 0,
+                minHeight: 0,
+                ml: { lg: 2 },
+                border: 1,
+                borderColor: 'border.default',
+                borderRadius: 1.5,
+                backgroundColor: 'surface.paper',
+                overflow: 'hidden',
+              }}
+            >
+              <EditorPanel problem={problem} onSubmitted={refresh} />
+            </Box>
+          </Stack>
+        </>
       ) : null}
     </Box>
   );

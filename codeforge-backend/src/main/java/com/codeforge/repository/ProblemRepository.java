@@ -191,6 +191,20 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
     @Query("select count(ip) > 0 from InterviewProblem ip where ip.problem.id = :id")
     boolean isUsedByInterviews(@Param("id") Long id);
 
+    /**
+     * Whether this problem was asked in one of this user's interviews.
+     *
+     * <p>The other half of "your own history still resolves": a debrief lists the
+     * problems a round asked and links to each one, and a candidate may well have
+     * skipped a problem without ever submitting to it. Consulted only when an
+     * unpublished problem is being opened, which is the rare path.
+     */
+    @Query("""
+            select count(ip) > 0 from InterviewProblem ip
+            where ip.problem.id = :problemId and ip.interview.user.id = :userId
+            """)
+    boolean isInInterviewOf(@Param("problemId") Long problemId, @Param("userId") Long userId);
+
     /** Projection for {@link #findInterviewCandidates}. */
     interface InterviewCandidate {
         Long getId();

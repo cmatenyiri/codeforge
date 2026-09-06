@@ -55,6 +55,9 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     /** The most recent submission per problem is what the editor restores, so ordering matters. */
     Optional<Submission> findFirstByUserIdAndProblemSlugOrderByCreatedAtDesc(Long userId, String slug);
 
+    /** Whether this user has any history with a problem — their way back into an unpublished one. */
+    boolean existsByUserIdAndProblemId(Long userId, Long problemId);
+
     boolean existsByUserIdAndProblemIdAndStatus(
             Long userId, Long problemId, com.codeforge.domain.SubmissionStatus status);
 
@@ -82,15 +85,29 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     long countAcceptedByUserId(@Param("userId") Long userId);
 
     /**
-     * Distinct problems solved at each difficulty.
+     * Distinct problems solved at each difficulty, counted over the live
+     * catalogue only.
      *
      * <p>Counts distinct problems, not submissions: solving the same problem
      * three times is one solve, and the progress bars would otherwise pass 100%.
+     *
+     * <p>The visibility filter has to match {@link ProblemRepository#countByDifficulty()}
+     * exactly, because these two numbers are shown as one fraction. A problem
+     * that leaves the catalogue — unpublished back to a draft, or archived —
+     * leaves both sides of it, so "12 / 40" stays a statement about the same set
+     * of problems. Without it, retiring a problem somebody had solved would
+     * shrink the denominator alone and leave a progress ring reading 3 / 2.
+     *
+     * <p>Note that this deliberately does not touch the submissions themselves.
+     * Those rows stay, the history still lists them, and the acceptance rate
+     * still counts them: a submission is a fact about what the user did, while a
+     * solved count is a claim about the catalogue as it stands today.
      */
     @Query("""
             select s.problem.difficulty as difficulty, count(distinct s.problem.id) as total
             from Submission s
             where s.user.id = :userId and s.status = com.codeforge.domain.SubmissionStatus.ACCEPTED
+              and s.problem.archived = false and s.problem.published = true
             group by s.problem.difficulty
             """)
     List<ProblemRepository.DifficultyTotal> countSolvedByDifficulty(@Param("userId") Long userId);

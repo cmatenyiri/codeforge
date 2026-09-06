@@ -119,18 +119,8 @@ public class ProblemService {
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public Problem getBySlug(String slug) {
-        Problem problem = problemRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.of("problem", slug));
-
-        // A draft is not in the catalogue and must not be reachable by guessing
-        // its URL either — but its author has to be able to open it, which is how
-        // an unpublished problem is previewed and test-run before release. An
-        // archived problem stays readable: people have solved it, and their
-        // submission history links straight here.
-        if (!problem.isPublished() && !SecurityUtils.isAdmin()) {
-            throw NotFoundException.of("problem", slug);
-        }
-
-        // Same reason as above. These are separate queries rather than one fetch
+        Problem problem = requireVisible(slug);
+        // These are separate queries rather than one fetch
         // join on purpose: three List associations in a single join would trip
         // Hibernate's MultipleBagFetchException.
         problem.getTags().size();
@@ -138,6 +128,42 @@ public class ProblemService {
         problem.getHints().size();
         problem.getParameters().size();
 
+        return problem;
+    }
+
+    /**
+     * A problem the caller is allowed to know exists, or a 404.
+     *
+     * <p>Three audiences for an unpublished problem, and only one of them is
+     * turned away:
+     *
+     * <ul>
+     *   <li>Its author, who has to preview and test-run it before release — that
+     *       is what a draft is for.
+     *   <li>Anyone who has already met it — submitted to it, or been asked it in
+     *       an interview — which can only have happened while it was published.
+     *       Their submission history and their interview debrief both link
+     *       straight here, and "your own history still resolves" has to mean the
+     *       page still opens. Two exists queries, and only on this rare path.
+     *   <li>Everybody else: a 404, so a draft cannot be found by guessing a URL.
+     * </ul>
+     *
+     * <p>Note that visibility follows {@code published} alone. An archived
+     * problem that was once in the catalogue stays readable by everyone —
+     * retiring it is not a reason to hide what people have already done with it —
+     * while one archived straight out of draft was never public and stays hidden.
+     *
+     * <p>Every read of a problem by slug goes through here, the editorial
+     * included: a walkthrough and four reference solutions are the answer key,
+     * and an endpoint that skipped this check would hand them out for an
+     * unreleased problem to anyone who guessed the URL.
+     */
+    private Problem requireVisible(String slug) {
+        Problem problem = problemRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.of("problem", slug));
+
+        if (!problem.isPublished() && !SecurityUtils.isAdmin() && !hasHistory(problem)) {
+            throw NotFoundException.of("problem", slug);
+        }
         return problem;
     }
 
@@ -152,6 +178,14 @@ public class ProblemService {
         problem.getTestCases().size();
 
         return problem;
+    }
+
+    /** Whether the caller has ever submitted to this problem, or been asked it in an interview. */
+    private boolean hasHistory(Problem problem) {
+        return SecurityUtils.currentUserId()
+                .map(userId -> submissionRepository.existsByUserIdAndProblemId(userId, problem.getId())
+                        || problemRepository.isInInterviewOf(problem.getId(), userId))
+                .orElse(false);
     }
 
     /** The sample cases, which are the only ones a client may see. */
@@ -178,6 +212,10 @@ public class ProblemService {
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public Editorial editorial(String slug) {
+        // The visibility rule first: an editorial is the answer key, and this
+        // endpoint is reachable by slug alone.
+        requireVisible(slug);
+
         Editorial editorial = editorialRepository
                 .findByProblemSlug(slug)
                 .orElseThrow(() -> NotFoundException.of("editorial", slug));
