@@ -1,0 +1,22 @@
+# Cross-cutting ignores for the whole monorepo. Stack-specific build output
+# (node_modules, dist, build/, .gradle) stays in each package's own .gitignore
+# so the packages remain self-contained.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.iml
+*.swp
+*.sw?
+
+# Env / secrets, in any package
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
