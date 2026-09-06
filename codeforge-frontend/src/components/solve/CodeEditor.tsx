@@ -71,6 +71,53 @@ export const CodeEditor = ({ value, language, settings, onChange, onRun, path }:
   }, []);
 
   /**
+   * The last text the editor itself produced.
+   *
+   * <p>This is what makes the editor safe to type in quickly. `@monaco-editor/react`
+   * treats `value` as fully controlled: whenever the prop differs from the model,
+   * it replaces the *entire* model range in one edit. React's state update is a
+   * round trip, so on a fast burst the prop arrives already stale — and the
+   * replace then wipes every character typed since that snapshot and leaves the
+   * caret at the end of the file. Measured, a 10–20 ms keystroke interval could
+   * lose the whole word.
+   *
+   * <p>So the prop is only handed to Monaco when the text did *not* come from
+   * Monaco — a reset, or a language switch. While React is merely echoing the
+   * user's own typing back, `undefined` is passed instead, which the wrapper
+   * ignores, leaving the model exactly as the user left it.
+   */
+  const echoRef = useRef(value);
+
+  const handleChange = useCallback(
+    (next: string | undefined) => {
+      const text = next ?? '';
+      echoRef.current = text;
+      onChange(text);
+    },
+    [onChange],
+  );
+
+  const externalValue = value === echoRef.current ? undefined : value;
+
+  /**
+   * Records an outside change as though the editor had produced it.
+   *
+   * <p>The wrapper suppresses `onChange` while applying its own edit, so without
+   * this the ref still holds the text from before the push and stays stale. The
+   * next genuine outside change would then compare equal to it, be mistaken for
+   * an echo, and never reach the model — switching away from a language and back
+   * would leave the previous language's code on screen.
+   *
+   * <p>Runs after the wrapper has applied the edit: effects flush from the child
+   * outwards, and the wrapper is this component's child.
+   */
+  useEffect(() => {
+    if (externalValue !== undefined) {
+      echoRef.current = externalValue;
+    }
+  }, [externalValue]);
+
+  /**
    * Throws away the models the other languages left behind.
    *
    * <p>Giving each language its own file name means switching language creates a
@@ -105,12 +152,13 @@ export const CodeEditor = ({ value, language, settings, onChange, onRun, path }:
       <Editor
         path={uri}
         language={MONACO_LANGUAGE[language]}
-        value={value}
+        // `defaultValue` seeds a newly created model — one is created per
+        // language — while `value` only ever carries an outside change.
+        defaultValue={value}
+        value={externalValue}
         theme={theme}
         onMount={handleMount}
-        onChange={(next) => {
-          onChange(next ?? '');
-        }}
+        onChange={handleChange}
         loading={<CircularProgress size={24} />}
         options={{
           fontFamily: fontFamilyMono,

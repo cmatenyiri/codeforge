@@ -42,29 +42,39 @@ const PERSIST_DELAY_MS = 400;
 
 export const useCodeDraft = (slug: string, language: Language, starterCode: string) => {
   const key = draftKey(slug, language);
-  const [code, setCode] = useState(() => read(key) ?? starterCode);
 
-  // The key changes when the language does, which is the cue to load that
-  // language's own draft rather than carry the previous one across.
-  useEffect(() => {
-    setCode(read(key) ?? starterCode);
-  }, [key, starterCode]);
+  // The draft and the key it belongs to are stored together, so the two can never
+  // disagree about which language the code on screen is written in.
+  const [draft, setDraft] = useState(() => ({ key, code: read(key) ?? starterCode }));
+
+  // Adjusted during render rather than in an effect. An effect would leave one
+  // committed render where the key is the new language but the code is still the
+  // old one — long enough for the editor to build the new model out of the
+  // previous language's source. React re-runs this component immediately
+  // instead, before anything reaches the screen.
+  if (draft.key !== key) {
+    setDraft({ key, code: read(key) ?? starterCode });
+  }
+
+  const setCode = useCallback((code: string) => {
+    setDraft((current) => ({ ...current, code }));
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      write(key, code);
+      write(draft.key, draft.code);
     }, PERSIST_DELAY_MS);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [key, code]);
+  }, [draft]);
 
   /** Discards the draft and returns to the generated stub. */
   const reset = useCallback(() => {
     remove(key);
-    setCode(starterCode);
+    setDraft({ key, code: starterCode });
   }, [key, starterCode]);
 
-  return { code, setCode, reset };
+  return { code: draft.code, setCode, reset };
 };
