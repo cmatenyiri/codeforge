@@ -1,5 +1,6 @@
 package com.codeforge.service;
 
+import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
 import com.codeforge.domain.SubmissionStatus;
@@ -11,6 +12,7 @@ import com.codeforge.execution.ExecutionRequest;
 import com.codeforge.execution.ExecutionResult;
 import com.codeforge.execution.codegen.CodeTemplateService;
 import com.codeforge.execution.codegen.DataFormat;
+import com.codeforge.execution.codegen.ProblemSignature;
 import com.codeforge.service.SubmissionService.NewSubmission;
 import com.codeforge.service.SubmissionService.Recorded;
 import com.codeforge.web.dto.execution.CaseResultResponse;
@@ -67,7 +69,7 @@ public class ExecutionService {
     public RunResponse run(String slug, Language language, String sourceCode) {
         validate(sourceCode);
 
-        Plan plan = plan(slug, language, sourceCode, false);
+        Plan plan = planFromCatalogue(slug, language, sourceCode, false, false);
         if (plan.cases().isEmpty()) {
             return new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of());
         }
@@ -101,7 +103,7 @@ public class ExecutionService {
     public RunResponse dryRun(String slug, Language language, String sourceCode) {
         validate(sourceCode);
 
-        Plan plan = plan(slug, language, sourceCode, true);
+        Plan plan = planFromCatalogue(slug, language, sourceCode, true, false);
         if (plan.cases().isEmpty()) {
             throw new BusinessRuleException(
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
@@ -128,52 +130,69 @@ public class ExecutionService {
      */
     @PreAuthorize("isAuthenticated()")
     public SubmissionResultResponse submit(String slug, Language language, String sourceCode) {
-        return submit(slug, language, sourceCode, true);
-    }
-
-    /**
-     * A submission from inside a running interview.
-     *
-     * <p>The one caller allowed to submit against a retired problem. An interview
-     * draws only from the live catalogue, but a round lasts an hour and a problem
-     * can be archived while a candidate is halfway through solving it — failing
-     * their submission at that point would cost them a slot for something that
-     * happened on the other side of the screen.
-     */
-    @PreAuthorize("isAuthenticated()")
-    public SubmissionResultResponse submitForInterview(String slug, Language language, String sourceCode) {
-        return submit(slug, language, sourceCode, false);
-    }
-
-    /**
-     * @param refuseRetired true for practice, where a submission is a claim on
-     *     the catalogue: a problem that is not in it — retired, or not released
-     *     yet — counts towards nobody's progress, so accepting the attempt and
-     *     then crediting nothing would be taking work the product has already
-     *     decided to ignore
-     */
-    private SubmissionResultResponse submit(
-            String slug, Language language, String sourceCode, boolean refuseRetired) {
         validate(sourceCode);
 
-        Plan plan = plan(slug, language, sourceCode, true);
+        return judgeAndRecord(
+                planFromCatalogue(slug, language, sourceCode, true, true), slug, language, sourceCode);
+    }
 
-        // Checked before the sandbox runs, so a refusal costs no judge time.
-        //
-        // The two closed states are reported apart because they mean opposite
-        // things to whoever hit them: an archived problem is over, a draft has
-        // not started. An author checking a draft wants the verification tool in
-        // the authoring form, which judges every case and records nothing —
-        // exactly what a submission would be for, minus the permanent record on a
-        // problem no solver has seen yet.
-        if (refuseRetired && plan.archived()) {
-            throw new BusinessRuleException(
-                    "error.execution.archived", "This problem has been retired and takes no new submissions");
+    /**
+     * Runs a round's sample cases against the problem as it stood when the round
+     * began.
+     *
+     * <p>An interview judges the snapshot rather than the catalogue, so an author
+     * editing the problem — renaming the function, rewriting a case — cannot
+     * reach a candidate who is halfway through it. Nothing here consults the
+     * live row, which is also why no archived-or-draft check is needed: those
+     * states describe a catalogue this code is no longer reading.
+     */
+    @PreAuthorize("isAuthenticated()")
+    public RunResponse runSnapshot(
+            InterviewProblemSnapshot snapshot, Language language, String sourceCode) {
+
+        validate(sourceCode);
+
+        Plan plan = planFromSnapshot(snapshot, language, sourceCode, false);
+        if (plan.cases().isEmpty()) {
+            return new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of());
         }
-        if (refuseRetired && !plan.published()) {
-            throw new BusinessRuleException(
-                    "error.execution.draft", "This problem is not published yet and takes no submissions");
-        }
+
+        Judged judged = judge(plan, execute(plan, snapshot.slug(), language));
+
+        return new RunResponse(
+                judged.status(),
+                judged.compileOutput(),
+                judged.passed(),
+                judged.total(),
+                judged.runtimeMs(),
+                judged.memoryKb(),
+                judged.results());
+    }
+
+    /**
+     * The verdict inside a round, against the frozen cases.
+     *
+     * <p>The submission itself is still recorded against the catalogue problem:
+     * an interview is a different way to be handed a problem, not a different
+     * kind of solving.
+     */
+    @PreAuthorize("isAuthenticated()")
+    public SubmissionResultResponse submitSnapshot(
+            InterviewProblemSnapshot snapshot, Language language, String sourceCode) {
+
+        validate(sourceCode);
+
+        return judgeAndRecord(
+                planFromSnapshot(snapshot, language, sourceCode, true),
+                snapshot.slug(),
+                language,
+                sourceCode);
+    }
+
+    /** Judges a prepared plan and writes the attempt down. */
+    private SubmissionResultResponse judgeAndRecord(
+            Plan plan, String slug, Language language, String sourceCode) {
+
         if (plan.cases().isEmpty()) {
             throw new BusinessRuleException(
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
@@ -228,12 +247,38 @@ public class ExecutionService {
     }
 
     /**
-     * Prepares everything the judge needs from an already-initialised entity.
+     * Prepares everything the judge needs from the live catalogue row.
+     *
+     * <p>The path for practice and for authoring. An interview does not come
+     * through here — see {@link #planFromSnapshot}.
      *
      * @param includeHidden false for a run, true for a submission
+     * @param refuseRetired true for a practice submission, which is a claim on
+     *     the catalogue: a problem that is not in it — retired, or not released
+     *     yet — counts towards nobody's progress, so accepting the attempt and
+     *     then crediting nothing would be taking work the product has already
+     *     decided to ignore. Checked here rather than after judging, so a refusal
+     *     costs no sandbox time
      */
-    private Plan plan(String slug, Language language, String sourceCode, boolean includeHidden) {
+    private Plan planFromCatalogue(
+            String slug, Language language, String sourceCode, boolean includeHidden, boolean refuseRetired) {
+
         Problem problem = problemService.getForJudging(slug);
+
+        // The two closed states are reported apart because they mean opposite
+        // things to whoever hit them: an archived problem is over, a draft has
+        // not started. An author checking a draft wants the verification tool in
+        // the authoring form, which judges every case and records nothing —
+        // exactly what a submission would be for, minus the permanent record on a
+        // problem no solver has seen yet.
+        if (refuseRetired && problem.isArchived()) {
+            throw new BusinessRuleException(
+                    "error.execution.archived", "This problem has been retired and takes no new submissions");
+        }
+        if (refuseRetired && !problem.isPublished()) {
+            throw new BusinessRuleException(
+                    "error.execution.draft", "This problem is not published yet and takes no submissions");
+        }
 
         List<JudgedCase> cases = problem.getTestCases().stream()
                 .filter(testCase -> includeHidden || !testCase.isHidden())
@@ -247,9 +292,33 @@ public class ExecutionService {
 
         return new Plan(
                 problem.getId(),
-                problem.isArchived(),
-                problem.isPublished(),
                 codeTemplateService.buildProgram(problem, language, sourceCode),
+                codeTemplateService.compilerOptions(language),
+                cases);
+    }
+
+    /**
+     * The same, from the copy frozen onto an interview slot.
+     *
+     * <p>No database read at all: the snapshot already carries the signature and
+     * every case, which is exactly what makes a round immune to an edit landing
+     * underneath it. The cases are ordered the same way, so the case numbers a
+     * candidate sees mean the same thing they do on the solving page.
+     */
+    private Plan planFromSnapshot(
+            InterviewProblemSnapshot snapshot, Language language, String sourceCode, boolean includeHidden) {
+
+        List<JudgedCase> cases = snapshot.testCases().stream()
+                .filter(testCase -> includeHidden || !testCase.hidden())
+                .sorted(Comparator.comparing(InterviewProblemSnapshot.Case::hidden))
+                .map(testCase -> new JudgedCase(
+                        testCase.id(), testCase.input(), testCase.expectedOutput(), testCase.hidden()))
+                .toList();
+
+        return new Plan(
+                snapshot.problemId(),
+                codeTemplateService.buildProgram(
+                        ProblemSignature.from(snapshot), snapshot.slug(), language, sourceCode),
                 codeTemplateService.compilerOptions(language),
                 cases);
     }
@@ -371,14 +440,8 @@ public class ExecutionService {
         return current == null ? candidate : Math.max(current, candidate);
     }
 
-    /** Everything needed to run, gathered while the entity was still attached. */
-    private record Plan(
-            Long problemId,
-            boolean archived,
-            boolean published,
-            String program,
-            String compilerOptions,
-            List<JudgedCase> cases) {}
+    /** Everything needed to run, gathered before any sandbox call. */
+    private record Plan(Long problemId, String program, String compilerOptions, List<JudgedCase> cases) {}
 
     private record JudgedCase(Long id, String input, String expectedOutput, boolean hidden) {}
 

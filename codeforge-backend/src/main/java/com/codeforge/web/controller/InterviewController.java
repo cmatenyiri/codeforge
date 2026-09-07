@@ -2,14 +2,12 @@ package com.codeforge.web.controller;
 
 import com.codeforge.domain.Interview;
 import com.codeforge.domain.InterviewFormat;
-import com.codeforge.domain.Problem;
-import com.codeforge.domain.ProblemHint;
 import com.codeforge.execution.codegen.CodeTemplateService;
+import com.codeforge.execution.codegen.ProblemSignature;
 import com.codeforge.service.InterviewExecutionService;
 import com.codeforge.service.InterviewService;
 import com.codeforge.service.InterviewService.OpenSlot;
 import com.codeforge.service.InterviewService.RevealedHints;
-import com.codeforge.service.ProblemService;
 import com.codeforge.web.dto.common.PageResponse;
 import com.codeforge.web.dto.execution.RunRequest;
 import com.codeforge.web.dto.execution.RunResponse;
@@ -22,10 +20,8 @@ import com.codeforge.web.dto.interview.InterviewSessionResponse;
 import com.codeforge.web.dto.interview.InterviewSummaryResponse;
 import com.codeforge.web.dto.interview.SelfReportRequest;
 import com.codeforge.web.dto.interview.StartInterviewRequest;
-import com.codeforge.web.dto.problem.TestCaseResponse;
 import com.codeforge.web.dto.submission.SubmissionResultResponse;
 import com.codeforge.web.mapper.InterviewMapper;
-import com.codeforge.web.mapper.ProblemMapper;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -65,10 +61,8 @@ public class InterviewController {
 
     private final InterviewService interviewService;
     private final InterviewExecutionService interviewExecutionService;
-    private final ProblemService problemService;
     private final CodeTemplateService codeTemplateService;
     private final InterviewMapper interviewMapper;
-    private final ProblemMapper problemMapper;
 
     /** The formats on offer, with the shape of each so the lobby need not hard-code it. */
     @GetMapping("/formats")
@@ -168,18 +162,14 @@ public class InterviewController {
             @PathVariable Long id, @PathVariable int position) {
 
         OpenSlot slot = interviewService.openSlot(id, position);
-        Problem problem = problemService.getBySlug(slot.slug());
-        List<String> hints = problem.getHints().stream()
-                .map(ProblemHint::getContent)
-                .toList();
+        List<String> hints = slot.snapshot().hints();
 
         return ResponseEntity.ok(interviewMapper.toProblem(
-                problem,
                 slot,
-                codeTemplateService.starterCode(problem),
-                sampleCases(problem),
-                problemService.hiddenTestCaseCount(problem.getId()),
-                hints.size(),
+                // Generated from the signature frozen with the round, so the stub
+                // the candidate is given and the harness their submission is
+                // compiled into can never disagree.
+                codeTemplateService.starterCode(ProblemSignature.from(slot.snapshot())),
                 // Only the prefix the candidate has paid for. The rest never
                 // leaves the server, so nothing on the client is trusted to hide
                 // them.
@@ -192,14 +182,9 @@ public class InterviewController {
             @PathVariable Long id, @PathVariable int position) {
 
         RevealedHints revealed = interviewService.revealNextHint(id, position);
-        List<String> hints = problemService.getBySlug(revealed.slug()).getHints().stream()
-                .map(ProblemHint::getContent)
-                .toList();
 
-        return ResponseEntity.ok(new InterviewHintResponse(
-                revealed.available(),
-                revealed.revealed(),
-                hints.subList(0, Math.min(revealed.revealed(), hints.size()))));
+        return ResponseEntity.ok(
+                new InterviewHintResponse(revealed.available(), revealed.revealed(), revealed.hints()));
     }
 
     /** Marks a problem passed over. Reversible by solving it. */
@@ -234,10 +219,6 @@ public class InterviewController {
 
     private InterviewReportResponse toReport(Interview interview) {
         return interviewMapper.toReport(interview, interviewService.insights(interview), Instant.now());
-    }
-
-    private List<TestCaseResponse> sampleCases(Problem problem) {
-        return problemMapper.toTestCaseResponses(problemService.visibleTestCases(problem.getId()));
     }
 
     private static Pageable pageable(int page, int size) {

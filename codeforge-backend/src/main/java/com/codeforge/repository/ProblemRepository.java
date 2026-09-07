@@ -143,10 +143,6 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
             @Param("userId") Long userId,
             @Param("excludedIds") Collection<Long> excludedIds);
 
-    /** How many hints a problem has, so a reveal can stop at the last one. */
-    @Query("select count(h) from Problem p join p.hints h where p.id = :id")
-    long countHints(@Param("id") Long id);
-
     /**
      * The authoring catalogue: every problem, whatever its state.
      *

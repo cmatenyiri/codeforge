@@ -1,6 +1,7 @@
 package com.codeforge.execution.codegen;
 
 import com.codeforge.domain.DataType;
+import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemParameter;
 import java.util.List;
@@ -41,5 +42,26 @@ public record ProblemSignature(String functionName, List<Parameter> parameters, 
                 .toList();
 
         return new ProblemSignature(problem.getFunctionName(), parameters, problem.getReturnType());
+    }
+
+    /**
+     * Reads the signature off a frozen snapshot rather than the live problem.
+     *
+     * <p>The whole point of the snapshot: an interview generates its starter code
+     * and builds its harness from the same declaration, taken once, so the two
+     * cannot drift apart underneath a candidate mid-round.
+     *
+     * @return null when the problem had no signature when the round began
+     */
+    public static ProblemSignature from(InterviewProblemSnapshot snapshot) {
+        if (snapshot.functionName() == null || snapshot.returnType() == null) {
+            return null;
+        }
+
+        List<Parameter> parameters = snapshot.parameters().stream()
+                .map(parameter -> new Parameter(parameter.name(), parameter.type()))
+                .toList();
+
+        return new ProblemSignature(snapshot.functionName(), parameters, snapshot.returnType());
     }
 }

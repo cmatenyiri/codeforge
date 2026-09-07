@@ -3,6 +3,7 @@ package com.codeforge.web.mapper;
 import com.codeforge.domain.Interview;
 import com.codeforge.domain.InterviewInsight;
 import com.codeforge.domain.InterviewProblem;
+import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
 import com.codeforge.service.InterviewService.OpenSlot;
@@ -12,11 +13,11 @@ import com.codeforge.web.dto.interview.InterviewReportResponse;
 import com.codeforge.web.dto.interview.InterviewSessionResponse;
 import com.codeforge.web.dto.interview.InterviewSlotResponse;
 import com.codeforge.web.dto.interview.InterviewSummaryResponse;
+import com.codeforge.web.dto.problem.ProblemExampleResponse;
 import com.codeforge.web.dto.problem.TestCaseResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,10 +31,7 @@ import org.springframework.stereotype.Component;
  * the same thing less directly.
  */
 @Component
-@RequiredArgsConstructor
 public class InterviewMapper {
-
-    private final ProblemMapper problemMapper;
 
     /**
      * A running interview.
@@ -64,15 +62,17 @@ public class InterviewMapper {
      * all, which is why the tab strip needs to know it is locked.
      */
     public InterviewSlotResponse toSlot(InterviewProblem slot, Interview interview) {
-        Problem problem = slot.getProblem();
+        // The frozen copy, like everything else inside a running round: an author
+        // renaming the problem must not rename it on a candidate mid-question.
+        InterviewProblemSnapshot snapshot = slot.getSnapshot();
         int active = interview.activePosition().orElse(interview.getProblems().size());
 
         return new InterviewSlotResponse(
                 slot.getPosition(),
-                problem.getId(),
-                problem.getSlug(),
-                problem.getTitle(),
-                problem.getDifficulty(),
+                snapshot.problemId(),
+                snapshot.slug(),
+                snapshot.title(),
+                snapshot.difficulty(),
                 slot.isWarmUp(),
                 slot.getPosition() > active,
                 slot.isResolved(),
@@ -95,24 +95,30 @@ public class InterviewMapper {
      *     the round by the service
      */
     public InterviewProblemResponse toProblem(
-            Problem problem,
-            OpenSlot slot,
-            Map<Language, String> starterCode,
-            List<TestCaseResponse> sampleTestCases,
-            int hiddenTestCaseCount,
-            int hintCount,
-            List<String> hints) {
+            OpenSlot slot, Map<Language, String> starterCode, List<String> hints) {
+
+        // Every field below comes off the snapshot rather than the catalogue.
+        // Nothing on this screen is read from the live problem, which is what
+        // makes an edit landing mid-round unable to change the question under
+        // the candidate — statement, examples and sample cases included.
+        InterviewProblemSnapshot snapshot = slot.snapshot();
 
         return new InterviewProblemResponse(
-                problem.getId(),
-                problem.getSlug(),
-                problem.getTitle(),
-                problem.getDifficulty(),
-                problem.getDescription(),
-                problem.getConstraintsMarkdown(),
-                problem.getExamples().stream().map(problemMapper::toExampleResponse).toList(),
-                sampleTestCases,
-                hiddenTestCaseCount,
+                snapshot.problemId(),
+                snapshot.slug(),
+                snapshot.title(),
+                snapshot.difficulty(),
+                snapshot.description(),
+                snapshot.constraintsMarkdown(),
+                snapshot.examples().stream()
+                        .map(example -> new ProblemExampleResponse(
+                                example.input(), example.output(), example.explanation()))
+                        .toList(),
+                snapshot.sampleTestCases().stream()
+                        .map(testCase ->
+                                new TestCaseResponse(testCase.id(), testCase.input(), testCase.expectedOutput()))
+                        .toList(),
+                (int) snapshot.hiddenTestCaseCount(),
                 starterCode,
                 slot.position(),
                 slot.warmUp(),
@@ -122,7 +128,7 @@ public class InterviewMapper {
                 slot.submittedSourceCode(),
                 slot.submittedLanguage(),
                 slot.attempts(),
-                hintCount,
+                snapshot.hints().size(),
                 hints);
     }
 
@@ -150,15 +156,25 @@ public class InterviewMapper {
                 insights);
     }
 
+    /**
+     * One problem's line in the debrief.
+     *
+     * <p>Named as it was asked — the title and difficulty come off the snapshot,
+     * because a report that renamed the question after the fact would describe a
+     * round nobody sat. The link, though, uses the live slug: it points into the
+     * catalogue as it is now, and a frozen slug would 404 if the problem has been
+     * renamed since.
+     */
     public InterviewProblemResultResponse toResult(InterviewProblem slot) {
         Problem problem = slot.getProblem();
+        InterviewProblemSnapshot snapshot = slot.getSnapshot();
 
         return new InterviewProblemResultResponse(
                 slot.getPosition(),
                 problem.getId(),
                 problem.getSlug(),
-                problem.getTitle(),
-                problem.getDifficulty(),
+                snapshot.title(),
+                snapshot.difficulty(),
                 slot.isWarmUp(),
                 slot.isSolved(),
                 slot.isSkipped(),

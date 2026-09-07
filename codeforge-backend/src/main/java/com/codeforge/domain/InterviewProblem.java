@@ -1,6 +1,7 @@
 package com.codeforge.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -36,6 +37,20 @@ public class InterviewProblem extends AuditableEntity {
 
     @Column(name = "position", nullable = false)
     private int position;
+
+    /**
+     * The problem exactly as it stood when the round began.
+     *
+     * <p>What the candidate reads and what the judge judges, for as long as the
+     * round lasts. The association above still points at the live catalogue row —
+     * that is what a submission is recorded against and what the debrief links to
+     * afterwards — but nothing inside the round reads through it, so an author
+     * editing the problem cannot reach a round already in progress. See
+     * {@link InterviewProblemSnapshot} for why that matters.
+     */
+    @Convert(converter = InterviewProblemSnapshotConverter.class)
+    @Column(name = "problem_snapshot", nullable = false, columnDefinition = "LONGTEXT")
+    private InterviewProblemSnapshot snapshot;
 
     @Column(nullable = false)
     private boolean solved = false;

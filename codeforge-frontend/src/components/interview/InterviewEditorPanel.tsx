@@ -51,10 +51,16 @@ const InterviewWorkspace = ({
   const [language, setLanguage] = useState<Language>(initialLanguage);
 
   const starterCode = problem.starterCode[language] ?? '';
-  // Keyed by the interview as well as the problem, so a round starts from the
-  // stub rather than from whatever was left in the practice editor last week —
-  // while a refresh mid-round still gets the candidate's work back.
-  const draftKey = `interview-${interviewId}-${problem.slug}`;
+  // Keyed by the interview as well as the slot, so a round starts from the stub
+  // rather than from whatever was left in the practice editor last week — while
+  // a refresh mid-round still gets the candidate's work back.
+  //
+  // The position rather than the slug: an author renaming the problem changes
+  // its slug, and a key built from that would silently point at a different
+  // entry, handing the candidate an empty editor and orphaning what they had
+  // written. The slot's place in the round is the one identifier nothing outside
+  // the round can move.
+  const draftKey = `interview-${interviewId}-${problem.position}`;
   const { code: draft, setCode, reset } = useCodeDraft(draftKey, language, starterCode);
 
   /**

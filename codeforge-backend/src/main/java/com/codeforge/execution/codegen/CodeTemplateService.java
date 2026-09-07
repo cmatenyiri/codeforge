@@ -38,7 +38,20 @@ public class CodeTemplateService {
      *     rather than presenting an editor that could never run
      */
     public Map<Language, String> starterCode(Problem problem) {
-        ProblemSignature signature = ProblemSignature.from(problem);
+        return starterCode(ProblemSignature.from(problem));
+    }
+
+    /**
+     * The same, from a signature that was read somewhere else.
+     *
+     * <p>What an interview uses: its signature comes off the snapshot taken when
+     * the round began, not off the problem as it stands now.
+     *
+     * @param signature null when none was authored, which both callers report the
+     *     same way — an empty map the frontend reads as "not solvable in the
+     *     editor"
+     */
+    public Map<Language, String> starterCode(ProblemSignature signature) {
         if (signature == null) {
             return Map.of();
         }
@@ -50,7 +63,19 @@ public class CodeTemplateService {
 
     /** The solver's code plus the harness that feeds it, ready to send to the judge. */
     public String buildProgram(Problem problem, Language language, String sourceCode) {
-        return support(language).buildProgram(sourceCode, requireSignature(problem));
+        return buildProgram(ProblemSignature.from(problem), problem.getSlug(), language, sourceCode);
+    }
+
+    /**
+     * The same, from an already-read signature.
+     *
+     * @param slug named only so a missing signature can say which problem it was
+     *     missing from
+     */
+    public String buildProgram(
+            ProblemSignature signature, String slug, Language language, String sourceCode) {
+
+        return support(language).buildProgram(sourceCode, requireSignature(signature, slug));
     }
 
     public String compilerOptions(Language language) {
@@ -65,11 +90,10 @@ public class CodeTemplateService {
         return support;
     }
 
-    private static ProblemSignature requireSignature(Problem problem) {
-        ProblemSignature signature = ProblemSignature.from(problem);
+    private static ProblemSignature requireSignature(ProblemSignature signature, String slug) {
         if (signature == null) {
             throw new BusinessRuleException(
-                    "error.execution.noSignature", "Problem has no solution signature: " + problem.getSlug());
+                    "error.execution.noSignature", "Problem has no solution signature: " + slug);
         }
         return signature;
     }

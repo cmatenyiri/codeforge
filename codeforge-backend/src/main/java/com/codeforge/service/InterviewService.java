@@ -6,8 +6,10 @@ import com.codeforge.domain.InterviewFormat;
 import com.codeforge.domain.InterviewInsight;
 import com.codeforge.domain.InterviewOutcome;
 import com.codeforge.domain.InterviewProblem;
+import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.InterviewStatus;
 import com.codeforge.domain.Language;
+import com.codeforge.domain.Problem;
 import com.codeforge.domain.Submission;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
@@ -133,17 +135,15 @@ public class InterviewService {
             slot.setInterview(interview);
             slot.setProblem(problemRepository.getReferenceById(problemId));
             slot.setPosition(position);
+            // Taken here, once, and never refreshed: everything the round shows
+            // and everything it judges is decided at this moment, so an author
+            // editing the problem later cannot reach a candidate who is already
+            // sitting it. Same rule as the duration copied above.
+            slot.setSnapshot(snapshot(problemId));
             interview.getProblems().add(slot);
         }
 
-        Interview saved = interviewRepository.save(interview);
-
-        // The slots were built from reference proxies. The response carries each
-        // problem's title, and this transaction closes before the mapper runs —
-        // the same reason the catalogue touches its tags before returning.
-        saved.getProblems().forEach(slot -> slot.getProblem().getTitle());
-
-        return saved;
+        return interviewRepository.save(interview);
     }
 
     /**
@@ -278,7 +278,7 @@ public class InterviewService {
 
         return new OpenSlot(
                 interview.getStatus(),
-                slot.getProblem().getSlug(),
+                slot.getSnapshot(),
                 position,
                 slot.isWarmUp(),
                 slot.isSolved(),
@@ -306,13 +306,16 @@ public class InterviewService {
         Interview interview = requireRunning(load(id));
         InterviewProblem slot = requireActiveSlot(interview, position);
 
-        int available = (int) problemRepository.countHints(slot.getProblem().getId());
-        if (slot.getHintsRevealed() >= available) {
+        List<String> hints = slot.getSnapshot().hints();
+        if (slot.getHintsRevealed() >= hints.size()) {
             throw new BusinessRuleException("error.interview.noMoreHints", "There are no further hints");
         }
         slot.setHintsRevealed(slot.getHintsRevealed() + 1);
 
-        return new RevealedHints(slot.getProblem().getSlug(), available, slot.getHintsRevealed());
+        // Sliced here rather than by the caller: the unrevealed ones are the
+        // thing being paid for, and they must not leave the server at all.
+        return new RevealedHints(
+                hints.subList(0, slot.getHintsRevealed()), hints.size(), slot.getHintsRevealed());
     }
 
     /**
@@ -337,16 +340,19 @@ public class InterviewService {
     }
 
     /**
-     * The slug to judge against, having checked the round may still be worked on.
+     * The frozen problem to judge against, having checked the round may still be
+     * worked on.
      *
      * <p>Its own short transaction because the judging that follows must hold no
-     * connection at all.
+     * connection at all — which is also why the snapshot is handed out whole
+     * rather than re-read later: by the time the judge returns, this transaction
+     * is long closed.
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public String requireRunningSlug(Long id, int position) {
+    public InterviewProblemSnapshot requireRunningSnapshot(Long id, int position) {
         Interview interview = requireRunning(load(id));
-        return requireActiveSlot(interview, position).getProblem().getSlug();
+        return requireActiveSlot(interview, position).getSnapshot();
     }
 
     /**
@@ -527,6 +533,27 @@ public class InterviewService {
      * Scoped to the owner in the query rather than checked after loading, so
      * someone else's id is a 404 and not a 403 — which would confirm it exists.
      */
+    /**
+     * Reads a problem in full so it can be frozen onto a slot.
+     *
+     * <p>Every collection the round will need is pulled in here, separately
+     * rather than as one fetch join — three List associations in a single join is
+     * Hibernate's MultipleBagFetchException, the same reason the authoring screen
+     * loads them one at a time.
+     */
+    private InterviewProblemSnapshot snapshot(Long problemId) {
+        Problem problem = problemRepository
+                .findById(problemId)
+                .orElseThrow(() -> NotFoundException.of("problem", String.valueOf(problemId)));
+
+        problem.getParameters().size();
+        problem.getExamples().size();
+        problem.getHints().size();
+        problem.getTestCases().size();
+
+        return InterviewProblemSnapshot.of(problem);
+    }
+
     private Interview owned(Long id) {
         return interviewRepository
                 .findOwned(id, SecurityUtils.requireCurrentUserId())
@@ -627,7 +654,7 @@ public class InterviewService {
      */
     public record OpenSlot(
             InterviewStatus status,
-            String slug,
+            InterviewProblemSnapshot snapshot,
             int position,
             boolean warmUp,
             boolean solved,
@@ -638,6 +665,10 @@ public class InterviewService {
             String submittedSourceCode,
             Language submittedLanguage) {}
 
-    /** @param available how many the problem has, so the button knows when to stop */
-    public record RevealedHints(String slug, int available, int revealed) {}
+    /**
+     * @param hints the revealed prefix, in order — never the whole list
+     * @param available how many the problem had when the round began, so the
+     *     button knows when to stop
+     */
+    public record RevealedHints(List<String> hints, int available, int revealed) {}
 }
