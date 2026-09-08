@@ -24,6 +24,7 @@ export const paths = {
   adminContests: '/admin/contests',
   adminContestNew: '/admin/contests/new',
   adminContestEdit: '/admin/contests/:id/edit',
+  adminDaily: '/admin/daily',
   adminProblems: '/admin/problems',
   adminProblemNew: '/admin/problems/new',
   adminProblemEdit: '/admin/problems/:id/edit',

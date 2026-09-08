@@ -1,10 +1,7 @@
-import { Box, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, MenuItem, Select, Stack, Tooltip, Typography } from '@mui/material';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type ActivityDay } from '../../api/types';
-
-/** A year of squares, plus the days needed to reach the end of the current week. */
-const WEEKS = 53;
+import { type ActivityCalendar as ActivityCalendarData } from '../../api/types';
 
 /**
  * Submission counts mapped onto five steps.
@@ -27,55 +24,77 @@ const LEVEL_ALPHA = [0, 0.22, 0.42, 0.66, 1] as const;
 
 const isoOf = (date: Date) => date.toISOString().slice(0, 10);
 
+/** Sentinel for the rolling window, since a Select cannot hold `undefined`. */
+const CURRENT = 'current';
+
 /**
- * The contribution heatmap.
+ * The contribution heatmap, for one calendar year.
  *
  * <p>Answers one question — do they keep at this? — which no total on the page
  * can. Fifty solves in one weekend and fifty over a year are the same number and
  * completely different facts about somebody.
  *
- * <p>Built from a UTC date grid so the columns line up with the buckets the
- * server grouped by; re-bucketing per viewer would move somebody's streak when
- * they travelled.
+ * <p>A whole calendar year rather than a rolling window, because the picker
+ * beside the heading selects years: the counters, the heading and the grid all
+ * have to be describing the same span, or "total active days" under a 2025 grid
+ * would quietly be counting 2026 as well.
+ *
+ * <p>Built on a UTC date grid so the columns line up with the buckets the server
+ * grouped by; re-bucketing per viewer would move somebody's streak when they
+ * travelled.
  */
-export const ActivityCalendar = ({ days, total }: { days: ActivityDay[]; total: number }) => {
+export const ActivityCalendar = ({
+  calendar,
+  years,
+  onYearChange,
+  loading,
+}: {
+  calendar: ActivityCalendarData;
+  /** Only years with activity — a picker that can select an empty grid can be wrong. */
+  years: number[];
+  /** undefined selects the rolling twelve months. */
+  onYearChange: (year: number | undefined) => void;
+  loading: boolean;
+}) => {
   const { t, i18n } = useTranslation();
 
   const { weeks, monthLabels } = useMemo(() => {
-    const counts = new Map(days.map((day) => [day.date, day.submissions]));
+    const counts = new Map(calendar.days.map((day) => [day.date, day.submissions]));
 
-    // The grid is anchored to the *end* of the current week, not to today.
-    //
-    // Winding the start back to a Sunday and then stepping a fixed number of
-    // weeks would finish up to six days short of today — so on most days of the
-    // week the square for today, the one square anybody looks for, would not be
-    // drawn at all. Anchoring to Saturday instead makes the last column the
-    // current week by construction; the days in it that have not happened yet
-    // are left blank below.
-    const today = new Date();
-    const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-    const lastColumnEnd = new Date(end);
-    lastColumnEnd.setUTCDate(lastColumnEnd.getUTCDate() + (6 - lastColumnEnd.getUTCDay()));
-    const start = new Date(lastColumnEnd);
-    start.setUTCDate(start.getUTCDate() - (WEEKS * 7 - 1));
+    // The window's own bounds, as the server drew them: a calendar year runs
+    // January to December, the rolling one ends today. Reading them off the
+    // response rather than recomputing here is what keeps the grid, the
+    // counters and the heading describing the same span.
+    const first = new Date(`${calendar.from}T00:00:00Z`);
+    const last = new Date(`${calendar.to}T00:00:00Z`);
 
-    const built: { date: string; count: number; future: boolean }[][] = [];
+    // Whole weeks, so the grid has no ragged edge.
+    const start = new Date(first);
+    start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+    const end = new Date(last);
+    end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
+
+    const built: { date: string; count: number; inWindow: boolean }[][] = [];
     const labels: { week: number; label: string }[] = [];
     const cursor = new Date(start);
     let lastMonth = -1;
+    let week = 0;
 
-    for (let week = 0; week < WEEKS; week++) {
-      const column: { date: string; count: number; future: boolean }[] = [];
+    while (cursor <= end) {
+      const column: { date: string; count: number; inWindow: boolean }[] = [];
 
       for (let day = 0; day < 7; day++) {
         const iso = isoOf(cursor);
-        column.push({ date: iso, count: counts.get(iso) ?? 0, future: cursor > end });
+        // Days outside the window pad the first and last columns; they keep the
+        // grid rectangular and are drawn as gaps.
+        const inWindow = cursor >= first && cursor <= last;
+        column.push({ date: iso, count: counts.get(iso) ?? 0, inWindow });
 
-        // One label per month, at the column the month first appears in — and
-        // never within three columns of the previous one, because a grid that
-        // starts mid-month would otherwise print two labels 14px apart and draw
-        // them on top of each other.
-        if (day === 0 && cursor.getUTCMonth() !== lastMonth) {
+        // One label per month, at the column it first appears in, and never
+        // within three columns of the previous one — a window that starts
+        // mid-month would otherwise print two labels 14px apart and draw them
+        // on top of each other.
+        if (day === 0 && inWindow && cursor.getUTCMonth() !== lastMonth) {
           lastMonth = cursor.getUTCMonth();
           const previous = labels.at(-1);
           if (previous === undefined || week - previous.week >= 3) {
@@ -88,26 +107,69 @@ export const ActivityCalendar = ({ days, total }: { days: ActivityDay[]; total: 
         cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
       built.push(column);
+      week++;
     }
 
     return { weeks: built, monthLabels: labels };
-  }, [days, i18n.language]);
+  }, [calendar, i18n.language]);
 
   return (
-    <Paper variant="outlined" sx={{ p: 2.5 }}>
+    <Box>
+      {/* The header LeetCode puts above the grid: how much, how often, and the
+          longest run — all three describing the selected year. */}
       <Stack
         direction="row"
         spacing={2}
         sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap' }}
+        useFlexGap
       >
-        <Typography variant="h4">{t('publicProfile.activityTitle')}</Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {total === 0 ? t('publicProfile.activityNone') : t('publicProfile.activityBody', { count: total })}
+        <Typography variant="h4">
+          {calendar.year === undefined
+            ? t('publicProfile.submissionsPastYear', { count: calendar.submissions })
+            : t('publicProfile.submissionsInYear', { count: calendar.submissions, year: calendar.year })}
         </Typography>
+
+        <Stack direction="row" spacing={2.5} sx={{ alignItems: 'center' }} useFlexGap>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {t('publicProfile.totalActiveDays')}{' '}
+            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
+              {calendar.activeDays}
+            </Box>
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {t('publicProfile.maxStreakLabel')}{' '}
+            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
+              {calendar.maxStreak}
+            </Box>
+          </Typography>
+
+          {/* "Current" is the rolling twelve months and the default: on the
+              second of January a calendar year would report two active days,
+              which is a true number and a useless one. The specific years are
+              there for looking back. */}
+          <Select
+            size="small"
+            value={calendar.year ?? CURRENT}
+            onChange={(event) => {
+              const value = event.target.value;
+              onYearChange(value === CURRENT ? undefined : Number(value));
+            }}
+            disabled={loading}
+            inputProps={{ 'aria-label': t('publicProfile.selectYear') }}
+            sx={{ minWidth: 108 }}
+          >
+            <MenuItem value={CURRENT}>{t('publicProfile.currentWindow')}</MenuItem>
+            {years.map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
+            ))}
+          </Select>
+        </Stack>
       </Stack>
 
-      <Box sx={{ overflowX: 'auto', pb: 0.5 }}>
-        <Box sx={{ minWidth: WEEKS * 14 }}>
+      <Box sx={{ overflowX: 'auto', pb: 0.5, opacity: loading ? 0.5 : 1, transition: 'opacity 120ms' }}>
+        <Box sx={{ minWidth: weeks.length * 14 }}>
           <Box sx={{ position: 'relative', height: 16, mb: 0.25 }}>
             {monthLabels.map((label) => (
               <Typography
@@ -124,7 +186,7 @@ export const ActivityCalendar = ({ days, total }: { days: ActivityDay[]; total: 
             {weeks.map((column, index) => (
               <Stack key={index} spacing="2px">
                 {column.map((cell) =>
-                  cell.future ? (
+                  !cell.inWindow ? (
                     <Box key={cell.date} sx={{ width: 12, height: 12 }} />
                   ) : (
                     <Tooltip
@@ -181,6 +243,6 @@ export const ActivityCalendar = ({ days, total }: { days: ActivityDay[]; total: 
           {t('publicProfile.more')}
         </Typography>
       </Stack>
-    </Paper>
+    </Box>
   );
 };

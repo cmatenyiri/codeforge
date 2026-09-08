@@ -20,6 +20,7 @@ const NAV = [
 const ADMIN_NAV = [
   { to: paths.adminProblems, labelKey: 'nav.admin' },
   { to: paths.adminContests, labelKey: 'nav.adminContests' },
+  { to: paths.adminDaily, labelKey: 'nav.adminDaily' },
 ] as const;
 
 /** The signed-in chrome: brand, primary nav, language and the account menu. */

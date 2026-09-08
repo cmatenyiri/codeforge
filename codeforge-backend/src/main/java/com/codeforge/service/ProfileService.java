@@ -1,13 +1,17 @@
 package com.codeforge.service;
 
 import com.codeforge.domain.Difficulty;
+import com.codeforge.domain.Language;
+import com.codeforge.domain.Streaks;
 import com.codeforge.domain.User;
 import com.codeforge.exception.NotFoundException;
 import com.codeforge.repository.ContestRatingChangeRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
 import com.codeforge.repository.UserRepository;
+import com.codeforge.web.dto.profile.ActivityCalendarResponse;
 import com.codeforge.web.dto.profile.ActivityDayResponse;
+import com.codeforge.web.dto.profile.LanguageStatResponse;
 import com.codeforge.web.dto.profile.LeaderboardRowResponse;
 import com.codeforge.web.dto.profile.PublicProfileResponse;
 import com.codeforge.web.dto.profile.RatingPointResponse;
@@ -19,8 +23,10 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -46,14 +52,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ProfileService {
 
-    /**
-     * How far back the activity calendar reaches.
-     *
-     * <p>A year, because that is what a calendar of weeks can show at a readable
-     * size, and because the question it answers — "do they keep at this?" — is
-     * not better answered by two.
-     */
-    private static final int CALENDAR_DAYS = 365;
 
     /** Enough recent solves to show what somebody is working on, few enough to read. */
     private static final int RECENT_SOLVES = 15;
@@ -62,6 +60,8 @@ public class ProfileService {
     private final SubmissionRepository submissionRepository;
     private final ProblemRepository problemRepository;
     private final ContestRatingChangeRepository ratingChangeRepository;
+    private final DailyChallengeService dailyChallengeService;
+    private final BadgeService badgeService;
 
     /**
      * One person's public profile.
@@ -71,7 +71,7 @@ public class ProfileService {
      */
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
-    public PublicProfileResponse profile(String username) {
+    public PublicProfileResponse profile(String username, Integer year, Locale locale) {
         User user = userRepository
                 .findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> NotFoundException.of("user", username));
@@ -88,8 +88,14 @@ public class ProfileService {
         long submissions = submissionRepository.countByUserId(userId);
         long accepted = submissionRepository.countAcceptedByUserId(userId);
 
-        List<String> activeDays = submissionRepository.findActiveDays(userId);
-        Streaks streaks = streaksOf(activeDays);
+        // Only years with something in them are offered, and a requested year is
+        // honoured only if it is one of them — a picker that can select an empty
+        // grid is a picker that can be wrong. Anything else falls back to the
+        // rolling window, which is what the profile opens on.
+        List<Integer> years = submissionRepository.findActiveYears(userId);
+        Integer selectedYear = year != null && years.contains(year) ? year : null;
+
+        Streaks daily = dailyChallengeService.streakOf(userId);
 
         long solvedPoints = progress.stream()
                 .mapToLong(entry -> entry.solved() * entry.difficulty().rank())
@@ -119,10 +125,12 @@ public class ProfileService {
                 user.hasRating() ? user.getContestsAttended() : null,
                 user.hasRating() ? userRepository.countRatedAbove(user.getRating()) + 1 : null,
                 user.hasRating() ? userRepository.countRated() : null,
-                streaks.current(),
-                streaks.longest(),
-                activeDays.size(),
-                calendarOf(userId),
+                years,
+                calendarOf(userId, selectedYear),
+                languagesOf(userId),
+                badgeService.badgesOf(userId, locale),
+                daily.current(),
+                daily.longest(),
                 ratingHistoryOf(userId),
                 recentSolvesOf(userId));
     }
@@ -150,62 +158,73 @@ public class ProfileService {
     }
 
     /**
-     * A year of daily submission counts.
+     * One window of daily submission counts, plus the numbers above it.
      *
-     * <p>Only the days with something on them. A year is 365 squares of which a
-     * typical profile lights perhaps sixty, and sending three hundred zeroes to
-     * draw nothing would be most of the response.
+     * <p>A calendar year when one is asked for, otherwise the rolling twelve
+     * months ending today — which is the default because it is the honest answer
+     * to "how have they been lately". January the second is a bad day to be told
+     * you have two active days.
+     *
+     * <p>Every counter is derived from the same set of days as the grid, so they
+     * cannot end up describing different spans.
      */
-    private List<ActivityDayResponse> calendarOf(Long userId) {
-        Instant since = Instant.now().minus(Duration.ofDays(CALENDAR_DAYS));
+    private ActivityCalendarResponse calendarOf(Long userId, Integer year) {
+        LocalDate today = DailyChallengeService.today();
+        LocalDate fromDay = year == null ? today.minusYears(1).plusDays(1) : LocalDate.of(year, 1, 1);
+        LocalDate toDay = year == null ? today : LocalDate.of(year, 12, 31);
 
-        return submissionRepository.findActivity(userId, since).stream()
+        Instant from = fromDay.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant until = toDay.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        List<ActivityDayResponse> days = submissionRepository.findActivityBetween(userId, from, until).stream()
                 .map(day -> new ActivityDayResponse(day.getDay(), day.getTotal(), day.getAccepted()))
                 .toList();
+
+        // Newest first, which is the order Streaks walks in.
+        List<LocalDate> dates = days.stream()
+                .map(day -> LocalDate.parse(day.date()))
+                .sorted(Comparator.reverseOrder())
+                .toList();
+
+        return new ActivityCalendarResponse(
+                year,
+                fromDay.toString(),
+                toDay.toString(),
+                days.stream().mapToLong(ActivityDayResponse::submissions).sum(),
+                days.size(),
+                Streaks.of(dates, today).longest(),
+                days);
     }
 
     /**
-     * The current and longest runs of consecutive active days.
+     * The calendar on its own, for the year picker.
      *
-     * <p>Computed from the distinct days rather than from the calendar above,
-     * because a streak worth reporting is often longer than the calendar shows —
-     * capping the query at a year would silently cap the answer at 365.
+     * <p>Its own endpoint so changing the window re-fetches a grid of squares
+     * rather than the whole profile — the contest history and the rating graph
+     * do not change when you look at 2024.
      *
-     * <p>Today not being on the list does not break the current streak. Somebody
-     * looking at their profile over breakfast has not yet had the chance to
-     * submit, and telling them their eighty-day run is over would be both wrong
-     * and, briefly, awful.
-     *
-     * @param days distinct active days, ISO and newest first
+     * @param year null for the rolling twelve months
      */
-    private static Streaks streaksOf(List<String> days) {
-        if (days.isEmpty()) {
-            return new Streaks(0, 0);
-        }
+    @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
+    public ActivityCalendarResponse calendar(String username, Integer year) {
+        User user = userRepository
+                .findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> NotFoundException.of("user", username));
 
-        List<LocalDate> dates = days.stream().map(LocalDate::parse).toList();
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return calendarOf(user.getId(), year);
+    }
 
-        int current = 0;
-        LocalDate newest = dates.getFirst();
-        if (!newest.isBefore(today.minusDays(1))) {
-            current = 1;
-            for (int i = 1; i < dates.size(); i++) {
-                if (!dates.get(i).equals(dates.get(i - 1).minusDays(1))) {
-                    break;
-                }
-                current++;
-            }
-        }
-
-        int longest = 1;
-        int run = 1;
-        for (int i = 1; i < dates.size(); i++) {
-            run = dates.get(i).equals(dates.get(i - 1).minusDays(1)) ? run + 1 : 1;
-            longest = Math.max(longest, run);
-        }
-
-        return new Streaks(current, Math.max(longest, current));
+    /**
+     * Distinct problems solved in each language, most first.
+     *
+     * <p>Empty for somebody who has solved nothing, which the profile renders as
+     * an absent section rather than an empty list with a heading.
+     */
+    private List<LanguageStatResponse> languagesOf(Long userId) {
+        return submissionRepository.countSolvedByLanguage(userId).stream()
+                .map(row -> new LanguageStatResponse(Language.valueOf(row.getLanguage()), row.getSolved()))
+                .toList();
     }
 
     /** Every rating movement, oldest first — the graph and the contest history in one list. */
@@ -292,7 +311,4 @@ public class ProfileService {
 
     /** A page of a global table, with how many rows the whole table has. */
     public record Board(List<LeaderboardRowResponse> rows, long total) {}
-
-    /** @param longest never smaller than the current run, which it contains */
-    private record Streaks(int current, int longest) {}
 }

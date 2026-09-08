@@ -881,6 +881,53 @@ export type RatingPoint = {
 export type RecentSolve = { slug: string; title: string; difficulty: Difficulty; solvedAt: string };
 
 /**
+ * One year of the activity calendar. Mirrors `ActivityCalendarResponse`.
+ *
+ * Scoped to a calendar year rather than a rolling window, because the picker
+ * beside it selects years — the heading, the counters and the grid all have to
+ * describe the same span.
+ */
+export type ActivityCalendar = {
+  /** Absent for the rolling window, which is what a profile opens on. */
+  year?: number;
+  /** ISO `yyyy-MM-dd` bounds of whatever window this is. */
+  from: string;
+  to: string;
+  submissions: number;
+  /** Days in this window with at least one submission. */
+  activeDays: number;
+  /** Longest run of consecutive active days inside this window. */
+  maxStreak: number;
+  /** Only the days with something on them; the rest are drawn empty. */
+  days: ActivityDay[];
+};
+
+/** Mirrors `com.codeforge.domain.BadgeKind`. */
+export type BadgeKind = 'MONTHLY' | 'ANNUAL_50' | 'ANNUAL_100' | 'ANNUAL_365';
+
+/**
+ * One badge on a profile. Mirrors `BadgeResponse`.
+ *
+ * Entirely derived from the days somebody solved the daily challenge, so a
+ * badge can never be granted twice, never go missing, and disappears again if a
+ * rejudge takes the solve away.
+ */
+export type Badge = {
+  kind: BadgeKind;
+  /** Assembled server-side — "Sep 2026", "100 Days 2026". */
+  name: string;
+  /** ISO `yyyy-MM` for a monthly badge. */
+  month?: string;
+  year?: number;
+  earned: boolean;
+  /** 0–1. The month or year in progress carries a real fraction. */
+  progress: number;
+};
+
+/** Distinct problems solved in one language. Mirrors `LanguageStatResponse`. */
+export type LanguageStat = { language: Language; solved: number };
+
+/**
  * Somebody's profile as anyone may see it. Mirrors `PublicProfileResponse`.
  *
  * `rating` is absent for an account that has never sat a rated contest: the
@@ -905,14 +952,56 @@ export type PublicProfile = {
   contestsAttended?: number;
   ratingRank?: number;
   ratingRankTotal?: number;
-  /** Consecutive days up to today with at least one submission. */
-  streak: number;
-  maxStreak: number;
-  activeDays: number;
-  activity: ActivityDay[];
+  /** Years the calendar's picker may offer, newest first, alongside its rolling option. */
+  activeYears: number[];
+  calendar: ActivityCalendar;
+  /** Most-used first; empty for somebody who has solved nothing. */
+  languages: LanguageStat[];
+  badges: Badge[];
+  /**
+   * Consecutive days solving the daily challenge on the day itself.
+   *
+   * A different measurement from `calendar.maxStreak`, which counts any
+   * submission at all — the same split LeetCode makes.
+   */
+  dailyStreak: number;
+  dailyMaxStreak: number;
   ratingHistory: RatingPoint[];
   recentSolves: RecentSolve[];
 };
+
+/* ------------------------------------------------------------------------- */
+/* Daily challenge                                                            */
+/* ------------------------------------------------------------------------- */
+
+/** Today's problem and where the caller stands with it. Mirrors `DailyChallengeResponse`. */
+export type DailyChallenge = {
+  /** ISO `yyyy-MM-dd`, UTC. */
+  date: string;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  tags: string[];
+  /** Whether they solved it *today*. Solving it later does not light this up. */
+  solved: boolean;
+  streak: number;
+  maxStreak: number;
+  /** Until midnight UTC, when the problem turns over and an unsolved day is lost. */
+  secondsUntilRollover: number;
+};
+
+/** One square of the daily-challenge calendar. Mirrors `DailyCalendarDayResponse`. */
+export type DailyCalendarDay = {
+  date: string;
+  /** Absent for a day that has not arrived — its problem is not decided yet. */
+  slug?: string;
+  title?: string;
+  difficulty?: Difficulty;
+  solved: boolean;
+  today: boolean;
+};
+
+export type DailyCalendarMonth = { year: number; month: number; days: DailyCalendarDay[] };
 
 /**
  * One row of a global table. Mirrors `LeaderboardRowResponse`.

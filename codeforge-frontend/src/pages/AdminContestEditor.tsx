@@ -452,7 +452,11 @@ export const AdminContestEditorPage = () => {
             <Button onClick={save} disabled={saving}>
               {t(saving ? 'admin.contest.saving' : contestId === null ? 'admin.contest.create' : 'admin.contest.save')}
             </Button>
-            {contest && contest.participantCount === 0 ? (
+            {/* Offered on exactly the terms the server accepts: nobody has
+                competed, and it is not an announced contest that people could be
+                reading right now. A button that always opens a dialog and then
+                fails is worse than one that is not there. */}
+            {contest && contest.participantCount === 0 && contest.status !== 'RUNNING' ? (
               <Button
                 color="error"
                 variant="text"
@@ -589,7 +593,16 @@ export const AdminContestEditorPage = () => {
             </Stack>
           ) : confirm === 'rejudge' ? (
             <DialogContentText>{t('admin.contest.rejudgeConfirmBody')}</DialogContentText>
-          ) : null}
+          ) : (
+            /* Deleting an announced contest cancels it on people who signed up.
+               They are not a reason to refuse — an author has to be able to
+               withdraw a mistake — but they are a reason not to do it silently. */
+            <DialogContentText>
+              {contest && contest.registrationCount > 0
+                ? t('admin.contest.deleteConfirmRegistered', { count: contest.registrationCount })
+                : t('admin.contest.deleteConfirmBody')}
+            </DialogContentText>
+          )}
         </DialogContent>
         <DialogActions>
           <Button variant="text" onClick={() => { setConfirm(null); }}>

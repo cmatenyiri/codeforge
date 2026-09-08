@@ -37,7 +37,8 @@
     "leaderboard": "Rangliste",
     "adminContests": "Wettbewerbe",
     "adminContestNew": "Neuer Wettbewerb",
-    "adminContestEdit": "Wettbewerb bearbeiten"
+    "adminContestEdit": "Wettbewerb bearbeiten",
+    "adminDaily": "Tagesaufgabe"
   },
   "auth": {
     "login": {
@@ -279,14 +280,23 @@
     "contest": {
       "notFound": "That contest does not exist.",
       "notStarted": "That contest has not started yet.",
-      "started": "That contest has already started.",
+      "started": "Dieser Wettbewerb hat begonnen und es haben sich Leute angemeldet.",
       "ended": "That contest is over.",
       "draft": "That contest is not announced yet.",
       "notEnded": "That contest is still running.",
-      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it."
+      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
+      "running": "Dieser Wettbewerb läuft; es kann gerade jemand mitlesen.",
+      "startsAtPast": "Ein angekündigter Wettbewerb muss in der Zukunft beginnen."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
+    },
+    "daily": {
+      "tooFarAhead": "That date is too far in the future.",
+      "past": "That day is over and keeps the problem it ran with.",
+      "notPublished": "A daily challenge has to be a released problem.",
+      "noProblems": "The catalogue has no problem a daily challenge could use.",
+      "settled": "Heute läuft und behält die Aufgabe, mit der der Tag begonnen hat."
     }
   },
   "avatar": {
@@ -320,7 +330,8 @@
     "admin": "Redaktion",
     "contests": "Wettbewerb",
     "leaderboard": "Rangliste",
-    "adminContests": "Wettbewerbe"
+    "adminContests": "Wettbewerbe",
+    "adminDaily": "Täglich"
   },
   "difficulty": {
     "easy": "Leicht",
@@ -749,7 +760,21 @@
       "rejudgeDone": "Rejudge finished",
       "rejudgeFailed": "Rejudge failed",
       "rejudgeNever": "Never rejudged",
-      "openContest": "Open the contest page"
+      "openContest": "Open the contest page",
+      "deleteConfirmBody": "Der Wettbewerb und seine Aufgaben werden entfernt. Das lässt sich nicht rückgängig machen.",
+      "deleteConfirmRegistered_one": "{{count}} Person hat sich angemeldet. Löschen sagt ihr ab und lässt sich nicht rückgängig machen.",
+      "deleteConfirmRegistered_other": "{{count}} Personen haben sich angemeldet. Löschen sagt ihnen ab und lässt sich nicht rückgängig machen."
+    },
+    "daily": {
+      "title": "Tagesaufgabe",
+      "subtitle": "Die Rotation füllt jeden Tag von selbst. Überschreibe nur, was dir wichtig ist.",
+      "pin": "Aufgabe für diesen Tag wählen",
+      "settled": "Dieser Tag ist vorbei und behält die Aufgabe, mit der er lief",
+      "pickProblem": "Aufgabe",
+      "currently": "Aktuell: {{title}}",
+      "unpin": "Zurück in die Rotation",
+      "rotationHint": "Die Aufgabe eines Tages steht fest, sobald sein Datum beginnt — auch heute — und ändert sich danach nie, damit eine Serie nie durch eine Änderung entsteht oder verschwindet.",
+      "today": "Heute läuft und behält die Aufgabe, mit der der Tag begonnen hat"
     }
   },
   "contest": {
@@ -853,27 +878,36 @@
     "noRatingBody": "Nimm an einem teil, dann erscheint hier eine Wertung.",
     "globalRank": "#{{rank}} von {{total}}",
     "joined": "Dabei seit {{date}}",
-    "streak": "Aktuelle Serie",
-    "maxStreak": "Längste Serie",
-    "days_one": "{{count}} Tag",
-    "days_other": "{{count}} Tage",
-    "activeDays_one": "{{count}} aktiver Tag",
-    "activeDays_other": "{{count}} aktive Tage",
-    "activityTitle": "Aktivität",
-    "activityBody": "{{count}} Einreichungen im vergangenen Jahr",
-    "activityNone": "Keine Einreichungen im vergangenen Jahr",
     "activityDay": "{{count}} Einreichungen am {{date}}",
     "activityDayNone": "Keine Einreichungen am {{date}}",
     "less": "Weniger",
     "more": "Mehr",
-    "ratingTitle": "Wertung",
     "ratingEmpty": "Noch keine Wettbewerbe",
     "contestHistory": "Wettbewerbsverlauf",
     "recentSolves": "Zuletzt gelöst",
     "recentEmpty": "Noch nichts gelöst",
     "notFound": "Kein solcher Nutzer",
     "notFoundBody": "Dieses Profil gibt es nicht.",
-    "viewProfile": "Profil ansehen"
+    "viewProfile": "Profil ansehen",
+    "solvedTitle": "Gelöste Aufgaben",
+    "ratingLabel": "Wertung",
+    "globalRanking": "Globale Platzierung",
+    "attended": "Teilgenommen",
+    "outOf": "von {{total}}",
+    "ofSubmissions": "von {{count}} Einreichungen",
+    "submissionsInYear": "{{count}} Einreichungen in {{year}}",
+    "totalActiveDays": "Aktive Tage insgesamt",
+    "maxStreakLabel": "Längste Serie",
+    "selectYear": "Jahr wählen",
+    "submissionsPastYear": "{{count}} Einreichungen im vergangenen Jahr",
+    "currentWindow": "Aktuell",
+    "languages": "Sprachen",
+    "problemsSolved_one": "{{count}} Aufgabe gelöst",
+    "problemsSolved_other": "{{count}} Aufgaben gelöst",
+    "badges": "Abzeichen",
+    "badgesNone": "Noch keine Abzeichen",
+    "badgesNoneBody": "Löse die Tagesaufgabe an jedem Tag eines Monats, um eines zu erhalten.",
+    "badgeLocked": "{{percent}}% geschafft"
   },
   "leaderboard": {
     "title": "Rangliste",
@@ -890,5 +924,25 @@
     "emptyRating": "Wertungen erscheinen, sobald ein Wettbewerb abgerechnet ist.",
     "emptySolved": "Löse eine Aufgabe und die Tabelle füllt sich.",
     "pointsHint": "Leicht zählt 1, mittel 2, schwer 3."
+  },
+  "daily": {
+    "title": "Tagesaufgabe",
+    "todayTitle": "Aufgabe des Tages",
+    "solve": "Lösen",
+    "solved": "Gelöst",
+    "streak": "{{count}} Tage Serie",
+    "streakNone": "Serie starten",
+    "maxStreak": "Bestwert {{count}}",
+    "resetsIn": "Wechselt in {{time}}",
+    "resetsHint": "Die Aufgabe wechselt um Mitternacht UTC. Später gelöst zählt für die Aufgabe, aber nicht für die Serie.",
+    "calendar": "Tageskalender",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "notYet": "Noch nicht festgelegt",
+    "noneToday": "Heute keine Tagesaufgabe",
+    "noneTodayBody": "Der Katalog hat keine veröffentlichte Aufgabe für die Rotation.",
+    "pin": "Aufgabe für diesen Tag festlegen",
+    "pinned": "Festgelegt",
+    "unpin": "Zurück in die Rotation"
   }
 }

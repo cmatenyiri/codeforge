@@ -7,6 +7,7 @@ import { problemsApi } from '../api/problems-api';
 import { usersApi } from '../api/users-api';
 import { type PageResponse, type ProblemSort, type ProblemSummary, type Tag, type UserStats } from '../api/types';
 import { AppHeader } from '../components/layout/AppHeader';
+import { DailyChallengeCard } from '../components/daily/DailyChallengeCard';
 import { ProblemFilters } from '../components/problems/ProblemFilters';
 import { ProblemProgress } from '../components/problems/ProblemProgress';
 import { ProblemsTable } from '../components/problems/ProblemsTable';
@@ -132,6 +133,10 @@ export const ProblemsPage = () => {
               {t('problems.subtitle')}
             </Typography>
           </Box>
+
+          {/* Above the filters and the list, where LeetCode puts it: the daily
+              challenge is the one thing on this page that expires. */}
+          <DailyChallengeCard />
 
           <ProblemProgress stats={stats} />
 

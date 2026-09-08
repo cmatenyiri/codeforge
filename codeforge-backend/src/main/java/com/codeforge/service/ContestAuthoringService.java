@@ -174,6 +174,14 @@ public class ContestAuthoringService {
 
     private void rebuildProblems(Contest contest, List<ContestProblemPayload> payloads) {
         contest.getProblems().clear();
+        // Forced out before the new rows are added, and this is load-bearing:
+        // within one flush Hibernate orders inserts ahead of deletes, so a
+        // rebuild that puts a question back at the position it already occupied
+        // would insert the replacement while the original still held
+        // (contest_id, position) — a duplicate-key failure on every save after
+        // the first. Splitting it into two flushes emits the deletes on their
+        // own, and the inserts then land on a clear table.
+        contestProblemRepository.flush();
 
         for (int position = 0; position < payloads.size(); position++) {
             ContestProblemPayload payload = payloads.get(position);
@@ -211,9 +219,39 @@ public class ContestAuthoringService {
     public void setPublished(Long id, boolean published) {
         Contest contest = get(id);
 
-        if (!published && contest.hasStarted(Instant.now())) {
-            throw new BusinessRuleException(
-                    "error.contest.started", "A contest that has started cannot be unannounced");
+        if (published) {
+            // The save path refuses announcing into the past; this toggle has to
+            // refuse it too, or the rule is only as strong as the route somebody
+            // happens to take. A draft may legitimately sit on a past start time
+            // — it is nobody's business until it is announced — so publishing it
+            // is the moment that becomes a claim about a contest that ran, with
+            // problems sealed from whenever the first read lands.
+            //
+            // A contest that has already sealed is exempt: it genuinely did run,
+            // and re-announcing one that was withdrawn is restoring a record
+            // rather than inventing one.
+            if (!contest.isSealed() && contest.hasStarted(Instant.now())) {
+                throw new BusinessRuleException(
+                        "error.contest.startsAtPast", "An announced contest has to start in the future");
+            }
+        }
+
+        if (!published) {
+            // Withdrawn on the same principle as deletion, one step softer:
+            // refused once anybody has invested something in it. A contest people
+            // sat is their record; a contest people signed up for is a promise
+            // already made. Anything else — including one that has slipped into
+            // its window with nobody registered and nobody competing — can be
+            // taken back, and that is the only way out of an accidental live
+            // contest short of waiting for the clock.
+            if (participationRepository.countByContestId(id) > 0) {
+                throw new BusinessRuleException(
+                        "error.contest.hasParticipants", "People have competed in this contest");
+            }
+            if (contest.hasStarted(Instant.now()) && registrationRepository.countByContestId(id) > 0) {
+                throw new BusinessRuleException(
+                        "error.contest.started", "That contest has started and people have registered for it");
+            }
         }
         contest.setPublished(published);
     }
@@ -225,16 +263,50 @@ public class ContestAuthoringService {
      * their history and, if it was rated, part of the arithmetic behind their
      * current rating — deleting it would leave a rating nothing explains. The
      * reversible alternative is to withdraw the rating and say why.
+     *
+     * <p>Registrations do not block it. An announced contest has to be
+     * cancellable — an author who scheduled the wrong thing must be able to take
+     * it back — so the count is surfaced to whoever is confirming rather than
+     * used to refuse them.
+     *
+     * <p>Everything else that points at the contest is cleared first, and the
+     * two cases are cleared differently on purpose. Registrations are deleted:
+     * an intention to sit something has no meaning once the thing is gone.
+     * Submissions are merely unlinked: an attempt is a fact about the person who
+     * made it, it still counts as a solve, and only its attribution to the
+     * contest disappears. The questions go with the contest through the
+     * cascade on the association.
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
         Contest contest = get(id);
 
+        // The question is not "has anyone registered" but "can anyone see this
+        // right now", and those are different: reading a contest's problems only
+        // requires that it has started, so an unregistered visitor can be part
+        // way through Q1 while the registration count still reads zero.
+        //
+        // Announced-and-running is therefore the refusal, whatever the counts.
+        // The published check is load-bearing too — isRunning is pure clock
+        // arithmetic and says nothing about visibility, so without it a draft
+        // sitting inside its own window would be refused for the sake of an
+        // audience that cannot reach it.
+        //
+        // That leaves an escape from the accidental live contest: unannounce it
+        // first, which setPublished allows precisely while nobody is invested,
+        // and then delete the draft.
+        if (contest.isPublished() && contest.isRunning(Instant.now())) {
+            throw new BusinessRuleException(
+                    "error.contest.running", "That contest is running; people can be reading it right now");
+        }
         if (participationRepository.countByContestId(id) > 0) {
             throw new BusinessRuleException(
                     "error.contest.hasParticipants", "People have competed in this contest");
         }
+
+        registrationRepository.deleteByContestId(id);
+        submissionRepository.detachFromContest(id);
         contestRepository.delete(contest);
     }
 
@@ -303,6 +375,30 @@ public class ContestAuthoringService {
         }
     }
 
+/**
+     * Refuses a rejudge that must not start, before anything is queued.
+     *
+     * <p>Separate from the check inside {@link #resealAndCollect} on purpose,
+     * and both are kept. The background job cannot report a refusal to the
+     * caller — it runs after the response has gone, so a guard that only lives
+     * there turns "you may not do this" into a 200 followed by a silent FAILED
+     * state that somebody has to go looking for. This one runs on the request
+     * thread and answers with a 409; the other stays as the guarantee that the
+     * work itself cannot proceed, however it was reached.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void requireRejudgeable(Long id) {
+        Contest contest = contestRepository
+                .findById(id)
+                .orElseThrow(() -> NotFoundException.of("contest", id));
+
+        if (!contest.hasEnded(Instant.now())) {
+            throw new BusinessRuleException(
+                    "error.contest.notEnded", "That contest is still running");
+        }
+    }
+
     // ── Rejudge bookkeeping ───────────────────────────────────────────────
     // Small transactional writes, called by ContestRejudgeService from a
     // background thread. They live here rather than there because a rejudge must
@@ -354,6 +450,18 @@ public class ContestAuthoringService {
         Contest contest = contestRepository
                 .findWithProblems(contestId)
                 .orElseThrow(() -> NotFoundException.of("contest", contestId));
+
+        // Refused before the contest is over, and this is the guard that matters
+        // most in the class: re-sealing replaces the frozen problems with the
+        // catalogue as it stands now, so running it mid-contest would change the
+        // questions and the test cases under a field that is sitting them — the
+        // exact failure the snapshots exist to make impossible. The authoring
+        // screen only offers it on a finished contest, but a screen is not a
+        // rule.
+        if (!contest.hasEnded(Instant.now())) {
+            throw new BusinessRuleException(
+                    "error.contest.notEnded", "That contest is still running");
+        }
 
         contestService.snapshotProblems(contest);
 

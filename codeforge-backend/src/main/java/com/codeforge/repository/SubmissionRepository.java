@@ -9,6 +9,7 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -158,6 +159,25 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             """)
     long countContestSubmissions(@Param("contestId") Long contestId);
 
+/**
+     * Unlinks a contest's submissions from it, without touching the submissions.
+     *
+     * <p>For a contest being deleted. The attempts themselves are facts about
+     * the people who made them — they stay in the history and still count as
+     * solves — but their attribution to a contest that no longer exists does
+     * not. Only reachable when nobody competed, since a contest with
+     * participations cannot be deleted at all; what this catches is practice on
+     * a finished contest's problems, which sets the link without creating a
+     * participation.
+     */
+    @Modifying
+    @Query("""
+            update Submission s
+            set s.contest = null, s.contestProblem = null, s.countedInContest = false, s.contestSeconds = null
+            where s.contest.id = :contestId
+            """)
+    void detachFromContest(@Param("contestId") Long contestId);
+
     // ── Activity calendar ─────────────────────────────────────────────────
 
     /**
@@ -180,11 +200,30 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
                            count(*) as total,
                            sum(case when s.status = 'ACCEPTED' then 1 else 0 end) as accepted
                     from submissions s
-                    where s.user_id = :userId and s.created_at >= :since
+                    where s.user_id = :userId
+                      and s.created_at >= :from and s.created_at < :until
                     group by day
                     order by day asc
                     """)
-    List<ActivityDay> findActivity(@Param("userId") Long userId, @Param("since") Instant since);
+    List<ActivityDay> findActivityBetween(
+            @Param("userId") Long userId, @Param("from") Instant from, @Param("until") Instant until);
+
+    /**
+     * Every calendar year this user has submitted anything in, newest first.
+     *
+     * <p>What fills the calendar's year picker. Only years with something in
+     * them are offered — a dropdown listing years somebody was not yet a member
+     * for is a dropdown of empty grids.
+     */
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+                    select distinct year(s.created_at)
+                    from submissions s where s.user_id = :userId
+                    order by 1 desc
+                    """)
+    List<Integer> findActiveYears(@Param("userId") Long userId);
 
     /**
      * Distinct days this user has ever submitted on, newest first.
@@ -247,7 +286,37 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
                     """)
     List<RecentSolve> findRecentSolves(@Param("userId") Long userId, @Param("limit") int limit);
 
-    /** Projection for {@link #findActivity}. */
+    /**
+     * Distinct problems solved in each language, most first.
+     *
+     * <p>A problem solved in two languages counts for both, which is the only
+     * reading that makes the list useful: it answers "what do they write in?",
+     * not "how do their solves divide up". Counted over the live catalogue for
+     * the same reason every other solved count is — a retired problem stops
+     * counting for everybody at once.
+     */
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+                    select s.language as language, count(distinct s.problem_id) as solved
+                    from submissions s
+                    join problems p on p.id = s.problem_id
+                    where s.user_id = :userId and s.status = 'ACCEPTED'
+                      and p.archived = false and p.published = true
+                    group by s.language
+                    order by solved desc, s.language asc
+                    """)
+    List<LanguageCount> countSolvedByLanguage(@Param("userId") Long userId);
+
+    /** Projection for {@link #countSolvedByLanguage}. */
+    interface LanguageCount {
+        String getLanguage();
+
+        long getSolved();
+    }
+
+    /** Projection for {@link #findActivityBetween}. */
     interface ActivityDay {
         /** ISO {@code yyyy-MM-dd}, in UTC. */
         String getDay();

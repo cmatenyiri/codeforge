@@ -138,6 +138,14 @@ export const routes: AppRoute[] = [
     access: 'authenticated',
   },
   {
+    path: paths.adminDaily,
+    component: lazy(() =>
+      import('../pages/AdminDailyChallenge').then((module) => ({ default: module.AdminDailyChallengePage })),
+    ),
+    titleKey: 'pageTitle.adminDaily',
+    access: 'admin',
+  },
+  {
     // Declared before the edit route only for readability — the router matches
     // on specificity, and "/admin/contests/new" is more specific than the
     // template it would otherwise fall into.

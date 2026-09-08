@@ -161,6 +161,25 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
             @Param("userId") Long userId,
             @Param("excludedIds") Collection<Long> excludedIds);
 
+/**
+     * Problems the daily challenge may draw, oldest first.
+     *
+     * <p>The same bar an interview slot has to clear: released, not retired, and
+     * actually solvable. A daily challenge nobody can run is a broken day for
+     * everybody, and unlike a bad interview draw it cannot be reshuffled — the
+     * date's problem is fixed the moment it is written down.
+     */
+    @Query("""
+            select p.id from Problem p
+            where p.archived = false
+              and p.published = true
+              and p.functionName is not null
+              and p.returnType is not null
+              and exists (select 1 from TestCase tc where tc.problem = p)
+            order by p.id asc
+            """)
+    List<Long> findDailyCandidates();
+
     /**
      * The authoring catalogue: every problem, whatever its state.
      *

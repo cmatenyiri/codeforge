@@ -37,7 +37,8 @@
     "leaderboard": "Classement",
     "adminContests": "Concours",
     "adminContestNew": "Nouveau concours",
-    "adminContestEdit": "Modifier le concours"
+    "adminContestEdit": "Modifier le concours",
+    "adminDaily": "Défi du jour"
   },
   "auth": {
     "login": {
@@ -279,14 +280,23 @@
     "contest": {
       "notFound": "That contest does not exist.",
       "notStarted": "That contest has not started yet.",
-      "started": "That contest has already started.",
+      "started": "Ce concours a commencé et des personnes s'y sont inscrites.",
       "ended": "That contest is over.",
       "draft": "That contest is not announced yet.",
       "notEnded": "That contest is still running.",
-      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it."
+      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
+      "running": "Ce concours est en cours ; des gens peuvent être en train de le lire.",
+      "startsAtPast": "Un concours annoncé doit commencer dans le futur."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
+    },
+    "daily": {
+      "tooFarAhead": "That date is too far in the future.",
+      "past": "That day is over and keeps the problem it ran with.",
+      "notPublished": "A daily challenge has to be a released problem.",
+      "noProblems": "The catalogue has no problem a daily challenge could use.",
+      "settled": "Aujourd'hui est en cours et garde le problème avec lequel il a commencé."
     }
   },
   "avatar": {
@@ -320,7 +330,8 @@
     "admin": "Rédaction",
     "contests": "Concours",
     "leaderboard": "Classement",
-    "adminContests": "Concours"
+    "adminContests": "Concours",
+    "adminDaily": "Quotidien"
   },
   "difficulty": {
     "easy": "Facile",
@@ -749,7 +760,21 @@
       "rejudgeDone": "Rejudge finished",
       "rejudgeFailed": "Rejudge failed",
       "rejudgeNever": "Never rejudged",
-      "openContest": "Open the contest page"
+      "openContest": "Open the contest page",
+      "deleteConfirmBody": "Le concours et ses problèmes sont supprimés. C'est irréversible.",
+      "deleteConfirmRegistered_one": "{{count}} personne s'est inscrite. La suppression l'annule pour elle, et c'est irréversible.",
+      "deleteConfirmRegistered_other": "{{count}} personnes se sont inscrites. La suppression l'annule pour elles, et c'est irréversible."
+    },
+    "daily": {
+      "title": "Défi du jour",
+      "subtitle": "La rotation remplit chaque jour toute seule. Ne remplacez que ce qui compte.",
+      "pin": "Choisir le problème de ce jour",
+      "settled": "Ce jour est terminé et garde le problème avec lequel il s'est déroulé",
+      "pickProblem": "Problème",
+      "currently": "Actuellement : {{title}}",
+      "unpin": "Rendre à la rotation",
+      "rotationHint": "Le problème d'un jour est figé dès que sa date commence — aujourd'hui compris — et ne change jamais ensuite, pour qu'une série ne puisse être accordée ni retirée par une modification.",
+      "today": "Aujourd'hui est en cours et garde le problème avec lequel il a commencé"
     }
   },
   "contest": {
@@ -853,27 +878,36 @@
     "noRatingBody": "Participez à un concours et un classement apparaîtra ici.",
     "globalRank": "#{{rank}} sur {{total}}",
     "joined": "Inscrit le {{date}}",
-    "streak": "Série en cours",
-    "maxStreak": "Plus longue série",
-    "days_one": "{{count}} jour",
-    "days_other": "{{count}} jours",
-    "activeDays_one": "{{count}} jour actif",
-    "activeDays_other": "{{count}} jours actifs",
-    "activityTitle": "Activité",
-    "activityBody": "{{count}} soumissions sur l'année écoulée",
-    "activityNone": "Aucune soumission sur l'année écoulée",
     "activityDay": "{{count}} soumissions le {{date}}",
     "activityDayNone": "Aucune soumission le {{date}}",
     "less": "Moins",
     "more": "Plus",
-    "ratingTitle": "Classement",
     "ratingEmpty": "Aucun concours",
     "contestHistory": "Historique des concours",
     "recentSolves": "Résolus récemment",
     "recentEmpty": "Rien de résolu",
     "notFound": "Utilisateur introuvable",
     "notFoundBody": "Ce profil n'existe pas.",
-    "viewProfile": "Voir le profil"
+    "viewProfile": "Voir le profil",
+    "solvedTitle": "Problèmes résolus",
+    "ratingLabel": "Classement",
+    "globalRanking": "Rang mondial",
+    "attended": "Participations",
+    "outOf": "sur {{total}}",
+    "ofSubmissions": "sur {{count}} soumissions",
+    "submissionsInYear": "{{count}} soumissions en {{year}}",
+    "totalActiveDays": "Jours actifs au total",
+    "maxStreakLabel": "Plus longue série",
+    "selectYear": "Choisir l'année",
+    "submissionsPastYear": "{{count}} soumissions sur l'année écoulée",
+    "currentWindow": "Actuel",
+    "languages": "Langages",
+    "problemsSolved_one": "{{count}} problème résolu",
+    "problemsSolved_other": "{{count}} problèmes résolus",
+    "badges": "Badges",
+    "badgesNone": "Aucun badge",
+    "badgesNoneBody": "Résolvez le défi du jour chaque jour d'un mois pour en obtenir un.",
+    "badgeLocked": "{{percent}}% atteint"
   },
   "leaderboard": {
     "title": "Classement",
@@ -890,5 +924,25 @@
     "emptyRating": "Les classements apparaissent une fois un concours réglé.",
     "emptySolved": "Résolvez un problème et le tableau se remplit.",
     "pointsHint": "Facile compte 1, moyen 2, difficile 3."
+  },
+  "daily": {
+    "title": "Défi du jour",
+    "todayTitle": "Problème du jour",
+    "solve": "Résoudre",
+    "solved": "Résolu",
+    "streak": "Série de {{count}} jours",
+    "streakNone": "Démarrer une série",
+    "maxStreak": "Record {{count}}",
+    "resetsIn": "Change dans {{time}}",
+    "resetsHint": "Le problème change à minuit UTC. Le résoudre après compte pour le problème, mais pas pour la série.",
+    "calendar": "Calendrier quotidien",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "notYet": "Pas encore décidé",
+    "noneToday": "Aucun défi aujourd'hui",
+    "noneTodayBody": "Le catalogue n'a aucun problème publié utilisable par la rotation.",
+    "pin": "Fixer un problème pour ce jour",
+    "pinned": "Fixé",
+    "unpin": "Rendre à la rotation"
   }
 }

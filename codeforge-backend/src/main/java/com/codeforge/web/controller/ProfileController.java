@@ -3,8 +3,10 @@ package com.codeforge.web.controller;
 import com.codeforge.service.ProfileService;
 import com.codeforge.service.ProfileService.Board;
 import com.codeforge.web.dto.common.PageResponse;
+import com.codeforge.web.dto.profile.ActivityCalendarResponse;
 import com.codeforge.web.dto.profile.LeaderboardRowResponse;
 import com.codeforge.web.dto.profile.PublicProfileResponse;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,10 +34,35 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    /** One person's public profile: solves, contests, rating and a year of activity. */
+    /**
+     * One person's public profile: solves, contests, rating and a year of
+     * activity.
+     *
+     * @param year which calendar year the heatmap should show; omitted means the
+     *     rolling twelve months, which is what a profile opens on
+     * @param locale the reader's, so a badge reads "Sep 2026" in their language
+     */
     @GetMapping("/profiles/{username}")
-    public ResponseEntity<PublicProfileResponse> profile(@PathVariable String username) {
-        return ResponseEntity.ok(profileService.profile(username));
+    public ResponseEntity<PublicProfileResponse> profile(
+            @PathVariable String username,
+            @RequestParam(required = false) Integer year,
+            Locale locale) {
+
+        return ResponseEntity.ok(profileService.profile(username, year, locale));
+    }
+
+    /**
+     * One year of somebody's activity calendar.
+     *
+     * <p>Separate from the profile so switching years re-fetches a grid rather
+     * than the whole page — the rating graph and the contest history do not
+     * change when you look at 2024.
+     */
+    @GetMapping("/profiles/{username}/calendar")
+    public ResponseEntity<ActivityCalendarResponse> calendar(
+            @PathVariable String username, @RequestParam(required = false) Integer year) {
+
+        return ResponseEntity.ok(profileService.calendar(username, year));
     }
 
     /** The rating table — only people who have actually competed. */

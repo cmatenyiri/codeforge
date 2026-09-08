@@ -1,14 +1,30 @@
-import { Box, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RatingPoint } from '../../api/types';
 import { formatRating } from '../contest/contest';
 
 const HEIGHT = 160;
-const PADDING = { top: 12, right: 8, bottom: 20, left: 40 };
 
 /**
- * The rating over time.
+ * Inset around the plot, in viewBox units.
+ *
+ * <p>The viewBox is 100 units wide and stretched to the panel, so a unit here is
+ * a percent of the width — which is why `left` is 2 and not 40. It once was 40,
+ * reserving room for y-axis labels that ended up rendered outside the SVG
+ * instead (see below), and the reservation quietly ate two-fifths of the panel.
+ * Top and bottom are real pixels, since the vertical axis is not scaled.
+ */
+const PADDING = { top: 12, right: 2, bottom: 20, left: 2 };
+
+/**
+ * The rating over time, drawn inside the Contest Rating panel.
+ *
+ * <p>No card of its own: the graph and the three numbers above it are one
+ * statement about one thing, and splitting them into two panels made the reader
+ * join them up by eye. It renders nothing at all when there is no history —
+ * the panel handles that case, because "no rating yet" is a sentence about the
+ * account rather than about the chart.
  *
  * <p>Inline SVG rather than a charting library: it is one line over at most a
  * few hundred points, and the whole thing is fewer lines of code than the import
@@ -16,7 +32,7 @@ const PADDING = { top: 12, right: 8, bottom: 20, left: 40 };
  * so it follows the light/dark switch without a second palette to maintain.
  */
 export const RatingGraph = ({ history }: { history: RatingPoint[] }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
 
   const geometry = useMemo(() => {
     if (history.length === 0) {
@@ -51,98 +67,90 @@ export const RatingGraph = ({ history }: { history: RatingPoint[] }) => {
     };
   }, [history]);
 
+  if (geometry === null) {
+    return null;
+  }
+
   return (
-    <Paper variant="outlined" sx={{ p: 2.5 }}>
-      <Typography variant="h4" sx={{ mb: 1.5 }}>
-        {t('publicProfile.ratingTitle')}
-      </Typography>
-
-      {geometry === null ? (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {t('publicProfile.ratingEmpty')}
-        </Typography>
-      ) : (
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            component="svg"
-            viewBox={`0 0 100 ${HEIGHT}`}
-            preserveAspectRatio="none"
-            sx={{ width: '100%', height: HEIGHT, display: 'block', overflow: 'visible' }}
-          >
-            {[geometry.high, (geometry.high + geometry.low) / 2, geometry.low].map((value) => (
-              <g key={value}>
-                <line
-                  x1={PADDING.left}
-                  x2={100 - PADDING.right}
-                  y1={geometry.y(value)}
-                  y2={geometry.y(value)}
-                  stroke="currentColor"
-                  strokeWidth={0.15}
-                  opacity={0.25}
-                />
-                {/* Non-scaling text inside a stretched viewBox would be squashed
-                    horizontally, so the labels sit outside the SVG below. */}
-              </g>
-            ))}
-
-            <path
-              d={geometry.path}
-              fill="none"
+    <Box sx={{ position: 'relative', mt: 2 }}>
+      <Box
+        component="svg"
+        viewBox={`0 0 100 ${HEIGHT}`}
+        preserveAspectRatio="none"
+        sx={{ width: '100%', height: HEIGHT, display: 'block', overflow: 'visible' }}
+      >
+        {[geometry.high, (geometry.high + geometry.low) / 2, geometry.low].map((value) => (
+          <g key={value}>
+            <line
+              x1={PADDING.left}
+              x2={100 - PADDING.right}
+              y1={geometry.y(value)}
+              y2={geometry.y(value)}
               stroke="currentColor"
-              strokeWidth={0.4}
-              vectorEffect="non-scaling-stroke"
-              style={{ color: 'var(--mui-palette-primary-main)' }}
+              strokeWidth={0.15}
+              opacity={0.25}
             />
-          </Box>
+            {/* Non-scaling text inside a stretched viewBox would be squashed
+                horizontally, so the labels sit outside the SVG below. */}
+          </g>
+        ))}
 
-          {/* The points are absolutely positioned rather than drawn as SVG
-              circles: a stretched viewBox would turn them into ellipses, and
-              they need real hover targets for the tooltip anyway. */}
-          {geometry.points.slice(1).map((point, index) => {
-            const entry = history[index]!;
+        <path
+          d={geometry.path}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={0.4}
+          vectorEffect="non-scaling-stroke"
+          style={{ color: 'var(--mui-palette-primary-main)' }}
+        />
+      </Box>
 
-            return (
-              <Tooltip
-                key={entry.contestSlug}
-                title={`${entry.contestTitle} · #${entry.rank}/${entry.participantCount} · ${formatRating(entry.ratingAfter)}`}
-              >
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    left: `${point.x}%`,
-                    top: point.y,
-                    width: 8,
-                    height: 8,
-                    ml: '-4px',
-                    mt: '-4px',
-                    borderRadius: '50%',
-                    backgroundColor: entry.delta >= 0 ? 'verdict.accepted' : 'verdict.wrongAnswer',
-                    border: 2,
-                    borderColor: 'surface.paper',
-                  }}
-                />
-              </Tooltip>
-            );
-          })}
+      {/* The points are absolutely positioned rather than drawn as SVG
+          circles: a stretched viewBox would turn them into ellipses, and
+          they need real hover targets for the tooltip anyway. */}
+      {geometry.points.slice(1).map((point, index) => {
+        const entry = history[index]!;
 
-          <Stack
-            direction="row"
-            sx={{ justifyContent: 'space-between', mt: 0.5, color: 'text.disabled' }}
+        return (
+          <Tooltip
+            key={entry.contestSlug}
+            title={`${entry.contestTitle} · #${entry.rank}/${entry.participantCount} · ${formatRating(entry.ratingAfter)}`}
           >
-            <Typography variant="caption">
-              {new Date(history[0]!.startsAt).toLocaleDateString(i18n.language, { dateStyle: 'medium' })}
-            </Typography>
-            <Typography variant="caption">
-              {formatRating(geometry.low)} – {formatRating(geometry.high)}
-            </Typography>
-            <Typography variant="caption">
-              {new Date(history[history.length - 1]!.startsAt).toLocaleDateString(i18n.language, {
-                dateStyle: 'medium',
-              })}
-            </Typography>
-          </Stack>
-        </Box>
-      )}
-    </Paper>
+            <Box
+              sx={{
+                position: 'absolute',
+                left: `${point.x}%`,
+                top: point.y,
+                width: 8,
+                height: 8,
+                ml: '-4px',
+                mt: '-4px',
+                borderRadius: '50%',
+                backgroundColor: entry.delta >= 0 ? 'verdict.accepted' : 'verdict.wrongAnswer',
+                border: 2,
+                borderColor: 'surface.paper',
+              }}
+            />
+          </Tooltip>
+        );
+      })}
+
+      <Stack
+        direction="row"
+        sx={{ justifyContent: 'space-between', mt: 0.5, color: 'text.disabled' }}
+      >
+        <Typography variant="caption">
+          {new Date(history[0]!.startsAt).toLocaleDateString(i18n.language, { dateStyle: 'medium' })}
+        </Typography>
+        <Typography variant="caption">
+          {formatRating(geometry.low)} – {formatRating(geometry.high)}
+        </Typography>
+        <Typography variant="caption">
+          {new Date(history[history.length - 1]!.startsAt).toLocaleDateString(i18n.language, {
+            dateStyle: 'medium',
+          })}
+        </Typography>
+      </Stack>
+    </Box>
   );
 };

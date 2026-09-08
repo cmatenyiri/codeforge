@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { type LeaderboardRow, type PageResponse, type PublicProfile } from './types';
+import { type ActivityCalendar, type LeaderboardRow, type PageResponse, type PublicProfile } from './types';
 
 /**
  * Public profiles and the two global tables.
@@ -8,8 +8,26 @@ import { type LeaderboardRow, type PageResponse, type PublicProfile } from './ty
  * and share, and `/u/ada` is the only form of it worth having.
  */
 export const profilesApi = {
-  async get(username: string): Promise<PublicProfile> {
-    const { data } = await apiClient.get<PublicProfile>(`/api/profiles/${username}`);
+  async get(username: string, year?: number): Promise<PublicProfile> {
+    const { data } = await apiClient.get<PublicProfile>(`/api/profiles/${username}`, {
+      params: year === undefined ? undefined : { year },
+    });
+    return data;
+  },
+
+  /**
+   * One window of the activity calendar.
+   *
+   * <p>Its own call so changing the window re-fetches a grid of squares rather
+   * than the whole profile — the rating graph and the contest history do not
+   * change when you look at 2024.
+   *
+   * @param year omit for the rolling twelve months
+   */
+  async calendar(username: string, year?: number): Promise<ActivityCalendar> {
+    const { data } = await apiClient.get<ActivityCalendar>(`/api/profiles/${username}/calendar`, {
+      params: year === undefined ? undefined : { year },
+    });
     return data;
   },
 

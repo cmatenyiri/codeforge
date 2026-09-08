@@ -37,7 +37,8 @@
     "leaderboard": "Leaderboard",
     "adminContests": "Contests",
     "adminContestNew": "New contest",
-    "adminContestEdit": "Edit contest"
+    "adminContestEdit": "Edit contest",
+    "adminDaily": "Daily challenge"
   },
   "auth": {
     "login": {
@@ -279,14 +280,23 @@
     "contest": {
       "notFound": "That contest does not exist.",
       "notStarted": "That contest has not started yet.",
-      "started": "That contest has already started.",
+      "started": "That contest has started and people have registered for it.",
       "ended": "That contest is over.",
       "draft": "That contest is not announced yet.",
       "notEnded": "That contest is still running.",
-      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it."
+      "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
+      "running": "That contest is running; people can be reading it right now.",
+      "startsAtPast": "An announced contest has to start in the future."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
+    },
+    "daily": {
+      "tooFarAhead": "That date is too far in the future.",
+      "past": "That day is over and keeps the problem it ran with.",
+      "notPublished": "A daily challenge has to be a released problem.",
+      "noProblems": "The catalogue has no problem a daily challenge could use.",
+      "settled": "Today is under way and keeps the problem it started with."
     }
   },
   "avatar": {
@@ -320,7 +330,8 @@
     "admin": "Authoring",
     "contests": "Contest",
     "leaderboard": "Ranking",
-    "adminContests": "Contests"
+    "adminContests": "Contests",
+    "adminDaily": "Daily"
   },
   "difficulty": {
     "easy": "Easy",
@@ -749,7 +760,21 @@
       "rejudgeDone": "Rejudge finished",
       "rejudgeFailed": "Rejudge failed",
       "rejudgeNever": "Never rejudged",
-      "openContest": "Open the contest page"
+      "openContest": "Open the contest page",
+      "deleteConfirmBody": "The contest and its questions are removed. This cannot be undone.",
+      "deleteConfirmRegistered_one": "{{count}} person has registered for this contest. Deleting it cancels on them, and cannot be undone.",
+      "deleteConfirmRegistered_other": "{{count}} people have registered for this contest. Deleting it cancels on them, and cannot be undone."
+    },
+    "daily": {
+      "title": "Daily challenge",
+      "subtitle": "The rotation fills every day on its own. Override only the ones you care about.",
+      "pin": "Choose the problem for this day",
+      "settled": "This day is over and keeps the problem it ran with",
+      "pickProblem": "Problem",
+      "currently": "Currently: {{title}}",
+      "unpin": "Return to the rotation",
+      "rotationHint": "A day's problem is fixed the moment its date arrives — today included — and never changes afterwards, so a streak can never be granted or revoked by an edit.",
+      "today": "Today is under way and keeps the problem it started with"
     }
   },
   "contest": {
@@ -853,27 +878,36 @@
     "noRatingBody": "Compete in one and a rating shows up here.",
     "globalRank": "#{{rank}} of {{total}}",
     "joined": "Joined {{date}}",
-    "streak": "Current streak",
-    "maxStreak": "Longest streak",
-    "days_one": "{{count}} day",
-    "days_other": "{{count}} days",
-    "activeDays_one": "{{count}} active day",
-    "activeDays_other": "{{count}} active days",
-    "activityTitle": "Activity",
-    "activityBody": "{{count}} submissions in the past year",
-    "activityNone": "No submissions in the past year",
     "activityDay": "{{count}} submissions on {{date}}",
     "activityDayNone": "No submissions on {{date}}",
     "less": "Less",
     "more": "More",
-    "ratingTitle": "Rating",
     "ratingEmpty": "No contests yet",
     "contestHistory": "Contest history",
     "recentSolves": "Recent solves",
     "recentEmpty": "Nothing solved yet",
     "notFound": "No such user",
     "notFoundBody": "That profile does not exist.",
-    "viewProfile": "View profile"
+    "viewProfile": "View profile",
+    "solvedTitle": "Solved problems",
+    "ratingLabel": "Rating",
+    "globalRanking": "Global ranking",
+    "attended": "Attended",
+    "outOf": "of {{total}}",
+    "ofSubmissions": "of {{count}} submissions",
+    "submissionsInYear": "{{count}} submissions in {{year}}",
+    "totalActiveDays": "Total active days",
+    "maxStreakLabel": "Max streak",
+    "selectYear": "Select year",
+    "submissionsPastYear": "{{count}} submissions in the past year",
+    "currentWindow": "Current",
+    "languages": "Languages",
+    "problemsSolved_one": "{{count}} problem solved",
+    "problemsSolved_other": "{{count}} problems solved",
+    "badges": "Badges",
+    "badgesNone": "No badges yet",
+    "badgesNoneBody": "Solve the daily challenge every day of a month to earn one.",
+    "badgeLocked": "{{percent}}% there"
   },
   "leaderboard": {
     "title": "Ranking",
@@ -890,5 +924,25 @@
     "emptyRating": "Ratings appear once a contest has been settled.",
     "emptySolved": "Solve a problem and the table fills up.",
     "pointsHint": "Easy problems count 1, medium 2, hard 3."
+  },
+  "daily": {
+    "title": "Daily challenge",
+    "todayTitle": "Today's problem",
+    "solve": "Solve",
+    "solved": "Solved",
+    "streak": "{{count}} day streak",
+    "streakNone": "Start a streak",
+    "maxStreak": "Best {{count}}",
+    "resetsIn": "Resets in {{time}}",
+    "resetsHint": "The problem changes at midnight UTC. Solving it after that counts for the problem, but not for the streak.",
+    "calendar": "Daily calendar",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "notYet": "Not yet decided",
+    "noneToday": "No daily challenge today",
+    "noneTodayBody": "The catalogue has no released problem the rotation could use.",
+    "pin": "Pin a problem to this day",
+    "pinned": "Pinned",
+    "unpin": "Return to the rotation"
   }
 }

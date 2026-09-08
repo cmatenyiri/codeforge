@@ -166,6 +166,11 @@ public class AdminContestController {
      */
     @PostMapping("/{id}/rejudge")
     public ResponseEntity<AdminContestDetailResponse> rejudge(@PathVariable Long id) {
+        // Checked here, on the request thread, so a refusal reaches the caller as
+        // a 409. The worker enforces it again, but it runs after the response
+        // has gone and can only record a failure nobody asked to see.
+        authoringService.requireRejudgeable(id);
+
         // Marked before the job is queued, so a screen that polls immediately
         // sees RUNNING rather than a state indistinguishable from nothing having
         // happened. The worker re-marks it with the real total once it knows how
