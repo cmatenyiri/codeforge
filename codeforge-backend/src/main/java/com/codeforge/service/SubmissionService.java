@@ -91,6 +91,14 @@ public class SubmissionService {
         return submissionRepository.findForUserAndProblem(SecurityUtils.requireCurrentUserId(), slug, pageable);
     }
 
+/** The caller's history for one contest question — the arena's "Submissions" tab. */
+    @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
+    public Page<Submission> listMineForContestProblem(Long contestProblemId, Pageable pageable) {
+        return submissionRepository.findForUserAndContestProblem(
+                SecurityUtils.requireCurrentUserId(), contestProblemId, pageable);
+    }
+
     /**
      * One submission of the caller's, with its source.
      *
@@ -141,6 +149,66 @@ public class SubmissionService {
                         Long::sum,
                         () -> new EnumMap<>(Difficulty.class)));
     }
+
+/**
+     * Writes a re-judged verdict over an existing submission.
+     *
+     * <p>Replaces rather than appends, which is what makes a rejudge honest: the
+     * competitor made one attempt at that moment, and the record should say what
+     * that attempt is now known to have been worth — not carry a second row dated
+     * months later.
+     *
+     * <p>The problem's acceptance counters are corrected by the difference, so a
+     * rejudge that turns forty rejections into acceptances does not leave the
+     * catalogue claiming a 3% acceptance rate on a problem most people solved.
+     */
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void applyRejudgedVerdict(Long submissionId, ExecutionService.Verdict verdict) {
+        Submission submission = submissionRepository
+                .findById(submissionId)
+                .orElseThrow(() -> NotFoundException.of("submission", submissionId));
+
+        boolean wasAccepted = submission.getStatus() == SubmissionStatus.ACCEPTED;
+        boolean nowAccepted = verdict.status() == SubmissionStatus.ACCEPTED;
+
+        submission.setStatus(verdict.status());
+        submission.setPassedTests(verdict.passed());
+        submission.setTotalTests(verdict.total());
+        submission.setRuntimeMs(verdict.runtimeMs());
+        submission.setMemoryKb(verdict.memoryKb());
+        submission.setFailureMessage(verdict.failureMessage());
+
+        if (wasAccepted != nowAccepted) {
+            problemRepository.adjustAcceptedSubmissions(
+                    submission.getProblem().getId(), nowAccepted ? 1 : -1);
+        }
+    }
+
+    /**
+     * One submission with everything a rejudge needs to re-run it.
+     *
+     * <p>Read one at a time rather than as a list. A contest can hold tens of
+     * thousands of submissions and each carries its full source, so loading them
+     * all to iterate over them would be the one part of a rejudge that could run
+     * a server out of memory.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public RejudgeItem loadForRejudge(Long submissionId) {
+        Submission submission = submissionRepository
+                .findById(submissionId)
+                .orElseThrow(() -> NotFoundException.of("submission", submissionId));
+
+        return new RejudgeItem(
+                submission.getId(),
+                submission.getContestProblem() == null ? null : submission.getContestProblem().getId(),
+                submission.getLanguage(),
+                submission.getSourceCode());
+    }
+
+    /** What a rejudge needs to re-run one attempt: which question, in what language, and the code. */
+    public record RejudgeItem(Long submissionId, Long contestProblemId, Language language, String sourceCode) {}
 
     /** A judged attempt, ready to be written down. */
     public record NewSubmission(

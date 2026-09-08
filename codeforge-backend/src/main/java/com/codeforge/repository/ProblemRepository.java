@@ -101,6 +101,24 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
             """)
     void recordSubmissionOutcome(@Param("id") Long id, @Param("accepted") int accepted);
 
+/**
+     * Corrects the accepted counter after a rejudge changed a verdict.
+     *
+     * <p>An UPDATE for the same reason {@link #recordSubmissionOutcome} is one:
+     * a rejudge walks thousands of submissions, and a read-modify-write per row
+     * would lose increments against any traffic still arriving on the problem.
+     *
+     * @param delta +1 when a rejudge turned a rejection into an acceptance, −1
+     *     the other way
+     */
+    @Modifying
+    @Query("""
+            update Problem p
+            set p.acceptedSubmissions = p.acceptedSubmissions + :delta
+            where p.id = :id
+            """)
+    void adjustAcceptedSubmissions(@Param("id") Long id, @Param("delta") int delta);
+
     /**
      * Problems an interview may draw at one difficulty, each tagged with how
      * familiar it already is to this caller.

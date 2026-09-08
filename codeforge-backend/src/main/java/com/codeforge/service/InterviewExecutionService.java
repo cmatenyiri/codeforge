@@ -1,7 +1,7 @@
 package com.codeforge.service;
 
-import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Language;
+import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.SubmissionStatus;
 import com.codeforge.web.dto.execution.RunResponse;
 import com.codeforge.web.dto.submission.SubmissionResultResponse;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>What is judged, though, is the copy frozen onto the slot when the round
  * began rather than the problem as it stands now — see
- * {@link com.codeforge.domain.InterviewProblemSnapshot}. That is the whole
+ * {@link com.codeforge.domain.ProblemSnapshot}. That is the whole
  * reason these two calls exist separately from the practice ones.
  */
 @Service
@@ -40,7 +40,7 @@ public class InterviewExecutionService {
     /** Sample cases only, nothing recorded — the fast loop, inside the clock. */
     @PreAuthorize("isAuthenticated()")
     public RunResponse run(Long interviewId, int position, Language language, String sourceCode) {
-        InterviewProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
+        ProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
 
         return executionService.runSnapshot(snapshot, language, sourceCode);
     }
@@ -58,7 +58,7 @@ public class InterviewExecutionService {
     public SubmissionResultResponse submit(
             Long interviewId, int position, Language language, String sourceCode) {
 
-        InterviewProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
+        ProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
         SubmissionResultResponse result = executionService.submitSnapshot(snapshot, language, sourceCode);
 
         interviewService.recordAttempt(

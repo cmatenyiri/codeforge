@@ -1,8 +1,8 @@
 package com.codeforge.service;
 
-import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
+import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.SubmissionStatus;
 import com.codeforge.domain.TestCase;
 import com.codeforge.exception.BusinessRuleException;
@@ -148,7 +148,7 @@ public class ExecutionService {
      */
     @PreAuthorize("isAuthenticated()")
     public RunResponse runSnapshot(
-            InterviewProblemSnapshot snapshot, Language language, String sourceCode) {
+            ProblemSnapshot snapshot, Language language, String sourceCode) {
 
         validate(sourceCode);
 
@@ -178,7 +178,7 @@ public class ExecutionService {
      */
     @PreAuthorize("isAuthenticated()")
     public SubmissionResultResponse submitSnapshot(
-            InterviewProblemSnapshot snapshot, Language language, String sourceCode) {
+            ProblemSnapshot snapshot, Language language, String sourceCode) {
 
         validate(sourceCode);
 
@@ -188,6 +188,51 @@ public class ExecutionService {
                 language,
                 sourceCode);
     }
+
+/**
+     * Re-judges code that has already been submitted, against a snapshot, and
+     * records nothing.
+     *
+     * <p>The rejudge path. It exists because a rejudge has to <em>replace</em> a
+     * verdict rather than add one: re-submitting would put a second row in the
+     * competitor's history dated months after the contest, and the standings
+     * would then be rebuilt from twice as many attempts as anybody actually made.
+     *
+     * <p>Judges every case, hidden ones included, and hands back exactly the
+     * fields stored on a submission — the caller writes them over the old ones.
+     * Nothing here consults the live catalogue, so an archived or unpublished
+     * problem re-judges fine, which matters: a contest question is normally still
+     * a draft when the contest that used it is corrected.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    public Verdict judgeSnapshot(ProblemSnapshot snapshot, Language language, String sourceCode) {
+        validate(sourceCode);
+
+        Plan plan = planFromSnapshot(snapshot, language, sourceCode, true);
+        if (plan.cases().isEmpty()) {
+            throw new BusinessRuleException(
+                    "error.execution.noTestCases", "This problem has no test cases to judge against");
+        }
+
+        Judged judged = judge(plan, execute(plan, snapshot.slug(), language));
+
+        return new Verdict(
+                judged.status(),
+                judged.passed(),
+                judged.total(),
+                judged.runtimeMs(),
+                judged.memoryKb(),
+                failureMessage(judged));
+    }
+
+    /** A verdict, in exactly the shape a submission row stores it. */
+    public record Verdict(
+            SubmissionStatus status,
+            int passed,
+            int total,
+            Integer runtimeMs,
+            Integer memoryKb,
+            String failureMessage) {}
 
     /** Judges a prepared plan and writes the attempt down. */
     private SubmissionResultResponse judgeAndRecord(
@@ -306,11 +351,11 @@ public class ExecutionService {
      * candidate sees mean the same thing they do on the solving page.
      */
     private Plan planFromSnapshot(
-            InterviewProblemSnapshot snapshot, Language language, String sourceCode, boolean includeHidden) {
+            ProblemSnapshot snapshot, Language language, String sourceCode, boolean includeHidden) {
 
         List<JudgedCase> cases = snapshot.testCases().stream()
                 .filter(testCase -> includeHidden || !testCase.hidden())
-                .sorted(Comparator.comparing(InterviewProblemSnapshot.Case::hidden))
+                .sorted(Comparator.comparing(ProblemSnapshot.Case::hidden))
                 .map(testCase -> new JudgedCase(
                         testCase.id(), testCase.input(), testCase.expectedOutput(), testCase.hidden()))
                 .toList();

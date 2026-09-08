@@ -2,6 +2,7 @@ package com.codeforge.repository;
 
 import com.codeforge.domain.Difficulty;
 import com.codeforge.domain.Submission;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -111,4 +112,159 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             group by s.problem.difficulty
             """)
     List<ProblemRepository.DifficultyTotal> countSolvedByDifficulty(@Param("userId") Long userId);
+
+    // ── Contests ──────────────────────────────────────────────────────────
+
+    /**
+     * Every submission that counted towards a contest, oldest first.
+     *
+     * <p>What a rejudge re-runs and what the standings are rebuilt from. The
+     * order matters to both: penalties depend on which attempts came before the
+     * accepted one, so replaying them out of order would score the same
+     * submissions differently.
+     */
+    @Query("""
+            select s from Submission s
+            join fetch s.contestProblem cp
+            join fetch s.user
+            where s.contest.id = :contestId and s.countedInContest = true
+            order by s.createdAt asc, s.id asc
+            """)
+    List<Submission> findContestSubmissions(@Param("contestId") Long contestId);
+
+    /** The caller's attempts at one contest problem, newest first — the arena's history tab. */
+    @Query(
+            value =
+                    """
+                    select s from Submission s
+                    join fetch s.problem
+                    where s.user.id = :userId and s.contestProblem.id = :contestProblemId
+                    order by s.createdAt desc
+                    """,
+            countQuery =
+                    """
+                    select count(s) from Submission s
+                    where s.user.id = :userId and s.contestProblem.id = :contestProblemId
+                    """)
+    Page<Submission> findForUserAndContestProblem(
+            @Param("userId") Long userId,
+            @Param("contestProblemId") Long contestProblemId,
+            Pageable pageable);
+
+    /** How many submissions a contest has to re-run, so a rejudge can report progress. */
+    @Query("""
+            select count(s) from Submission s
+            where s.contest.id = :contestId and s.countedInContest = true
+            """)
+    long countContestSubmissions(@Param("contestId") Long contestId);
+
+    // ── Activity calendar ─────────────────────────────────────────────────
+
+    /**
+     * Submissions per day for one user, for the heatmap on their profile.
+     *
+     * <p>Native and MySQL-shaped because the grouping is a date truncation, which
+     * JPQL has no portable spelling for. Days with nothing are simply absent —
+     * a year of squares is mostly empty for most people, and sending eleven
+     * months of zeroes to draw nothing would be the larger half of the response.
+     *
+     * <p>Bucketed in UTC, which is what the column stores and what the connection
+     * runs in. A calendar that re-bucketed per viewer would move somebody's
+     * streak when they travelled.
+     */
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+                    select date_format(s.created_at, '%Y-%m-%d') as day,
+                           count(*) as total,
+                           sum(case when s.status = 'ACCEPTED' then 1 else 0 end) as accepted
+                    from submissions s
+                    where s.user_id = :userId and s.created_at >= :since
+                    group by day
+                    order by day asc
+                    """)
+    List<ActivityDay> findActivity(@Param("userId") Long userId, @Param("since") Instant since);
+
+    /**
+     * Distinct days this user has ever submitted on, newest first.
+     *
+     * <p>Read by the streak counter, which needs to look further back than the
+     * calendar shows: a streak running for four hundred days is exactly the one
+     * worth reporting, and a query capped at a year would cut it off at 365.
+     */
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+                    select distinct date_format(s.created_at, '%Y-%m-%d')
+                    from submissions s where s.user_id = :userId
+                    order by 1 desc
+                    """)
+    List<String> findActiveDays(@Param("userId") Long userId);
+
+    // ── Public profile ────────────────────────────────────────────────────
+
+    /**
+     * The same difficulty breakdown as {@link #countSolvedByDifficulty}, for
+     * somebody else's profile.
+     *
+     * <p>A separate method taking an explicit id rather than the caller's, so
+     * that reading a public profile can never accidentally be written as a read
+     * of the current user's own numbers.
+     */
+    @Query("""
+            select s.problem.difficulty as difficulty, count(distinct s.problem.id) as total
+            from Submission s
+            where s.user.id = :userId and s.status = com.codeforge.domain.SubmissionStatus.ACCEPTED
+              and s.problem.archived = false and s.problem.published = true
+            group by s.problem.difficulty
+            """)
+    List<ProblemRepository.DifficultyTotal> countSolvedByDifficultyFor(@Param("userId") Long userId);
+
+    /**
+     * Someone's recent accepted solves, for the "recent" list on a public
+     * profile.
+     *
+     * <p>Accepted only, and one row per problem. A public profile is a
+     * highlights reel, not an audit log: listing failures would make it a record
+     * of somebody's worst afternoon, and repeats would fill it with one problem
+     * submitted six times.
+     */
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+                    select p.slug as slug, p.title as title, p.difficulty as difficulty,
+                           max(s.created_at) as solvedAt
+                    from submissions s
+                    join problems p on p.id = s.problem_id
+                    where s.user_id = :userId and s.status = 'ACCEPTED'
+                      and p.archived = false and p.published = true
+                    group by p.id, p.slug, p.title, p.difficulty
+                    order by solvedAt desc
+                    limit :limit
+                    """)
+    List<RecentSolve> findRecentSolves(@Param("userId") Long userId, @Param("limit") int limit);
+
+    /** Projection for {@link #findActivity}. */
+    interface ActivityDay {
+        /** ISO {@code yyyy-MM-dd}, in UTC. */
+        String getDay();
+
+        long getTotal();
+
+        long getAccepted();
+    }
+
+    /** Projection for {@link #findRecentSolves}. */
+    interface RecentSolve {
+        String getSlug();
+
+        String getTitle();
+
+        String getDifficulty();
+
+        Instant getSolvedAt();
+    }
 }

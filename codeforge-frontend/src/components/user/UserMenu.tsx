@@ -1,11 +1,12 @@
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
+import BadgeRounded from '@mui/icons-material/BadgeRounded';
 import PersonRounded from '@mui/icons-material/PersonRounded';
 import { Box, ButtonBase, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../auth/use-auth';
-import { paths } from '../../routes/paths';
+import { paths, profilePath } from '../../routes/paths';
 import { UserAvatar } from './UserAvatar';
 import { isAvatarId } from './avatars';
 
@@ -66,6 +67,21 @@ export const UserMenu = () => {
             <PersonRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText>{t('userMenu.profile')}</ListItemText>
+        </MenuItem>
+
+        {/* The public page, as everybody else sees it — the only way to find
+            out what a profile actually shows, and the entry point to the
+            calendar, the rating graph and the contest history. */}
+        <MenuItem
+          onClick={() => {
+            close();
+            void navigate(profilePath(user.username));
+          }}
+        >
+          <ListItemIcon>
+            <BadgeRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('publicProfile.viewProfile')}</ListItemText>
         </MenuItem>
 
         <MenuItem

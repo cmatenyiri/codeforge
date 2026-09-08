@@ -6,16 +6,16 @@ import com.codeforge.domain.InterviewFormat;
 import com.codeforge.domain.InterviewInsight;
 import com.codeforge.domain.InterviewOutcome;
 import com.codeforge.domain.InterviewProblem;
-import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.InterviewStatus;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
+import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.Submission;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
 import com.codeforge.repository.InterviewRepository;
-import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.ProblemRepository.InterviewCandidate;
+import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
 import com.codeforge.repository.UserRepository;
 import com.codeforge.security.SecurityUtils;
@@ -350,7 +350,7 @@ public class InterviewService {
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public InterviewProblemSnapshot requireRunningSnapshot(Long id, int position) {
+    public ProblemSnapshot requireRunningSnapshot(Long id, int position) {
         Interview interview = requireRunning(load(id));
         return requireActiveSlot(interview, position).getSnapshot();
     }
@@ -541,7 +541,7 @@ public class InterviewService {
      * Hibernate's MultipleBagFetchException, the same reason the authoring screen
      * loads them one at a time.
      */
-    private InterviewProblemSnapshot snapshot(Long problemId) {
+    private ProblemSnapshot snapshot(Long problemId) {
         Problem problem = problemRepository
                 .findById(problemId)
                 .orElseThrow(() -> NotFoundException.of("problem", String.valueOf(problemId)));
@@ -551,7 +551,7 @@ public class InterviewService {
         problem.getHints().size();
         problem.getTestCases().size();
 
-        return InterviewProblemSnapshot.of(problem);
+        return ProblemSnapshot.of(problem);
     }
 
     private Interview owned(Long id) {
@@ -654,7 +654,7 @@ public class InterviewService {
      */
     public record OpenSlot(
             InterviewStatus status,
-            InterviewProblemSnapshot snapshot,
+            ProblemSnapshot snapshot,
             int position,
             boolean warmUp,
             boolean solved,

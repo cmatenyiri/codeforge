@@ -23,7 +23,11 @@ import lombok.Setter;
         name = "submissions",
         indexes = {
             @Index(name = "ix_submissions_user", columnList = "user_id"),
-            @Index(name = "ix_submissions_problem", columnList = "problem_id")
+            @Index(name = "ix_submissions_problem", columnList = "problem_id"),
+            @Index(name = "ix_submissions_contest", columnList = "contest_id"),
+            // The activity calendar reads a year of one user's submissions by
+            // date; without this it is a full scan per profile view.
+            @Index(name = "ix_submissions_user_created", columnList = "user_id, created_at")
         })
 public class Submission extends AuditableEntity {
 
@@ -39,6 +43,54 @@ public class Submission extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interview_id")
     private Interview interview;
+
+    /**
+     * Set when the submission was made inside a contest.
+     *
+     * <p>Denormalised alongside {@link #contestProblem}, which already knows its
+     * contest. It is here because "every submission in contest X" is the query a
+     * rejudge runs and the standings are rebuilt from, and reaching it through
+     * the problem would make an indexed lookup into a join.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contest_id")
+    private Contest contest;
+
+    /** Which question of the contest, so a verdict can be attributed to a slot. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contest_problem_id")
+    private ContestProblem contestProblem;
+
+    /**
+     * True while the contest was still running when this was submitted.
+     *
+     * <p>Contest problems stay open afterwards — "virtual" practice on a past
+     * round is the most useful thing a finished contest leaves behind — and those
+     * attempts are ordinary submissions that must never touch the standings.
+     * Stamped at submission time rather than derived from the timestamps later,
+     * because a rejudge re-runs a submission months after the fact and has to
+     * reach the same answer about whether it counted.
+     */
+    @Column(name = "counted_in_contest", nullable = false)
+    private boolean countedInContest = false;
+
+    /**
+     * How far into the contest this was <em>sent</em>, in seconds.
+     *
+     * <p>Stamped when the request is admitted, before the judge runs, and it has
+     * to be: {@link #getCreatedAt()} is written when the verdict comes back, so
+     * timing a submission by it would charge every competitor for however long
+     * the sandbox happened to take — a cold Java compile costs ten seconds that
+     * the person who submitted did nothing to deserve.
+     *
+     * <p>It is also what lets a rejudge rebuild the standings identically months
+     * later. The live scoreboard uses this number as each verdict lands, and the
+     * rebuild reads it back off the row; without it the two would disagree, and
+     * a rejudge that changed no verdict at all would still quietly reshuffle
+     * everybody's finish time by the judging latency.
+     */
+    @Column(name = "contest_seconds")
+    private Long contestSeconds;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)

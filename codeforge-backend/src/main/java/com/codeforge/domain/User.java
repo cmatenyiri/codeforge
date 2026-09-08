@@ -25,6 +25,9 @@ import lombok.Setter;
         })
 public class User extends AuditableEntity {
 
+    /** Where every account starts, before a single contest has been sat. */
+    public static final double INITIAL_RATING = 1500.0;
+
     @Column(nullable = false, length = 32)
     private String username;
 
@@ -46,4 +49,44 @@ public class User extends AuditableEntity {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    // ── Contest rating ────────────────────────────────────────────────────
+    // The running balance of ContestRatingChange, denormalised onto the user so
+    // that a rating leaderboard is one indexed ORDER BY rather than an aggregate
+    // over the whole ledger. Every write to these three goes through
+    // ContestRatingService, which owns the ledger and keeps them in step.
+    //
+    // All three carry database-level defaults, which is what makes adding them to
+    // a running instance safe: every account that existed before contests did
+    // starts on the same 1500 as a new one, rather than on the 0 an unqualified
+    // NOT NULL column would have given them — a rating of zero would sort every
+    // pre-existing account to the bottom of a table they have never competed in.
+
+    /**
+     * Where this account currently sits, on the scale every rating system of
+     * this shape uses: 1500 is average and the starting point for everybody.
+     *
+     * <p>A double rather than an int because the deltas are fractional and
+     * rounding on every contest would let a long history drift by a few points
+     * for no reason. It is rounded once, on the way to the screen.
+     */
+    @Column(nullable = false, columnDefinition = "double default 1500")
+    private double rating = INITIAL_RATING;
+
+    /** The highest it has ever been — a thing people care about keeping. */
+    @Column(name = "max_rating", nullable = false, columnDefinition = "double default 1500")
+    private double maxRating = INITIAL_RATING;
+
+    /**
+     * Rated contests actually sat, which is not the same as contests registered
+     * for. Drives the damping that makes a newcomer's rating move fast and a
+     * veteran's move slowly.
+     */
+    @Column(name = "contests_attended", nullable = false, columnDefinition = "int default 0")
+    private int contestsAttended = 0;
+
+    /** True once they have sat a rated contest; before that the rating is a placeholder, not a measurement. */
+    public boolean hasRating() {
+        return contestsAttended > 0;
+    }
 }

@@ -10,12 +10,17 @@ import { ColorModeToggle } from './ColorModeToggle';
 
 const NAV = [
   { to: paths.problems, labelKey: 'nav.problems' },
+  { to: paths.contests, labelKey: 'nav.contests' },
   { to: paths.interviews, labelKey: 'nav.interviews' },
+  { to: paths.leaderboard, labelKey: 'nav.leaderboard' },
   { to: paths.home, labelKey: 'nav.home' },
 ] as const;
 
 /** Only ever rendered for an administrator; the route and the API refuse everyone else. */
-const ADMIN_NAV = { to: paths.adminProblems, labelKey: 'nav.admin' } as const;
+const ADMIN_NAV = [
+  { to: paths.adminProblems, labelKey: 'nav.admin' },
+  { to: paths.adminContests, labelKey: 'nav.adminContests' },
+] as const;
 
 /** The signed-in chrome: brand, primary nav, language and the account menu. */
 export const AppHeader = () => {
@@ -23,7 +28,7 @@ export const AppHeader = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  const items = user?.role === 'ADMIN' ? [...NAV, ADMIN_NAV] : [...NAV];
+  const items = user?.role === 'ADMIN' ? [...NAV, ...ADMIN_NAV] : [...NAV];
 
   // Matched by prefix so the solving page and the interview workspace keep their
   // section highlighted rather than dropping the indicator on a subpage. Home is

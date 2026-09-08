@@ -46,11 +46,11 @@ public class InterviewProblem extends AuditableEntity {
      * that is what a submission is recorded against and what the debrief links to
      * afterwards — but nothing inside the round reads through it, so an author
      * editing the problem cannot reach a round already in progress. See
-     * {@link InterviewProblemSnapshot} for why that matters.
+     * {@link ProblemSnapshot} for why that matters.
      */
-    @Convert(converter = InterviewProblemSnapshotConverter.class)
+    @Convert(converter = ProblemSnapshotConverter.class)
     @Column(name = "problem_snapshot", nullable = false, columnDefinition = "LONGTEXT")
-    private InterviewProblemSnapshot snapshot;
+    private ProblemSnapshot snapshot;
 
     @Column(nullable = false)
     private boolean solved = false;

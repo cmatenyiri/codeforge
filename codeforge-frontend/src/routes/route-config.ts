@@ -70,6 +70,50 @@ export const routes: AppRoute[] = [
     access: 'authenticated',
   },
   {
+    // Declared before the contest routes only for readability — the router
+    // matches on specificity, not on order.
+    path: paths.contests,
+    component: lazy(() => import('../pages/Contests').then((module) => ({ default: module.ContestsPage }))),
+    titleKey: 'pageTitle.contests',
+    access: 'authenticated',
+  },
+  {
+    path: paths.contest,
+    component: lazy(() =>
+      import('../pages/ContestOverview').then((module) => ({ default: module.ContestOverviewPage })),
+    ),
+    titleKey: 'pageTitle.contest',
+    access: 'authenticated',
+  },
+  {
+    path: paths.contestProblem,
+    component: lazy(() => import('../pages/ContestArena').then((module) => ({ default: module.ContestArenaPage }))),
+    titleKey: 'pageTitle.contestArena',
+    access: 'authenticated',
+  },
+  {
+    path: paths.contestRanking,
+    component: lazy(() =>
+      import('../pages/ContestRanking').then((module) => ({ default: module.ContestRankingPage })),
+    ),
+    titleKey: 'pageTitle.contestRanking',
+    access: 'authenticated',
+  },
+  {
+    path: paths.leaderboard,
+    component: lazy(() => import('../pages/Leaderboard').then((module) => ({ default: module.LeaderboardPage }))),
+    titleKey: 'pageTitle.leaderboard',
+    access: 'authenticated',
+  },
+  {
+    path: paths.publicProfile,
+    component: lazy(() =>
+      import('../pages/PublicProfile').then((module) => ({ default: module.PublicProfilePage })),
+    ),
+    titleKey: 'pageTitle.publicProfile',
+    access: 'authenticated',
+  },
+  {
     path: paths.interviews,
     component: lazy(() => import('../pages/Interview').then((module) => ({ default: module.InterviewPage }))),
     titleKey: 'pageTitle.interviews',
@@ -92,6 +136,31 @@ export const routes: AppRoute[] = [
     ),
     titleKey: 'pageTitle.interviewReport',
     access: 'authenticated',
+  },
+  {
+    // Declared before the edit route only for readability — the router matches
+    // on specificity, and "/admin/contests/new" is more specific than the
+    // template it would otherwise fall into.
+    path: paths.adminContests,
+    component: lazy(() => import('../pages/AdminContests').then((module) => ({ default: module.AdminContestsPage }))),
+    titleKey: 'pageTitle.adminContests',
+    access: 'admin',
+  },
+  {
+    path: paths.adminContestNew,
+    component: lazy(() =>
+      import('../pages/AdminContestEditor').then((module) => ({ default: module.AdminContestEditorPage })),
+    ),
+    titleKey: 'pageTitle.adminContestNew',
+    access: 'admin',
+  },
+  {
+    path: paths.adminContestEdit,
+    component: lazy(() =>
+      import('../pages/AdminContestEditor').then((module) => ({ default: module.AdminContestEditorPage })),
+    ),
+    titleKey: 'pageTitle.adminContestEdit',
+    access: 'admin',
   },
   {
     // Declared before the edit route only for readability — the router matches

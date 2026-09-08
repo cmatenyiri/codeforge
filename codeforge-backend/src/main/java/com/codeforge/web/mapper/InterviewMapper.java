@@ -3,9 +3,9 @@ package com.codeforge.web.mapper;
 import com.codeforge.domain.Interview;
 import com.codeforge.domain.InterviewInsight;
 import com.codeforge.domain.InterviewProblem;
-import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
+import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.service.InterviewService.OpenSlot;
 import com.codeforge.web.dto.interview.InterviewProblemResponse;
 import com.codeforge.web.dto.interview.InterviewProblemResultResponse;
@@ -64,7 +64,7 @@ public class InterviewMapper {
     public InterviewSlotResponse toSlot(InterviewProblem slot, Interview interview) {
         // The frozen copy, like everything else inside a running round: an author
         // renaming the problem must not rename it on a candidate mid-question.
-        InterviewProblemSnapshot snapshot = slot.getSnapshot();
+        ProblemSnapshot snapshot = slot.getSnapshot();
         int active = interview.activePosition().orElse(interview.getProblems().size());
 
         return new InterviewSlotResponse(
@@ -101,7 +101,7 @@ public class InterviewMapper {
         // Nothing on this screen is read from the live problem, which is what
         // makes an edit landing mid-round unable to change the question under
         // the candidate — statement, examples and sample cases included.
-        InterviewProblemSnapshot snapshot = slot.snapshot();
+        ProblemSnapshot snapshot = slot.snapshot();
 
         return new InterviewProblemResponse(
                 snapshot.problemId(),
@@ -167,7 +167,7 @@ public class InterviewMapper {
      */
     public InterviewProblemResultResponse toResult(InterviewProblem slot) {
         Problem problem = slot.getProblem();
-        InterviewProblemSnapshot snapshot = slot.getSnapshot();
+        ProblemSnapshot snapshot = slot.getSnapshot();
 
         return new InterviewProblemResultResponse(
                 slot.getPosition(),

@@ -14,6 +14,7 @@ import com.codeforge.domain.TestCase;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
 import com.codeforge.execution.codegen.CodeTemplateService;
+import com.codeforge.repository.ContestRepository;
 import com.codeforge.repository.EditorialRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
@@ -72,6 +73,7 @@ public class ProblemAuthoringService {
     private final ProblemRepository problemRepository;
     private final TagRepository tagRepository;
     private final TestCaseRepository testCaseRepository;
+    private final ContestRepository contestRepository;
     private final EditorialRepository editorialRepository;
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
@@ -292,6 +294,13 @@ public class ProblemAuthoringService {
         if (problemRepository.isUsedByInterviews(id)) {
             throw new BusinessRuleException(
                     "error.problem.usedByInterviews", "This problem has been asked in an interview; archive it instead");
+        }
+        // A contest names the problems it asked and links to each one, and its
+        // standings are permanent — so deleting one would leave a finished
+        // contest pointing at nothing, exactly as an interview debrief would.
+        if (contestRepository.isUsedByContests(id)) {
+            throw new BusinessRuleException(
+                    "error.problem.usedByContests", "This problem has been asked in a contest; archive it instead");
         }
 
         editorialRepository.deleteByProblemId(id);

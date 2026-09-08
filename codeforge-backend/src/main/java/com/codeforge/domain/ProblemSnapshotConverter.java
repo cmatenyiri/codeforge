@@ -8,7 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Stores an {@link InterviewProblemSnapshot} as JSON in a single column.
+ * Stores an {@link ProblemSnapshot} as JSON in a single column.
  *
  * <p>Its own mapper rather than the application's: that one is configured for
  * the HTTP layer — {@code non_null} inclusion, among other things — and a stored
@@ -21,15 +21,15 @@ import tools.jackson.databind.json.JsonMapper;
  * will carry it.
  */
 @Converter
-public class InterviewProblemSnapshotConverter
-        implements AttributeConverter<InterviewProblemSnapshot, String> {
+public class ProblemSnapshotConverter
+        implements AttributeConverter<ProblemSnapshot, String> {
 
     private static final ObjectMapper MAPPER = JsonMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
     @Override
-    public String convertToDatabaseColumn(InterviewProblemSnapshot snapshot) {
+    public String convertToDatabaseColumn(ProblemSnapshot snapshot) {
         if (snapshot == null) {
             return null;
         }
@@ -41,12 +41,12 @@ public class InterviewProblemSnapshotConverter
     }
 
     @Override
-    public InterviewProblemSnapshot convertToEntityAttribute(String json) {
+    public ProblemSnapshot convertToEntityAttribute(String json) {
         if (json == null || json.isBlank()) {
             return null;
         }
         try {
-            return MAPPER.readValue(json, InterviewProblemSnapshot.class);
+            return MAPPER.readValue(json, ProblemSnapshot.class);
         } catch (JacksonException e) {
             throw new IllegalStateException("Could not read the interview problem snapshot", e);
         }

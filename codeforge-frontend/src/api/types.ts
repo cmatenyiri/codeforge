@@ -590,3 +590,343 @@ export type InterviewSummary = {
   score?: number;
   total: number;
 };
+
+/* ------------------------------------------------------------------------- */
+/* Contests                                                                   */
+/* ------------------------------------------------------------------------- */
+
+/** Mirrors `com.codeforge.domain.ContestType`. */
+export type ContestType = 'WEEKLY' | 'BIWEEKLY' | 'SPECIAL';
+
+/**
+ * Where a contest is in its life. Mirrors `com.codeforge.domain.ContestStatus`.
+ *
+ * Derived on the server from the clock and two flags, never stored — so a
+ * contest becomes `RUNNING` at its start time without anything having to run.
+ * `ENDED` means the places are settled but the ratings have not been applied;
+ * `FINALIZED` means they have, or that the contest is unrated.
+ */
+export type ContestStatus = 'DRAFT' | 'SCHEDULED' | 'RUNNING' | 'ENDED' | 'FINALIZED';
+
+/** Progress of the last rejudge. Mirrors `com.codeforge.domain.RejudgeState`. */
+export type RejudgeState = 'NONE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+/** One row in the contest list. Mirrors `ContestSummaryResponse`. */
+export type ContestSummary = {
+  id: number;
+  slug: string;
+  title: string;
+  type: ContestType;
+  status: ContestStatus;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  problemCount: number;
+  rated: boolean;
+  /** Why the rating was withdrawn; present only when it was. */
+  unratedReason?: string;
+  registrationCount: number;
+  participantCount: number;
+  /** Recomputed server-side on every call; the client counts down from it between polls. */
+  secondsUntilStart: number;
+  remainingSeconds: number;
+  registered: boolean;
+  /** Absent unless the caller actually competed — registering alone is not participating. */
+  myRank?: number;
+  myScore?: number;
+  myRatingDelta?: number;
+};
+
+/**
+ * One question in the tab strip. Mirrors `ContestProblemSummaryResponse`.
+ *
+ * `title`, `slug` and `difficulty` are absent until the contest starts. That is
+ * not the client declining to render them — the server does not send them, so
+ * there is nothing in the tab to read early.
+ */
+export type ContestProblemSummary = {
+  position: number;
+  /** Q1, Q2, … */
+  label: string;
+  title?: string;
+  slug?: string;
+  difficulty?: Difficulty;
+  points: number;
+  solved: boolean;
+  attempts: number;
+  /** How many competitors solved it; the "was Q4 hard or broken" number. */
+  solveCount?: number;
+};
+
+/** One cell of the standings grid. Mirrors `ContestProblemResultResponse`. */
+export type ContestProblemResult = {
+  position: number;
+  label: string;
+  solved: boolean;
+  /** Measured from the start of the contest, not as a wall clock. */
+  solvedAtSeconds?: number;
+  /** Only those before the solve; attempts afterwards cost nothing. */
+  wrongAttempts: number;
+  attempts: number;
+};
+
+/** One person's result. Mirrors `ContestResultResponse`. */
+export type ContestResult = {
+  userId: number;
+  username: string;
+  avatar: string;
+  rank?: number;
+  score: number;
+  finishSeconds: number;
+  penaltySeconds: number;
+  totalTimeSeconds: number;
+  submissionCount: number;
+  problems: ContestProblemResult[];
+  ratingBefore?: number;
+  ratingAfter?: number;
+  /** Absent until the ratings are applied, and for an unrated contest for good. */
+  ratingDelta?: number;
+};
+
+/** A contest's own page. Mirrors `ContestDetailResponse`. */
+export type ContestDetail = {
+  id: number;
+  slug: string;
+  title: string;
+  /** Markdown. */
+  description?: string;
+  type: ContestType;
+  status: ContestStatus;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  rated: boolean;
+  unratedReason?: string;
+  registered: boolean;
+  registrationCount: number;
+  participantCount: number;
+  secondsUntilStart: number;
+  remainingSeconds: number;
+  totalPoints: number;
+  problems: ContestProblemSummary[];
+  myResult?: ContestResult;
+};
+
+/**
+ * A question inside the arena. Mirrors `ContestProblemResponse`.
+ *
+ * Every field is served from the copy frozen when the contest started, which is
+ * what makes an author's edit unable to change the question mid-contest.
+ *
+ * Note what is missing next to `ProblemDetail`: no editorial, no topic tags, no
+ * hints, and nothing about whether the caller solved this problem before.
+ */
+export type ContestProblemDetail = {
+  position: number;
+  label: string;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  points: number;
+  description: string;
+  constraintsMarkdown?: string;
+  examples: ProblemExample[];
+  sampleTestCases: TestCase[];
+  hiddenTestCaseCount: number;
+  starterCode: Partial<Record<Language, string>>;
+  solved: boolean;
+  attempts: number;
+  wrongAttempts: number;
+  /** False once the clock has run out: still judged, but it will not move the standings. */
+  counted: boolean;
+  remainingSeconds: number;
+  /** The code the judge last saw, so reopening the tab restores it. */
+  submittedSourceCode?: string;
+  submittedLanguage?: Language;
+};
+
+/** The scoreboard. Mirrors `ContestStandingsResponse`. */
+export type ContestStandings = {
+  page: PageResponse<ContestResult>;
+  /** The caller's own row, sent with every page so they never have to hunt for it. */
+  me?: ContestResult;
+  /** How many people solved each question, in position order. */
+  solveCounts: number[];
+  /** Whether the places have stopped moving. */
+  finalised: boolean;
+  rated: boolean;
+  unratedReason?: string;
+};
+
+export type ContestRegistrationState = { registered: boolean; registrationCount: number };
+
+/* ------------------------------------------------------------------------- */
+/* Contest authoring (admin only)                                             */
+/* ------------------------------------------------------------------------- */
+
+/** `points` null asks for the default for the position — 3, 4, 5, 6. */
+export type ContestProblemPayload = { problemId: number; points?: number | null };
+
+/**
+ * A whole contest, as one write. Mirrors `ContestUpsertRequest`.
+ *
+ * Withdrawing a rating is deliberately not here: it reaches every rating since,
+ * so it has its own endpoint rather than riding along with an ordinary save.
+ */
+export type ContestUpsertPayload = {
+  title: string;
+  /** Blank derives one from the title. */
+  slug: string;
+  description?: string | null;
+  type: ContestType;
+  /** ISO instant. */
+  startsAt: string;
+  durationMinutes: number;
+  published: boolean;
+  rated: boolean;
+  problems: ContestProblemPayload[];
+};
+
+/** One row in the authoring list. Mirrors `AdminContestSummaryResponse`. */
+export type AdminContestSummary = {
+  id: number;
+  slug: string;
+  title: string;
+  type: ContestType;
+  status: ContestStatus;
+  startsAt: string;
+  durationMinutes: number;
+  problemCount: number;
+  published: boolean;
+  rated: boolean;
+  /** Once sealed, the questions and the clock are settled and the form locks them. */
+  sealed: boolean;
+  ratingsApplied: boolean;
+  registrationCount: number;
+  participantCount: number;
+  rejudgeState: RejudgeState;
+  updatedAt: string;
+};
+
+/** One question in the authoring form. Mirrors `AdminContestProblemResponse`. */
+export type AdminContestProblem = {
+  position: number;
+  label: string;
+  problemId: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  /** The catalogue state of the problem behind it — a published one is readable in advance. */
+  state: ProblemState;
+  points: number;
+  /** Without a signature and cases the arena renders an editor that cannot run. */
+  solvable: boolean;
+  testCaseCount: number;
+};
+
+/** A contest in full, for the authoring form. Mirrors `AdminContestDetailResponse`. */
+export type AdminContestDetail = {
+  id: number;
+  slug: string;
+  title: string;
+  description?: string;
+  type: ContestType;
+  status: ContestStatus;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  published: boolean;
+  rated: boolean;
+  unratedReason?: string;
+  sealed: boolean;
+  sealedAt?: string;
+  ratingsAppliedAt?: string;
+  registrationCount: number;
+  participantCount: number;
+  problems: AdminContestProblem[];
+  rejudgeState: RejudgeState;
+  rejudgeStartedAt?: string;
+  rejudgeFinishedAt?: string;
+  rejudgeTotal?: number;
+  rejudgeDone?: number;
+  rejudgeError?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ------------------------------------------------------------------------- */
+/* Public profiles and leaderboards                                           */
+/* ------------------------------------------------------------------------- */
+
+/** One square of the activity calendar. Mirrors `ActivityDayResponse`. */
+export type ActivityDay = {
+  /** ISO `yyyy-MM-dd`, bucketed in UTC. */
+  date: string;
+  submissions: number;
+  accepted: number;
+};
+
+/** One point on the rating graph, and one row of the contest history. */
+export type RatingPoint = {
+  contestSlug: string;
+  contestTitle: string;
+  startsAt: string;
+  rank: number;
+  participantCount: number;
+  ratingBefore: number;
+  ratingAfter: number;
+  delta: number;
+};
+
+export type RecentSolve = { slug: string; title: string; difficulty: Difficulty; solvedAt: string };
+
+/**
+ * Somebody's profile as anyone may see it. Mirrors `PublicProfileResponse`.
+ *
+ * `rating` is absent for an account that has never sat a rated contest: the
+ * 1500 they nominally carry is a placeholder, and showing it would claim a
+ * measurement nobody has made.
+ */
+export type PublicProfile = {
+  id: number;
+  username: string;
+  avatar: string;
+  joinedAt: string;
+  solved: number;
+  totalProblems: number;
+  submissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate?: number;
+  progress: DifficultyProgress[];
+  globalRank?: number;
+  globalRankTotal?: number;
+  rating?: number;
+  maxRating?: number;
+  contestsAttended?: number;
+  ratingRank?: number;
+  ratingRankTotal?: number;
+  /** Consecutive days up to today with at least one submission. */
+  streak: number;
+  maxStreak: number;
+  activeDays: number;
+  activity: ActivityDay[];
+  ratingHistory: RatingPoint[];
+  recentSolves: RecentSolve[];
+};
+
+/**
+ * One row of a global table. Mirrors `LeaderboardRowResponse`.
+ *
+ * Both halves are optional because one shape serves both boards: the rating
+ * table has no solved count and the solved table has no rating.
+ */
+export type LeaderboardRow = {
+  rank: number;
+  userId: number;
+  username: string;
+  avatar: string;
+  rating?: number;
+  contestsAttended?: number;
+  solved?: number;
+  points?: number;
+};

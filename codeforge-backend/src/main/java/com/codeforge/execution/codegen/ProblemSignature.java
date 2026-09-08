@@ -1,9 +1,9 @@
 package com.codeforge.execution.codegen;
 
 import com.codeforge.domain.DataType;
-import com.codeforge.domain.InterviewProblemSnapshot;
 import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemParameter;
+import com.codeforge.domain.ProblemSnapshot;
 import java.util.List;
 
 /**
@@ -53,7 +53,7 @@ public record ProblemSignature(String functionName, List<Parameter> parameters, 
      *
      * @return null when the problem had no signature when the round began
      */
-    public static ProblemSignature from(InterviewProblemSnapshot snapshot) {
+    public static ProblemSignature from(ProblemSnapshot snapshot) {
         if (snapshot.functionName() == null || snapshot.returnType() == null) {
             return null;
         }
