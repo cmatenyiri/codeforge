@@ -9,7 +9,6 @@ import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
 import com.codeforge.repository.ContestParticipationRepository;
 import com.codeforge.repository.ContestProblemRepository;
-import com.codeforge.repository.ContestRegistrationRepository;
 import com.codeforge.repository.ContestRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
@@ -58,7 +57,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContestAuthoringService {
 
     private final ContestRepository contestRepository;
-    private final ContestRegistrationRepository registrationRepository;
     private final ContestParticipationRepository participationRepository;
     private final ContestProblemRepository contestProblemRepository;
     private final ProblemRepository problemRepository;
@@ -97,8 +95,8 @@ public class ContestAuthoringService {
     @PreAuthorize("hasRole('ADMIN')")
     public Counts counts(Long contestId) {
         return new Counts(
-                registrationRepository.countByContestId(contestId),
                 participationRepository.countByContestId(contestId),
+                participationRepository.countByContestIdAndSubmissionCountGreaterThan(contestId, 0),
                 contestProblemRepository.countByContestId(contestId));
     }
 
@@ -244,11 +242,11 @@ public class ContestAuthoringService {
             // its window with nobody registered and nobody competing — can be
             // taken back, and that is the only way out of an accidental live
             // contest short of waiting for the clock.
-            if (participationRepository.countByContestId(id) > 0) {
+            if (participationRepository.countByContestIdAndSubmissionCountGreaterThan(id, 0) > 0) {
                 throw new BusinessRuleException(
                         "error.contest.hasParticipants", "People have competed in this contest");
             }
-            if (contest.hasStarted(Instant.now()) && registrationRepository.countByContestId(id) > 0) {
+            if (contest.hasStarted(Instant.now()) && participationRepository.countByContestId(id) > 0) {
                 throw new BusinessRuleException(
                         "error.contest.started", "That contest has started and people have registered for it");
             }
@@ -300,12 +298,16 @@ public class ContestAuthoringService {
             throw new BusinessRuleException(
                     "error.contest.running", "That contest is running; people can be reading it right now");
         }
-        if (participationRepository.countByContestId(id) > 0) {
+        // Entries alone do not block: a registration is an intention, and an
+        // announced contest has to stay cancellable. What blocks is somebody
+        // having actually competed, which is now a property of the same row
+        // rather than the existence of a second one.
+        if (participationRepository.countByContestIdAndSubmissionCountGreaterThan(id, 0) > 0) {
             throw new BusinessRuleException(
                     "error.contest.hasParticipants", "People have competed in this contest");
         }
 
-        registrationRepository.deleteByContestId(id);
+        participationRepository.deleteByContestId(id);
         submissionRepository.detachFromContest(id);
         contestRepository.delete(contest);
     }
@@ -502,6 +504,11 @@ public class ContestAuthoringService {
         }
     }
 
-    /** Registration, participation and question totals, for a row in the authoring list. */
+    /**
+     * Entry, turnout and question totals, for a row in the authoring list.
+     *
+     * @param registrations everyone who entered
+     * @param participants the subset who actually submitted something
+     */
     public record Counts(long registrations, long participants, long problems) {}
 }

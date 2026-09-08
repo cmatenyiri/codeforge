@@ -12,6 +12,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,11 +21,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * One person's run at a contest: what they scored, how long it took them, and
- * where that put them.
+ * One person's involvement with a contest: that they entered it, what they
+ * scored, and where that put them.
  *
- * <p>Created by the first submission, not by registering — see
- * {@link ContestRegistration} for why that distinction is load-bearing.
+ * <p>Created when they register, and it is the <em>only</em> record of their
+ * involvement — there is no separate registrations table. That merge follows
+ * from the entry rule: a contest's problems cannot be opened without
+ * registering, so everybody who competes has registered and the two sets were
+ * storing one relationship twice. It also makes "competed without registering"
+ * unrepresentable rather than merely forbidden.
+ *
+ * <p>Somebody who registers and never submits keeps a row with
+ * {@link #submissionCount} at zero. That is what a no-show <em>is</em> — a fact
+ * you can read, rather than the absence of a row somewhere else — and it is why
+ * they can be ranked last and rated for it.
  *
  * <h2>How a contest is scored</h2>
  *
@@ -80,6 +90,15 @@ public class ContestParticipation extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    /**
+     * When they entered. Set once, at registration, and never moved.
+     *
+     * <p>The row's first life is as a bare intention; everything below it stays
+     * zero until they actually submit something.
+     */
+    @Column(name = "registered_at", nullable = false)
+    private Instant registeredAt = Instant.now();
 
     @Column(nullable = false)
     private int score = 0;

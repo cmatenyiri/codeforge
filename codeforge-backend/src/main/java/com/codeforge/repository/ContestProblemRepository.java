@@ -44,6 +44,6 @@ public interface ContestProblemRepository extends JpaRepository<ContestProblem, 
             where cp.contest.id in :contestIds
             group by cp.contest.id
             """)
-    List<ContestRegistrationRepository.ContestCount> countByContestIds(
+    List<ContestParticipationRepository.ContestCount> countByContestIds(
             @Param("contestIds") Collection<Long> contestIds);
 }

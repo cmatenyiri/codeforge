@@ -40,12 +40,18 @@ import org.springframework.stereotype.Component;
  *
  * <h2>The blanking rule</h2>
  *
- * <p>Before a contest starts, its questions exist, are numbered and are worth
- * known points, and none of that gives anything away. Their titles do:
- * "Minimum Window Substring" above Q3 is most of the answer, and a client that
- * received it and merely declined to draw it would be one devtools tab away from
- * handing it over. So the titles are omitted here, on the server, and the
- * placeholder is the absence rather than a client-side conditional.
+ * <p>A contest's questions exist, are numbered and are worth known points long
+ * before anybody may read them, and none of that gives anything away. Their
+ * titles do: "Minimum Window Substring" above Q3 is most of the answer, and a
+ * client that received it and merely declined to draw it would be one devtools
+ * tab away from handing it over. So the titles are omitted here, on the server,
+ * and the placeholder is the absence rather than a client-side conditional.
+ *
+ * <p>They are revealed to somebody who has entered a running contest, to
+ * everybody once it is over, and to authors throughout. Not merely once it has
+ * started: an unregistered visitor who could read the titles would be deciding
+ * whether to compete after seeing whether it looked easy, which is the thing
+ * registering first exists to prevent.
  */
 @Component
 public class ContestMapper {
@@ -97,14 +103,13 @@ public class ContestMapper {
             long participantCount,
             Optional<ContestParticipation> mine,
             Optional<ContestRatingChange> myRating,
-            List<Integer> solveCounts) {
-
-        boolean started = contest.hasStarted(now);
+            List<Integer> solveCounts,
+            boolean revealProblems) {
 
         List<ContestProblemSummaryResponse> problems = contest.getProblems().stream()
                 .map(slot -> toProblemSummary(
                         slot,
-                        started,
+                        revealProblems,
                         mine.flatMap(participation -> participation.problemAt(slot.getPosition())),
                         solveCountAt(solveCounts, slot.getPosition())))
                 .toList();
@@ -134,14 +139,15 @@ public class ContestMapper {
     /**
      * One question in the tab strip.
      *
-     * <p>The title and slug are null until the contest starts — see the blanking
-     * rule above. The points are not: knowing Q4 is worth six tells a competitor
-     * how to plan their ninety minutes, which is part of the contest rather than
-     * a leak of it.
+     * <p>The title and slug are null unless the caller may see them — see the
+     * blanking rule above. The points are not: knowing Q4 is worth six tells a
+     * competitor how to plan their ninety minutes, which is part of the contest
+     * rather than a leak of it, and it is what an announcement needs in order to
+     * be worth reading.
      */
     public ContestProblemSummaryResponse toProblemSummary(
             ContestProblem slot,
-            boolean started,
+            boolean reveal,
             Optional<ContestParticipationProblem> mine,
             Integer solveCount) {
 
@@ -150,9 +156,9 @@ public class ContestMapper {
         return new ContestProblemSummaryResponse(
                 slot.getPosition(),
                 slot.label(),
-                started ? snapshot.title() : null,
-                started ? snapshot.slug() : null,
-                started ? snapshot.difficulty() : null,
+                reveal ? snapshot.title() : null,
+                reveal ? snapshot.slug() : null,
+                reveal ? snapshot.difficulty() : null,
                 slot.getPoints(),
                 mine.map(ContestParticipationProblem::isSolved).orElse(false),
                 mine.map(ContestParticipationProblem::getAttempts).orElse(0),

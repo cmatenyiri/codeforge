@@ -286,7 +286,8 @@
       "notEnded": "That contest is still running.",
       "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
       "running": "That contest is running; people can be reading it right now.",
-      "startsAtPast": "An announced contest has to start in the future."
+      "startsAtPast": "An announced contest has to start in the future.",
+      "notRegistered": "Register for this contest to open its problems."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
@@ -865,7 +866,10 @@
     "rulesFrozen": "The problems are frozen when the contest starts, so everybody is judged on the same tests.",
     "rulesRating": "A rated contest moves your rating, up or down, against everybody who competed.",
     "yourRating": "Your rating",
-    "unrankedHint": "Register to take part."
+    "unrankedHint": "Register to take part.",
+    "registerToView": "Register to see the problems",
+    "registerToViewBody": "Reading the problems is competing, so you register first. You can still join now — you have just lost the time already gone.",
+    "problemUnavailable": "This problem is not open to you"
   },
   "publicProfile": {
     "solved": "Solved",

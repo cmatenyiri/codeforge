@@ -212,8 +212,10 @@ export const ContestArenaPage = () => {
         </Box>
       ) : error !== null && problem === null ? (
         <Container maxWidth="sm" sx={{ py: 6 }}>
+          {/* The message is the server's: not started, or not entered. The
+              heading must not assert one of them. */}
           <Alert severity="info">
-            <AlertTitle>{t('contest.notStartedTitle')}</AlertTitle>
+            <AlertTitle>{t('contest.problemUnavailable')}</AlertTitle>
             {error}
           </Alert>
         </Container>

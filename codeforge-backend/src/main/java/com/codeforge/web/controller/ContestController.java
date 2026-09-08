@@ -127,7 +127,14 @@ public class ContestController {
                 // Only worth computing once the contest has started; before that
                 // every question has been solved by nobody, which the client can
                 // work out for itself.
-                contest.hasStarted(now) ? standingsService.solveCounts(contest) : List.of()));
+                contest.hasStarted(now) ? standingsService.solveCounts(contest) : List.of(),
+                // Started, and either finished, entered, or the author's own.
+                // Anything less and an unregistered reader could shop for an easy
+                // contest before committing to one.
+                contest.hasStarted(now)
+                        && (contest.hasEnded(now)
+                                || context.isRegistered(contest.getId())
+                                || SecurityUtils.isAdmin())));
     }
 
     /** Signs the caller up. Idempotent — pressing it twice is not an error. */

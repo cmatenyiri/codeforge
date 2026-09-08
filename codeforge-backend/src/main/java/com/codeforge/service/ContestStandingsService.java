@@ -10,6 +10,7 @@ import com.codeforge.repository.ContestParticipationRepository;
 import com.codeforge.repository.ContestProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
 import com.codeforge.repository.UserRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -80,12 +81,17 @@ public class ContestStandingsService {
             boolean accepted,
             long secondsIntoContest) {
 
+        // The row is already there: opening a running contest's problems requires
+        // registering, and registering is what creates it. The fallback is a
+        // belt-and-braces for a contest that ended and is being rebuilt, where
+        // the entry may since have been removed.
         ContestParticipation participation = participationRepository
                 .findWithProblems(contest.getId(), userId)
                 .orElseGet(() -> {
                     ContestParticipation created = new ContestParticipation();
                     created.setContest(contest);
                     created.setUser(userRepository.getReferenceById(userId));
+                    created.setRegisteredAt(Instant.now());
                     return participationRepository.save(created);
                 });
 
@@ -170,7 +176,11 @@ public class ContestStandingsService {
      */
     @Transactional
     public void recomputeStandings(Contest contest) {
-        participationRepository.deleteByContestId(contest.getId());
+        // Only the rows of people who competed are rebuilt. An entry with no
+        // submissions carries nothing a rejudge could change, and deleting it
+        // would quietly un-register somebody who is owed a last place and a
+        // rating drop for not turning up.
+        participationRepository.deleteByContestIdAndSubmissionCountGreaterThan(contest.getId(), 0);
         // Forced out before the inserts below, which reuse the same
         // (contest, user) unique key.
         participationRepository.flush();
@@ -197,6 +207,7 @@ public class ContestStandingsService {
                 ContestParticipation created = new ContestParticipation();
                 created.setContest(contest);
                 created.setUser(submission.getUser());
+                created.setRegisteredAt(contest.getStartsAt());
                 return created;
             });
 
@@ -250,6 +261,14 @@ public class ContestStandingsService {
     public void assignRanks(Contest contest) {
         List<ContestParticipation> ranked = participationRepository.findAllRanked(contest.getId());
 
+        // Score and finish time are the whole key — nothing else breaks a tie.
+        // A no-show and somebody who submitted and scored nothing therefore share
+        // a rank, because they share a score of 0 and a finish of 0:00.
+        //
+        // It is tempting to rank the one who tried above the one who did not, and
+        // that is deliberately not done: equal results earn equal places, and the
+        // deterrent against sitting a contest out is that an absence costs rating
+        // at all, not that it costs a place more than failing does.
         int rank = 0;
         Integer previousScore = null;
         Long previousTime = null;
@@ -282,7 +301,13 @@ public class ContestStandingsService {
      */
     @Transactional(readOnly = true)
     public Page<ContestParticipation> standings(Contest contest, Pageable pageable) {
-        Page<ContestParticipation> page = participationRepository.findStandings(contest.getId(), pageable);
+        // While a contest is live the people who have not submitted yet are not
+        // news — a board of five hundred registrants on zero buries the dozen
+        // who are actually racing. Once it is over they belong there: a no-show
+        // is a result, and it is the one the rating pass acts on.
+        boolean includeAbsent = contest.hasEnded(Instant.now());
+        Page<ContestParticipation> page =
+                participationRepository.findStandings(contest.getId(), includeAbsent, pageable);
         List<ContestParticipation> rows = page.getContent();
 
         if (rows.isEmpty() || rows.getFirst().getRank() != null) {

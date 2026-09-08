@@ -286,7 +286,8 @@
       "notEnded": "That contest is still running.",
       "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
       "running": "Ce concours est en cours ; des gens peuvent être en train de le lire.",
-      "startsAtPast": "Un concours annoncé doit commencer dans le futur."
+      "startsAtPast": "Un concours annoncé doit commencer dans le futur.",
+      "notRegistered": "Inscrivez-vous à ce concours pour ouvrir ses problèmes."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
@@ -865,7 +866,10 @@
     "rulesFrozen": "Les problèmes sont figés au démarrage, pour que tous soient jugés sur les mêmes tests.",
     "rulesRating": "Un concours classé fait évoluer votre classement face à tous les participants.",
     "yourRating": "Votre classement",
-    "unrankedHint": "Inscrivez-vous pour participer."
+    "unrankedHint": "Inscrivez-vous pour participer.",
+    "registerToView": "Inscrivez-vous pour voir les problèmes",
+    "registerToViewBody": "Lire les problèmes, c'est concourir : on s'inscrit d'abord. Vous pouvez encore rejoindre — seul le temps écoulé est perdu.",
+    "problemUnavailable": "Ce problème ne vous est pas ouvert"
   },
   "publicProfile": {
     "solved": "Résolus",

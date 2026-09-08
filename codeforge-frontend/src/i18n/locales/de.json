@@ -286,7 +286,8 @@
       "notEnded": "That contest is still running.",
       "hasParticipants": "People have competed in this contest; make it unrated instead of deleting it.",
       "running": "Dieser Wettbewerb läuft; es kann gerade jemand mitlesen.",
-      "startsAtPast": "Ein angekündigter Wettbewerb muss in der Zukunft beginnen."
+      "startsAtPast": "Ein angekündigter Wettbewerb muss in der Zukunft beginnen.",
+      "notRegistered": "Melde dich für diesen Wettbewerb an, um die Aufgaben zu öffnen."
     },
     "contestProblem": {
       "notFound": "That question is not part of this contest."
@@ -865,7 +866,10 @@
     "rulesFrozen": "Die Aufgaben werden beim Start eingefroren, damit alle an denselben Tests gemessen werden.",
     "rulesRating": "Ein gewerteter Wettbewerb verändert deine Wertung gegenüber allen Teilnehmenden.",
     "yourRating": "Deine Wertung",
-    "unrankedHint": "Melde dich an, um teilzunehmen."
+    "unrankedHint": "Melde dich an, um teilzunehmen.",
+    "registerToView": "Anmelden, um die Aufgaben zu sehen",
+    "registerToViewBody": "Die Aufgaben zu lesen heißt teilzunehmen, also meldest du dich zuerst an. Du kannst jetzt noch einsteigen — nur die vergangene Zeit ist weg.",
+    "problemUnavailable": "Diese Aufgabe ist für dich nicht geöffnet"
   },
   "publicProfile": {
     "solved": "Gelöst",

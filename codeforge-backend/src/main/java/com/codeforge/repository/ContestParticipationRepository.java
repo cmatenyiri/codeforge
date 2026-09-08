@@ -1,7 +1,9 @@
 package com.codeforge.repository;
 
 import com.codeforge.domain.ContestParticipation;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +33,56 @@ public interface ContestParticipationRepository extends JpaRepository<ContestPar
     Optional<ContestParticipation> findWithProblems(
             @Param("contestId") Long contestId, @Param("userId") Long userId);
 
+    boolean existsByContestIdAndUserId(Long contestId, Long userId);
+
+    /** Everyone who entered, whether or not they turned up. */
     long countByContestId(Long contestId);
+
+    /** Only those who actually submitted something — the field the standings rank. */
+    long countByContestIdAndSubmissionCountGreaterThan(Long contestId, int threshold);
+
+    @Modifying
+    void deleteByContestIdAndUserId(Long contestId, Long userId);
+
+    /**
+     * Which of these contests the caller has entered, for the list page's
+     * buttons.
+     */
+    @Query("""
+            select p.contest.id from ContestParticipation p
+            where p.user.id = :userId and p.contest.id in :contestIds
+            """)
+    Set<Long> findEnteredContestIds(
+            @Param("userId") Long userId, @Param("contestIds") Iterable<Long> contestIds);
+
+    /**
+     * Entry totals for a page of contests, in one query.
+     *
+     * <p>A count per row would be twenty round trips to render a list of twenty
+     * contests, which is the classic way a list page gets slow without anything
+     * obviously wrong with it.
+     */
+    @Query("""
+            select p.contest.id as contestId, count(p) as total from ContestParticipation p
+            where p.contest.id in :contestIds
+            group by p.contest.id
+            """)
+    List<ContestCount> countEnteredByContestIds(@Param("contestIds") Collection<Long> contestIds);
+
+    /** The same, counting only those who submitted something. */
+    @Query("""
+            select p.contest.id as contestId, count(p) as total from ContestParticipation p
+            where p.contest.id in :contestIds and p.submissionCount > 0
+            group by p.contest.id
+            """)
+    List<ContestCount> countCompetedByContestIds(@Param("contestIds") Collection<Long> contestIds);
+
+    /** Projection for the batched counts. */
+    interface ContestCount {
+        Long getContestId();
+
+        long getTotal();
+    }
 
     /**
      * A page of the standings, in ranking order.
@@ -51,10 +102,19 @@ public interface ContestParticipationRepository extends JpaRepository<ContestPar
                     join fetch p.user
                     left join fetch p.problems
                     where p.contest.id = :contestId
+                      and (:includeAbsent = true or p.submissionCount > 0)
                     order by p.score desc, p.totalTimeSeconds asc, p.id asc
                     """,
-            countQuery = "select count(p) from ContestParticipation p where p.contest.id = :contestId")
-    Page<ContestParticipation> findStandings(@Param("contestId") Long contestId, Pageable pageable);
+            countQuery =
+                    """
+                    select count(p) from ContestParticipation p
+                    where p.contest.id = :contestId
+                      and (:includeAbsent = true or p.submissionCount > 0)
+                    """)
+    Page<ContestParticipation> findStandings(
+            @Param("contestId") Long contestId,
+            @Param("includeAbsent") boolean includeAbsent,
+            Pageable pageable);
 
     /**
      * Every participation of a contest, in ranking order, without paging.
@@ -116,9 +176,19 @@ public interface ContestParticipationRepository extends JpaRepository<ContestPar
             @Param("score") int score,
             @Param("totalTimeSeconds") long totalTimeSeconds);
 
-    /** Everything a contest recorded, dropped before it is rebuilt from the submissions. */
+    /** Everything a contest recorded, dropped when the contest itself goes. */
     @Modifying
     void deleteByContestId(Long contestId);
+
+    /**
+     * Only the rows of people who competed.
+     *
+     * <p>What a rejudge clears before rebuilding. Entries with no submissions are
+     * left alone: there is nothing in them for a rejudge to change, and removing
+     * one would un-register somebody.
+     */
+    @Modifying
+    void deleteByContestIdAndSubmissionCountGreaterThan(Long contestId, int threshold);
 
     /**
      * This user's participations across a set of contests.
@@ -133,12 +203,4 @@ public interface ContestParticipationRepository extends JpaRepository<ContestPar
     List<ContestParticipation> findForUserAndContests(
             @Param("userId") Long userId, @Param("contestIds") java.util.Collection<Long> contestIds);
 
-    /** Participant totals for a page of contests, in one query. */
-    @Query("""
-            select p.contest.id as contestId, count(p) as total from ContestParticipation p
-            where p.contest.id in :contestIds
-            group by p.contest.id
-            """)
-    List<ContestRegistrationRepository.ContestCount> countByContestIds(
-            @Param("contestIds") java.util.Collection<Long> contestIds);
 }

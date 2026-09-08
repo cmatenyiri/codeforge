@@ -317,6 +317,24 @@ export const ContestOverviewPage = () => {
               </Alert>
             )}
 
+            {/* Started, but the server has still sent no titles: the caller has
+                not entered. Reading the problems is competing, so the way in is
+                to register — which is a commitment made before seeing them. */}
+            {started && !over && !contest.registered ? (
+              <Alert
+                severity="warning"
+                icon={<LockRounded fontSize="small" />}
+                action={
+                  <Button size="small" onClick={toggleRegistration} disabled={busy}>
+                    {t('contest.register')}
+                  </Button>
+                }
+              >
+                <AlertTitle>{t('contest.registerToView')}</AlertTitle>
+                {t('contest.registerToViewBody')}
+              </Alert>
+            ) : null}
+
             {contest.problems.map((problem) => (
               <Paper key={problem.position} variant="outlined" sx={{ p: 2 }}>
                 <Stack
@@ -369,7 +387,7 @@ export const ContestOverviewPage = () => {
                     <Button
                       component={Link}
                       to={contestProblemPath(contest.slug, problem.position)}
-                      disabled={!started}
+                      disabled={!started || (running && !contest.registered)}
                       variant={running ? 'contained' : 'outlined'}
                       size="small"
                     >

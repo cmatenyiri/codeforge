@@ -153,6 +153,12 @@ public class ContestRatingService {
      * ordinary caller from applying twice.
      */
     private int rate(Contest contest) {
+        // Everyone who entered, whether or not they turned up. A registration is
+        // a commitment, and the field each competitor is measured against is the
+        // field that signed up — so a no-show is ranked last and pays for it,
+        // which is what stops the rating from measuring only somebody's good
+        // days. Without it the optimal play when a contest is going badly is to
+        // submit nothing at all.
         List<ContestParticipation> ranked = participationRepository.findAllRanked(contest.getId());
         if (ranked.isEmpty()) {
             return 0;

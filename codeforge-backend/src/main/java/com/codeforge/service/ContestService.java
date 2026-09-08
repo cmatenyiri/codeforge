@@ -5,7 +5,6 @@ import com.codeforge.domain.ContestParticipation;
 import com.codeforge.domain.ContestParticipationProblem;
 import com.codeforge.domain.ContestProblem;
 import com.codeforge.domain.ContestRatingChange;
-import com.codeforge.domain.ContestRegistration;
 import com.codeforge.domain.ContestStatus;
 import com.codeforge.domain.Language;
 import com.codeforge.domain.Problem;
@@ -16,7 +15,6 @@ import com.codeforge.exception.NotFoundException;
 import com.codeforge.repository.ContestParticipationRepository;
 import com.codeforge.repository.ContestProblemRepository;
 import com.codeforge.repository.ContestRatingChangeRepository;
-import com.codeforge.repository.ContestRegistrationRepository;
 import com.codeforge.repository.ContestRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
@@ -68,7 +66,6 @@ public class ContestService {
     private static final int UPCOMING_LIMIT = 5;
 
     private final ContestRepository contestRepository;
-    private final ContestRegistrationRepository registrationRepository;
     private final ContestParticipationRepository participationRepository;
     private final ContestProblemRepository contestProblemRepository;
     private final ProblemRepository problemRepository;
@@ -136,21 +133,21 @@ public class ContestService {
         if (contestIds.isEmpty()) {
             return Set.of();
         }
-        return registrationRepository.findRegisteredContestIds(
+        return participationRepository.findEnteredContestIds(
                 SecurityUtils.requireCurrentUserId(), contestIds);
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public boolean isRegistered(Long contestId) {
-        return registrationRepository.existsByContestIdAndUserId(
+        return participationRepository.existsByContestIdAndUserId(
                 contestId, SecurityUtils.requireCurrentUserId());
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public long registrationCount(Long contestId) {
-        return registrationRepository.countByContestId(contestId);
+        return participationRepository.countByContestId(contestId);
     }
 
 /**
@@ -173,25 +170,25 @@ public class ContestService {
         List<Long> ids = contests.stream().map(Contest::getId).toList();
 
         return new SummaryContext(
-                registrationRepository.findRegisteredContestIds(userId, ids),
+                participationRepository.findEnteredContestIds(userId, ids),
                 participationRepository.findForUserAndContests(userId, ids).stream()
                         .collect(java.util.stream.Collectors.toMap(
                                 participation -> participation.getContest().getId(), participation -> participation)),
                 ratingChangeRepository.findForUserAndContests(userId, ids).stream()
                         .collect(java.util.stream.Collectors.toMap(
                                 change -> change.getContest().getId(), change -> change)),
-                registrationRepository.countByContestIds(ids).stream()
+                participationRepository.countEnteredByContestIds(ids).stream()
                         .collect(java.util.stream.Collectors.toMap(
-                                ContestRegistrationRepository.ContestCount::getContestId,
-                                ContestRegistrationRepository.ContestCount::getTotal)),
-                participationRepository.countByContestIds(ids).stream()
+                                ContestParticipationRepository.ContestCount::getContestId,
+                                ContestParticipationRepository.ContestCount::getTotal)),
+                participationRepository.countCompetedByContestIds(ids).stream()
                         .collect(java.util.stream.Collectors.toMap(
-                                ContestRegistrationRepository.ContestCount::getContestId,
-                                ContestRegistrationRepository.ContestCount::getTotal)),
+                                ContestParticipationRepository.ContestCount::getContestId,
+                                ContestParticipationRepository.ContestCount::getTotal)),
                 contestProblemRepository.countByContestIds(ids).stream()
                         .collect(java.util.stream.Collectors.toMap(
-                                ContestRegistrationRepository.ContestCount::getContestId,
-                                ContestRegistrationRepository.ContestCount::getTotal)));
+                                ContestParticipationRepository.ContestCount::getContestId,
+                                ContestParticipationRepository.ContestCount::getTotal)));
     }
 
 /**
@@ -281,15 +278,18 @@ public class ContestService {
         if (contest.hasEnded(Instant.now())) {
             throw new BusinessRuleException("error.contest.ended", "That contest is over");
         }
-        if (registrationRepository.existsByContestIdAndUserId(contest.getId(), userId)) {
+        if (participationRepository.existsByContestIdAndUserId(contest.getId(), userId)) {
             return;
         }
 
-        ContestRegistration registration = new ContestRegistration();
-        registration.setContest(contest);
-        registration.setUser(userRepository.getReferenceById(userId));
-        registration.setRegisteredAt(Instant.now());
-        registrationRepository.save(registration);
+        // The row that will carry their result, opened empty. Registering is the
+        // act that puts somebody in a contest, so it is the act that creates the
+        // record — see ContestParticipation for why there is only one.
+        ContestParticipation entry = new ContestParticipation();
+        entry.setContest(contest);
+        entry.setUser(userRepository.getReferenceById(userId));
+        entry.setRegisteredAt(Instant.now());
+        participationRepository.save(entry);
     }
 
     /**
@@ -309,7 +309,7 @@ public class ContestService {
             throw new BusinessRuleException(
                     "error.contest.started", "That contest has already started");
         }
-        registrationRepository.deleteByContestIdAndUserId(
+        participationRepository.deleteByContestIdAndUserId(
                 contest.getId(), SecurityUtils.requireCurrentUserId());
     }
 
@@ -335,6 +335,7 @@ public class ContestService {
         Instant now = Instant.now();
 
         requireStarted(contest, now);
+        requireEntitled(contest, now);
 
         ContestProblem contestProblem = problemAt(contest, position);
         Optional<ContestParticipation> participation =
@@ -368,6 +369,7 @@ public class ContestService {
         Instant now = Instant.now();
 
         requireStarted(contest, now);
+        requireEntitled(contest, now);
         ContestProblem contestProblem = problemAt(contest, position);
 
         return new JudgingTarget(
@@ -505,6 +507,31 @@ public class ContestService {
             throw NotFoundException.of("contest", slug);
         }
         return contest;
+    }
+
+    /**
+     * Refuses a live contest's problems to anybody who has not entered it.
+     *
+     * <p>The gate that makes registration mean something. Reading the problems
+     * <em>is</em> competing — knowing what is being asked is the advantage — so
+     * letting an unregistered visitor browse a running contest would leave the
+     * decision to compete until after they had seen whether it looked easy.
+     * Registering first is what turns it into a commitment.
+     *
+     * <p>It lifts the moment the contest ends: practising a finished round is
+     * the most useful thing it leaves behind, and there is nothing left to
+     * protect. Authors are exempt throughout, because they wrote the questions
+     * and have to be able to check a live contest is rendering.
+     */
+    private void requireEntitled(Contest contest, Instant now) {
+        if (contest.hasEnded(now) || SecurityUtils.isAdmin()) {
+            return;
+        }
+        if (!participationRepository.existsByContestIdAndUserId(
+                contest.getId(), SecurityUtils.requireCurrentUserId())) {
+            throw new BusinessRuleException(
+                    "error.contest.notRegistered", "Register for this contest to open its problems");
+        }
     }
 
     private static void requireStarted(Contest contest, Instant now) {
