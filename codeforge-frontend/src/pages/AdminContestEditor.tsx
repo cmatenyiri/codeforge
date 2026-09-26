@@ -342,8 +342,15 @@ export const AdminContestEditorPage = () => {
               onChange={(event) => {
                 update('slug', event.target.value);
               }}
+              // The address is handed out with the announcement, so it is fixed
+              // from then on; the server refuses a different one.
+              disabled={contest?.published === true}
               error={Boolean(fieldErrors.slug)}
-              helperText={fieldErrors.slug ? message(fieldErrors.slug) : t('admin.contest.slugHelp')}
+              helperText={
+                fieldErrors.slug
+                  ? message(fieldErrors.slug)
+                  : t(contest?.published === true ? 'admin.contest.slugLocked' : 'admin.contest.slugHelp')
+              }
               fullWidth
             />
 

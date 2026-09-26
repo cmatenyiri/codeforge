@@ -149,9 +149,14 @@ public class ContestAuthoringService {
         // Read before anything is written: the lock depends on the stored
         // announcement, which this very request may be about to change.
         boolean locked = contest.isLocked(Instant.now());
+        boolean announced = contest.isPublished();
 
         contest.setTitle(ValidationRules.trimToNull(request.title()));
-        contest.setSlug(slugOf(request));
+        // An announced contest keeps its address. The validator has refused any
+        // other; this stops a blank one being re-derived from a renamed title.
+        if (!announced) {
+            contest.setSlug(slugOf(request));
+        }
         contest.setDescription(ValidationRules.trimToNull(request.description()));
         contest.setType(request.type() == null ? ContestType.WEEKLY : request.type());
         contest.setStartsAt(request.startsAt());

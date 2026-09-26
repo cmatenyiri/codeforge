@@ -203,7 +203,8 @@
         "length": "Slug is too long",
         "format": "Use lowercase letters, digits and single hyphens",
         "reserved": "That slug is reserved",
-        "taken": "Another contest already uses that slug"
+        "taken": "Another contest already uses that slug",
+        "announced": "L'URL est figée dès que le concours est annoncé"
       },
       "startsAt": {
         "required": "A start time is required",
@@ -734,6 +735,7 @@
       "titleField": "Title",
       "slug": "URL slug",
       "slugHelp": "Leave blank to derive it from the title.",
+      "slugLocked": "L'URL est figée dès que le concours est annoncé.",
       "description": "Description",
       "descriptionHelp": "Markdown. Rules, prizes, anything the announcement should say.",
       "type": "Type",

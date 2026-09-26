@@ -30,6 +30,9 @@ import org.springframework.stereotype.Component;
  *   <li><b>Only when announcing</b>: completeness. Questions, each of them
  *       actually solvable, and a start time that has not already gone by. A draft
  *       is allowed to be half-written — that is what a draft is for.
+ *   <li><b>Never, once announced</b>: the slug. It is the contest's address, and
+ *       from the announcement on it has been handed out — see
+ *       {@link #validateSlug}.
  *   <li><b>Never, once it has started</b>: the questions, their points and the
  *       clock. A started contest is being sat, or has been sat, against a fixed
  *       set of problems worth fixed points in a fixed window, and changing any of
@@ -92,6 +95,23 @@ public class ContestUpsertRequestValidator {
 
     private void validateSlug(
             ContestUpsertRequest request, Optional<Contest> existing, ValidationErrors errors) {
+
+        // Fixed from the announcement on. The address is what has been handed
+        // out by then — in the announcement, in registrants' bookmarks, and in
+        // every open tab of a live contest, whose requests all name it — and a
+        // rename would break each of them, with nothing to redirect the old one.
+        // Blank is not a rename: it keeps the slug the contest already has,
+        // rather than deriving a new one from a title that may have changed.
+        Optional<Contest> announced = existing.filter(Contest::isPublished);
+        if (announced.isPresent()) {
+            String sent = ValidationRules.trimToNull(request.slug());
+            errors.addIf(
+                    sent != null && !sent.equals(announced.get().getSlug()),
+                    "slug",
+                    "validation.contest.slug.announced",
+                    "The URL is fixed once the contest is announced");
+            return;
+        }
 
         // Blank derives one from the title, which is what an author wants right
         // up until a rename would break the links they have already shared.
