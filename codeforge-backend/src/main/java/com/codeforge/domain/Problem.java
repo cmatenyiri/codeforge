@@ -16,8 +16,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.OrderColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -89,6 +92,18 @@ public class Problem extends AuditableEntity {
      */
     @Column(nullable = false)
     private boolean archived = false;
+
+    /**
+     * The first moment this problem was public, and never cleared.
+     *
+     * <p>{@code published} says whether it is visible now; this records that it
+     * has ever been, which is a fact no later state can undo — anybody could have
+     * read it, solved it and kept their code. It is what makes a problem
+     * unusable in a contest, whose questions have to be new to everybody sitting
+     * it. Stamped by {@link #stampFirstPublication}, never set by hand.
+     */
+    @Column(name = "first_published_at")
+    private Instant firstPublishedAt;
 
     // ── Submission counters ───────────────────────────────────────────────
     // Kept on the problem rather than recomputed, so listing a page of problems
@@ -163,5 +178,23 @@ public class Problem extends AuditableEntity {
     public void setDifficulty(Difficulty difficulty) {
         this.difficulty = difficulty;
         this.difficultyRank = difficulty == null ? null : difficulty.rank();
+    }
+
+    /**
+     * Stamps {@link #firstPublishedAt} the first time the problem is saved as
+     * published.
+     *
+     * <p>A lifecycle hook rather than a setter, because there are routes to
+     * {@code published = true} that call no setter at all — a new problem starts
+     * published by default, which is how the seeder writes its catalogue — and a
+     * contest's rule about new problems is only as strong as the route that
+     * slips past it.
+     */
+    @PrePersist
+    @PreUpdate
+    void stampFirstPublication() {
+        if (published && firstPublishedAt == null) {
+            firstPublishedAt = Instant.now();
+        }
     }
 }

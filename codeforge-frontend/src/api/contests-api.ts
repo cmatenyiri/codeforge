@@ -37,6 +37,14 @@ export const contestsApi = {
     return data;
   },
 
+  /** Contests that have ended, newest first, a page at a time — the lobby's archive. */
+  async past(page = 0, size = 10): Promise<PageResponse<ContestSummary>> {
+    const { data } = await apiClient.get<PageResponse<ContestSummary>>('/api/contests/past', {
+      params: { page, size },
+    });
+    return data;
+  },
+
   /** What is running now, then what is next — one call, because the lobby wants both. */
   async upcoming(): Promise<ContestSummary[]> {
     const { data } = await apiClient.get<ContestSummary[]>('/api/contests/upcoming');

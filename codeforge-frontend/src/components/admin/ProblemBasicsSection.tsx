@@ -2,7 +2,7 @@ import LinkOffRounded from '@mui/icons-material/LinkOffRounded';
 import LinkRounded from '@mui/icons-material/LinkRounded';
 import { Alert, InputAdornment, MenuItem, Stack, TextField, Tooltip, IconButton } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { type ProblemState, type Tag } from '../../api/types';
+import { type ContestHold, type ProblemState, type Tag } from '../../api/types';
 import { useMessages } from '../../i18n/use-messages';
 import { DIFFICULTIES, DIFFICULTY_LABEL_KEY } from '../problems/difficulty';
 import { FormSection } from './FormSection';
@@ -11,17 +11,20 @@ import { slugify, type ProblemFormState } from './problem-form';
 
 const STATE_LABEL_KEY = {
   DRAFT: 'admin.state.draft',
+  IN_CONTEST: 'admin.state.inContest',
   PUBLISHED: 'admin.state.published',
   ARCHIVED: 'admin.state.archived',
 } as const satisfies Record<ProblemState, string>;
 
 const STATE_HELP_KEY = {
   DRAFT: 'admin.form.stateHelpDraft',
+  IN_CONTEST: 'admin.form.stateHelpInContest',
   PUBLISHED: 'admin.form.stateHelpPublished',
   ARCHIVED: 'admin.form.stateHelpArchived',
 } as const satisfies Record<ProblemState, string>;
 
-const STATES = Object.keys(STATE_LABEL_KEY) as ProblemState[];
+/** What an author can choose. `IN_CONTEST` is not a choice: announcing a contest puts a problem there. */
+const SELECTABLE_STATES: ProblemState[] = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
 
 type ProblemBasicsSectionProps = {
   form: ProblemFormState;
@@ -29,6 +32,8 @@ type ProblemBasicsSectionProps = {
   errorOf: (field: string) => string | undefined;
   /** Every reason the server gave for refusing to publish, not just the first. */
   publishErrors: string[];
+  /** The announced contest holding this problem, which locks the state until it ends. */
+  heldBy?: ContestHold;
   tags: Tag[];
   onTagCreated: (tag: Tag) => void;
 };
@@ -41,19 +46,30 @@ type ProblemBasicsSectionProps = {
  * "archived" are stored separately — un-archiving has to put a problem back
  * exactly where it was — but as a pair of toggles they offer a combination
  * ("archived draft") that means nothing to the person setting it.
+ *
+ * <p>A problem an announced contest holds shows a fourth state and cannot leave
+ * it from here: the contest publishes it when it ends, and until then it has to
+ * stay complete enough to publish, which is what the server's messages say.
  */
 export const ProblemBasicsSection = ({
   form,
   onChange,
   errorOf,
   publishErrors,
+  heldBy,
   tags,
   onTagCreated,
 }: ProblemBasicsSectionProps) => {
   const { t } = useTranslation();
   const message = useMessages();
 
-  const state: ProblemState = form.archived ? 'ARCHIVED' : form.published ? 'PUBLISHED' : 'DRAFT';
+  const state: ProblemState = heldBy
+    ? 'IN_CONTEST'
+    : form.archived
+      ? 'ARCHIVED'
+      : form.published
+        ? 'PUBLISHED'
+        : 'DRAFT';
 
   const changeState = (next: ProblemState) => {
     if (next === 'ARCHIVED') {
@@ -140,10 +156,11 @@ export const ProblemBasicsSection = ({
           onChange={(event) => {
             changeState(event.target.value as ProblemState);
           }}
-          helperText={t(STATE_HELP_KEY[state])}
+          disabled={heldBy !== undefined}
+          helperText={t(STATE_HELP_KEY[state], { title: heldBy?.title })}
           sx={{ minWidth: 200 }}
         >
-          {STATES.map((candidate) => (
+          {(heldBy ? (['IN_CONTEST'] as ProblemState[]) : SELECTABLE_STATES).map((candidate) => (
             <MenuItem key={candidate} value={candidate}>
               {t(STATE_LABEL_KEY[candidate])}
             </MenuItem>
@@ -153,7 +170,7 @@ export const ProblemBasicsSection = ({
 
       {publishErrors.length > 0 ? (
         <Alert severity="warning">
-          {t('admin.form.publishBlocked')}
+          {heldBy ? t('admin.form.heldBlocked') : t('admin.form.publishBlocked')}
           <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
             {publishErrors.map((code) => (
               <li key={code}>{message(code)}</li>

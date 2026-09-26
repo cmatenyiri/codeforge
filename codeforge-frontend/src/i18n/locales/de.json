@@ -178,6 +178,10 @@
         "examples": "Eine veröffentlichte Aufgabe braucht mindestens ein Beispiel.",
         "testCases": "Eine veröffentlichte Aufgabe braucht Testfälle.",
         "samples": "Eine veröffentlichte Aufgabe braucht mindestens einen sichtbaren Fall zum Ausführen."
+      },
+      "held": {
+        "published": "Ein angekündigter Wettbewerb veröffentlicht diese Aufgabe, wenn er endet.",
+        "archived": "Ein angekündigter Wettbewerb verwendet diese Aufgabe, daher kann sie nicht archiviert werden."
       }
     },
     "tag": {
@@ -212,15 +216,21 @@
       },
       "problems": {
         "required": "An announced contest needs at least one question",
-        "sealed": "A contest that has started keeps the questions it ran with"
+        "sealed": "A contest that has started keeps the questions it ran with",
+        "pointsSealed": "A contest that has started keeps the points it ran with"
       },
       "problem": {
         "required": "Choose a problem",
         "duplicate": "That problem is already in this contest",
         "unknown": "That problem no longer exists",
         "noSignature": "That problem has no solution signature yet",
+        "noExamples": "That problem has no example yet",
         "noTestCases": "That problem has no test cases yet",
+        "noSamples": "That problem has no sample case to run against",
         "archived": "That problem has been retired",
+        "public": "That problem is already public, so anyone could read it before the contest",
+        "previouslyPublic": "That problem has been public before, so it is not new to everyone",
+        "held": "Another announced contest is already using that problem",
         "points": "A question is worth between 1 and 100 points"
       }
     }
@@ -275,7 +285,8 @@
       "notFound": "Diese Aufgabe existiert nicht.",
       "hasSubmissions": "Zu dieser Aufgabe wurde bereits eingereicht. Archiviere sie, statt sie zu löschen.",
       "usedByInterviews": "Diese Aufgabe wurde in einem Interview gestellt. Archiviere sie, statt sie zu löschen.",
-      "usedByContests": "This problem has been asked in a contest; archive it instead."
+      "usedByContests": "This problem has been asked in a contest; archive it instead.",
+      "inContest": "Ein angekündigter Wettbewerb verwendet diese Aufgabe. Sie bleibt verborgen, bis der Wettbewerb endet, und wird dann veröffentlicht."
     },
     "contest": {
       "notFound": "That contest does not exist.",
@@ -554,8 +565,10 @@
   "admin": {
     "state": {
       "draft": "Entwurf",
+      "inContest": "Im Wettbewerb",
       "published": "Veröffentlicht",
-      "archived": "Archiviert"
+      "archived": "Archiviert",
+      "inContestHint": "Gehalten von „{{title}}“. Wird automatisch veröffentlicht, wenn der Wettbewerb endet."
     },
     "list": {
       "title": "Aufgaben",
@@ -626,9 +639,11 @@
       "difficulty": "Schwierigkeit",
       "state": "Status",
       "stateHelpDraft": "Für Lösende unsichtbar. Nur du kannst sie öffnen.",
+      "stateHelpInContest": "Gehalten von „{{title}}“: verborgen bis zum Ende des Wettbewerbs, danach automatisch veröffentlicht.",
       "stateHelpPublished": "Live im Katalog.",
       "stateHelpArchived": "Aus dem Katalog genommen; frühere Einreichungen bleiben auflösbar.",
       "publishBlocked": "Diese Aufgabe kann noch nicht veröffentlicht werden:",
+      "heldBlocked": "Ein angekündigter Wettbewerb veröffentlicht diese Aufgabe, wenn er endet, daher muss sie veröffentlichungsbereit bleiben:",
       "topics": "Themen",
       "topicsPlaceholder": "Arrays, Hash Table…",
       "newTopic": "Neues Thema",
@@ -709,7 +724,9 @@
       "people": "People",
       "rejudge": "Rejudge",
       "sealed": "Sealed",
-      "sealedHint": "The questions and the clock are settled; a contest that has started keeps what it ran with.",
+      "lockedTitle": "This contest has started",
+      "sealedHint": "The questions, their points and the clock are settled; a contest that has started keeps what it ran with.",
+      "problemsReleased": "Problems released",
       "ratingsApplied": "Rated",
       "ratingsPending": "Awaiting rating",
       "basics": "Basics",
@@ -727,14 +744,15 @@
       "ratedField": "Rated",
       "ratedHelp": "A rated contest moves everybody's rating when it is settled.",
       "questions": "Questions",
-      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6.",
+      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6. Questions stay hidden until the contest ends, then they are published automatically.",
       "addQuestion": "Add a question",
       "pickProblem": "Problem",
       "points": "Points",
       "removeQuestion": "Remove",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "publishedProblemWarning": "This problem is already in the catalogue, so anyone could read it — and its editorial — before the contest starts.",
+      "publishedProblemWarning": "This problem is already public, so anyone could read it — and its editorial — before the contest. Replace it with a draft before announcing.",
+      "previouslyPublicWarning": "This problem has been public before, so people may already know it. Contest questions have to be new; replace it with one that has never been published before announcing.",
       "notSolvable": "This problem has no solution signature or no test cases yet.",
       "save": "Save",
       "saving": "Saving…",
@@ -780,7 +798,7 @@
   },
   "contest": {
     "title": "Wettbewerbe",
-    "subtitle": "Neunzig Minuten, vier Aufgaben, alle gleichzeitig.",
+    "subtitle": "Zeitlich begrenzte Runden, die alle im selben Moment bestreiten.",
     "type": {
       "weekly": "Wöchentlich",
       "biweekly": "Zweiwöchentlich",
@@ -857,14 +875,26 @@
     "solvedAt": "Gelöst um {{time}}",
     "notSolved": "Nicht gelöst",
     "submissions": "Einreichungen",
-    "penaltyHint": "5 Minuten pro falscher Einreichung, nur bei gelösten Aufgaben.",
-    "scoreHint": "Zuerst die Punkte, dann Endzeit plus Strafzeit.",
-    "rulesTitle": "So läuft es ab",
-    "rulesClock": "Neunzig Minuten auf einer Uhr, die für alle gleichzeitig startet.",
-    "rulesScore": "Jede Aufgabe bringt Punkte; mehr Punkte gewinnen, die Zeit entscheidet nur bei Gleichstand.",
-    "rulesPenalty": "Eine falsche Einreichung kostet fünf Minuten — aber nur bei einer Aufgabe, die du am Ende löst.",
-    "rulesFrozen": "Die Aufgaben werden beim Start eingefroren, damit alle an denselben Tests gemessen werden.",
-    "rulesRating": "Ein gewerteter Wettbewerb verändert deine Wertung gegenüber allen Teilnehmenden.",
+    "scoreHint": "Punkte aus gelösten Aufgaben. Was jede Aufgabe wert ist, steht unter ihrer Bezeichnung.",
+    "timeHint": "Zeitpunkt der letzten gelösten Aufgabe, plus 5 Minuten für jede falsche Einreichung bei einer gelösten Aufgabe.",
+    "legend": {
+      "title": "So liest du die Rangliste",
+      "ranking": "Mehr Punkte stehen weiter oben. Bei gleicher Punktzahl gewinnt die kürzere Zeit.",
+      "score": "Die Punkte stammen aus gelösten Aufgaben — die Zahl unter Q1, Q2 … ist, was jede Aufgabe wert ist.",
+      "time": "Die Zeit ist der Zeitpunkt der letzten gelösten Aufgabe, ab dem Start gezählt, plus 5 Minuten für jede falsche Einreichung bei einer gelösten Aufgabe.",
+      "solved": "Gelöst, so lange nach dem Start.",
+      "solvedAfterWrong": "Nach 1 falschen Einreichung gelöst; das hat 5 Minuten zur Zeit hinzugefügt.",
+      "wrongUnsolved": "2 falsche Einreichungen, nie gelöst — keine Punkte und keine Strafzeit.",
+      "untouched": "Nicht versucht."
+    },
+    "rulesButton": "So funktionieren Wettbewerbe",
+    "rulesTitle": "So funktionieren Wettbewerbe",
+    "rulesClock": "Alle beginnen und enden im selben Moment. Jeder Wettbewerb zeigt, wie lange er dauert und wie viele Aufgaben er hat.",
+    "rulesAccess": "Melde dich an, um teilzunehmen. Die Aufgaben bleiben bis zum Start verborgen. Du kannst dich auch noch während eines laufenden Wettbewerbs anmelden — nur die vergangene Zeit ist weg.",
+    "rulesScore": "Jede Aufgabe bringt die Punkte, die daneben stehen. Mehr Punkte stehen weiter oben; bei gleicher Punktzahl gewinnt die kürzere Zeit.",
+    "rulesPenalty": "Deine Zeit ist der Zeitpunkt deiner letzten gelösten Aufgabe, plus fünf Minuten für jede abgelehnte Einreichung — Kompilierfehler eingeschlossen — bei einer gelösten Aufgabe. „Ausführen“ zählt nicht, und erneutes Einreichen nach dem Lösen kostet nichts.",
+    "rulesFrozen": "Die Aufgaben werden beim Start eingefroren, damit alle an denselben Tests gemessen werden. Nach dem Ende werden sie zu normalen Übungsaufgaben, und Einreichungen zählen nicht mehr.",
+    "rulesRating": "Ein gewerteter Wettbewerb verändert die Wertung aller Angemeldeten, nach oben oder unten, je nach Platzierung. Wer angemeldet ist und nichts einreicht, zählt wie null Punkte. Die Wertungen werden angewendet, sobald die Ergebnisse geprüft sind.",
     "yourRating": "Deine Wertung",
     "unrankedHint": "Melde dich an, um teilzunehmen.",
     "registerToView": "Anmelden, um die Aufgaben zu sehen",

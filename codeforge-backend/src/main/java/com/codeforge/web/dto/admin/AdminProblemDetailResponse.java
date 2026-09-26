@@ -21,6 +21,8 @@ import java.util.Map;
  *     solving page
  * @param totalSubmissions how much this problem has been used, which is what
  *     makes an edit to its test cases consequential rather than free
+ * @param heldBy the announced contest holding this problem back, or null. While
+ *     it is set the contest, not the author, decides when it is published
  */
 public record AdminProblemDetailResponse(
         Long id,
@@ -44,4 +46,5 @@ public record AdminProblemDetailResponse(
         long totalSubmissions,
         long acceptedSubmissions,
         Instant createdAt,
-        Instant updatedAt) {}
+        Instant updatedAt,
+        ContestHoldResponse heldBy) {}

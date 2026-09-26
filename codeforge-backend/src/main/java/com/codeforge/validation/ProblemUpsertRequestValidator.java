@@ -55,6 +55,16 @@ public class ProblemUpsertRequestValidator {
      *     uniqueness has to ignore the row it is checking on behalf of
      */
     public void validate(ProblemUpsertRequest request, Long problemId) {
+        validate(request, problemId, false);
+    }
+
+    /**
+     * @param held whether an announced contest is holding this problem out of
+     *     the catalogue. The contest publishes it when it ends, not the author,
+     *     so the form may neither publish nor archive it — and it has to stay
+     *     ready to publish throughout, because nobody will be watching when it is
+     */
+    public void validate(ProblemUpsertRequest request, Long problemId, boolean held) {
         ValidationErrors errors = new ValidationErrors();
 
         validateTitle(request.title(), problemId, errors);
@@ -66,7 +76,8 @@ public class ProblemUpsertRequestValidator {
         validateHints(request.hints(), errors);
         validateTestCases(request, errors);
         validateEditorial(request.editorial(), errors);
-        validateReadyToPublish(request, errors);
+        validateHold(request, held, errors);
+        validateReadyToPublish(request, held, errors);
 
         errors.throwIfAny();
     }
@@ -342,15 +353,42 @@ public class ProblemUpsertRequestValidator {
     }
 
     /**
+     * The two moves a held problem may not make.
+     *
+     * <p>Publishing it would put a contest question in the catalogue before the
+     * round, and archiving it would leave the contest to publish a retired
+     * problem when it ends. Both are reported against {@code published}, next to
+     * the state control, for the same reason the completeness rules are.
+     */
+    private static void validateHold(ProblemUpsertRequest request, boolean held, ValidationErrors errors) {
+        if (!held) {
+            return;
+        }
+        errors.addIf(
+                request.published(),
+                "published",
+                "validation.problem.held.published",
+                "An announced contest publishes this problem when it ends");
+        errors.addIf(
+                request.archived(),
+                "published",
+                "validation.problem.held.archived",
+                "An announced contest is using this problem, so it cannot be archived");
+    }
+
+    /**
      * The gate between a draft and the catalogue.
      *
      * <p>Everything here is reported against {@code published}, because that is
      * the one field the author can change to make the request valid: the answer
      * to "this problem has no test cases" is either to write some or to leave it
      * as a draft.
+     *
+     * <p>A problem an announced contest holds is checked as though it were being
+     * published, because it will be — by the contest, the moment it ends.
      */
-    private void validateReadyToPublish(ProblemUpsertRequest request, ValidationErrors errors) {
-        if (!request.published() || request.archived()) {
+    private void validateReadyToPublish(ProblemUpsertRequest request, boolean held, ValidationErrors errors) {
+        if (!(request.published() || held) || request.archived()) {
             return;
         }
 

@@ -24,6 +24,7 @@ import { contestsApi } from '../api/contests-api';
 import { type ContestDetail } from '../api/types';
 import { useAuth } from '../auth/use-auth';
 import { ContestCountdown } from '../components/contest/ContestCountdown';
+import { ContestRulesButton } from '../components/contest/ContestRulesButton';
 import { ContestStatusChip } from '../components/contest/ContestStatusChip';
 import { RatingDelta } from '../components/contest/RatingDelta';
 import { CONTEST_TYPE_LABEL_KEY, formatContestTime } from '../components/contest/contest';
@@ -239,6 +240,7 @@ export const ContestOverviewPage = () => {
                 <Button component={Link} to={contestRankingPath(contest.slug)} variant="outlined">
                   {t('contest.standings')}
                 </Button>
+                <ContestRulesButton />
               </Stack>
             </Stack>
           </Box>

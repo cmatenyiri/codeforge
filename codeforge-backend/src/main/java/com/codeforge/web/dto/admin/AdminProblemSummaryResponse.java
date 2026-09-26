@@ -19,6 +19,7 @@ import java.util.List;
  *     problem with none has a "Run" button that judges nothing
  * @param solvable whether a signature has been authored, so the row can flag a
  *     problem that cannot be opened in the editor at all
+ * @param heldBy the announced contest holding this problem back, or null
  */
 public record AdminProblemSummaryResponse(
         Long id,
@@ -33,4 +34,5 @@ public record AdminProblemSummaryResponse(
         boolean solvable,
         long totalSubmissions,
         Double acceptanceRate,
-        Instant updatedAt) {}
+        Instant updatedAt,
+        ContestHoldResponse heldBy) {}

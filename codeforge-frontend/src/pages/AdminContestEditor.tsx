@@ -99,6 +99,7 @@ const toForm = (contest: AdminContestDetail): FormState => ({
     difficulty: problem.difficulty,
     state: problem.state,
     solvable: problem.solvable,
+    everPublished: problem.everPublished,
   })),
 });
 
@@ -252,6 +253,11 @@ export const AdminContestEditorPage = () => {
   }
 
   const sealed = contest?.sealed === true;
+  // Settled from the moment an announced contest's start time passes, whether or
+  // not anybody has opened it yet — the server holds the same line, this only
+  // stops the form offering what it would refuse.
+  const locked =
+    sealed || contest?.status === 'RUNNING' || contest?.status === 'ENDED' || contest?.status === 'FINALIZED';
   const ended = contest?.status === 'ENDED' || contest?.status === 'FINALIZED';
   const rejudging = contest?.rejudgeState === 'RUNNING';
 
@@ -278,6 +284,9 @@ export const AdminContestEditorPage = () => {
               {contest ? <ContestStatusChip status={contest.status} /> : null}
               {contest?.rated === false ? <Chip label={t('contest.unrated')} /> : null}
               {sealed ? <Chip label={t('admin.contest.sealed')} variant="outlined" /> : null}
+              {contest?.problemsReleasedAt ? (
+                <Chip label={t('admin.contest.problemsReleased')} variant="outlined" />
+              ) : null}
               {contest?.ratingsAppliedAt ? (
                 <Chip label={t('admin.contest.ratingsApplied')} variant="outlined" />
               ) : null}
@@ -300,9 +309,9 @@ export const AdminContestEditorPage = () => {
           ) : null}
           {saved ? <Alert severity="success">{t('admin.contest.saved')}</Alert> : null}
 
-          {sealed ? (
+          {locked ? (
             <Alert severity="info">
-              <AlertTitle>{t('admin.contest.sealed')}</AlertTitle>
+              <AlertTitle>{t('admin.contest.lockedTitle')}</AlertTitle>
               {t('admin.contest.sealedHint')}
             </Alert>
           ) : null}
@@ -366,7 +375,7 @@ export const AdminContestEditorPage = () => {
                 onChange={(event) => {
                   update('startsAt', event.target.value);
                 }}
-                disabled={sealed}
+                disabled={locked}
                 error={Boolean(fieldErrors.startsAt)}
                 helperText={fieldErrors.startsAt ? message(fieldErrors.startsAt) : t('admin.contest.startsAtHelp')}
                 slotProps={{ inputLabel: { shrink: true } }}
@@ -380,7 +389,7 @@ export const AdminContestEditorPage = () => {
                 onChange={(event) => {
                   update('durationMinutes', Number(event.target.value));
                 }}
-                disabled={sealed}
+                disabled={locked}
                 error={Boolean(fieldErrors.durationMinutes)}
                 helperText={fieldErrors.durationMinutes ? message(fieldErrors.durationMinutes) : ' '}
                 sx={{ width: 160 }}
@@ -411,7 +420,7 @@ export const AdminContestEditorPage = () => {
                 control={
                   <Switch
                     checked={form.rated}
-                    disabled={sealed}
+                    disabled={locked}
                     onChange={(event) => {
                       update('rated', event.target.checked);
                     }}
@@ -444,7 +453,7 @@ export const AdminContestEditorPage = () => {
                 const code = fieldErrors[`problems[${index}].problemId`];
                 return code === undefined ? undefined : message(code);
               }}
-              disabled={sealed}
+              disabled={locked}
             />
           </FormSection>
 

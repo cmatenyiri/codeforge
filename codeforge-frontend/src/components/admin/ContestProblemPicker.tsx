@@ -29,16 +29,26 @@ export type ContestQuestion = {
   difficulty?: AdminProblemSummary['difficulty'];
   state?: AdminProblemSummary['state'];
   solvable?: boolean;
+  /** Filled in for a saved contest: whether the problem has ever been public. */
+  everPublished?: boolean;
 };
 
 /**
  * Picks the problems a contest asks, in order.
  *
- * <p>Two warnings are worth the space they take. A question whose problem is
- * already published is readable — editorial and all — before the contest starts,
- * which quietly ruins it; and a problem with no signature or no test cases
- * renders an editor that cannot run, which is a wasted ninety minutes for the
- * whole field and cannot be fixed once the contest has sealed.
+ * <p>Only drafts that have never been public are offered. A problem in the
+ * catalogue is readable — editorial and all — before the contest starts; one
+ * that has been in it and was taken back out has been read already; and one
+ * another announced contest holds is spoken for. The contest keeps its
+ * questions hidden until it ends and then publishes them, so a question is new
+ * to everybody sitting it.
+ *
+ * <p>Warnings are still worth the space they take, for questions saved before a
+ * problem changed state. A public or once-public one will be refused when the
+ * contest is announced — said only until the contest seals, since a finished
+ * contest publishes its questions itself; and one with no signature or no test
+ * cases renders an editor that cannot run, which is a wasted ninety minutes for
+ * the whole field and cannot be fixed once the contest has sealed.
  */
 export const ContestProblemPicker = ({
   questions,
@@ -49,7 +59,7 @@ export const ContestProblemPicker = ({
   questions: ContestQuestion[];
   onChange: (questions: ContestQuestion[]) => void;
   errorFor: (index: number) => string | undefined;
-  /** True once the contest has sealed: the set is settled, only points may move. */
+  /** True once the contest has sealed: the questions and their points are settled. */
   disabled: boolean;
 }) => {
   const { t } = useTranslation();
@@ -61,7 +71,7 @@ export const ContestProblemPicker = ({
 
     const timer = setTimeout(() => {
       adminApi
-        .list({ search, size: 20, sort: 'updated', order: 'desc' })
+        .list({ search, state: 'DRAFT', neverPublished: true, size: 20, sort: 'updated', order: 'desc' })
         .then((page) => {
           if (!cancelled) {
             setOptions(page.content);
@@ -111,9 +121,17 @@ export const ContestProblemPicker = ({
                 {question.state ? <ProblemStateChip state={question.state} size="small" /> : null}
               </Stack>
 
-              {question.state === 'PUBLISHED' ? (
+              {/* Only while the questions can still change. Once a contest has
+                  started they are settled, and once it has ended they are
+                  published on purpose — the warning would describe the release
+                  as a mistake. */}
+              {disabled ? null : question.state === 'PUBLISHED' ? (
                 <Alert severity="warning" sx={{ py: 0 }}>
                   {t('admin.contest.publishedProblemWarning')}
+                </Alert>
+              ) : question.everPublished === true ? (
+                <Alert severity="warning" sx={{ py: 0 }}>
+                  {t('admin.contest.previouslyPublicWarning')}
                 </Alert>
               ) : null}
               {question.solvable === false ? (
@@ -129,6 +147,7 @@ export const ContestProblemPicker = ({
               type="number"
               size="small"
               value={question.points}
+              disabled={disabled}
               onChange={(event) => {
                 update(index, { points: Number(event.target.value) });
               }}
@@ -172,9 +191,9 @@ export const ContestProblemPicker = ({
         </Paper>
       ))}
 
-      {disabled ? (
-        <Alert severity="info">{t('admin.contest.sealedHint')}</Alert>
-      ) : (
+      {/* Nothing to add once the contest has started — the editor says why, once,
+          at the top of the page. */}
+      {disabled ? null : (
         <Autocomplete
           options={options.filter(
             (option) => !questions.some((question) => question.problemId === option.id),

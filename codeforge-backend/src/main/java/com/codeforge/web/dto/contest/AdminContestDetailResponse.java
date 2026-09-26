@@ -13,6 +13,8 @@ import java.util.List;
  *     form disables them — the frozen problems are what a field is being judged
  *     against, and changing them from under a live contest is precisely what the
  *     snapshots exist to prevent
+ * @param problemsReleasedAt when the questions went into the public catalogue;
+ *     null while the contest is still holding them back, or never announced
  * @param rejudgeProgress how far the last rejudge got, so the screen can show a
  *     bar rather than a spinner that never resolves
  */
@@ -31,6 +33,7 @@ public record AdminContestDetailResponse(
         String unratedReason,
         boolean sealed,
         Instant sealedAt,
+        Instant problemsReleasedAt,
         Instant ratingsAppliedAt,
         long registrationCount,
         long participantCount,

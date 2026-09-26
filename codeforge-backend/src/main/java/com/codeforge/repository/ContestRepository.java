@@ -3,6 +3,7 @@ package com.codeforge.repository;
 import com.codeforge.domain.Contest;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -58,6 +59,22 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     @Query("select c from Contest c where c.published = true order by c.startsAt desc")
     Page<Contest> findPublished(Pageable pageable);
 
+    /**
+     * Announced contests that have ended, most recent first — the archive the
+     * lobby pages through.
+     *
+     * <p>Its own query rather than the full list filtered on the client, so that
+     * a page is always a full page of finished contests and the page count means
+     * something: filtering afterwards would let the live and upcoming ones eat
+     * into the first page and leave every later one unreachable.
+     */
+    @Query("""
+            select c from Contest c
+            where c.published = true and c.endsAt <= :now
+            order by c.startsAt desc, c.id desc
+            """)
+    Page<Contest> findPast(@Param("now") Instant now, Pageable pageable);
+
     /** Announced and not started yet, soonest first — the "upcoming" rail. */
     @Query("""
             select c from Contest c
@@ -109,7 +126,57 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     boolean isUsedByContests(@Param("id") Long id);
 
     /**
-     * One contest, locked for the row that seals it.
+     * Whether an announced contest is holding this problem out of the
+     * catalogue — see {@link Contest#isHoldingProblems()}.
+     *
+     * <p>Such a problem is hidden from everyone but authors, whatever their
+     * history with it, and only the contest may publish it.
+     */
+    @Query("""
+            select count(cp) > 0 from ContestProblem cp
+            where cp.problem.id = :problemId
+              and cp.contest.published = true and cp.contest.problemsReleasedAt is null
+            """)
+    boolean isHoldingProblem(@Param("problemId") Long problemId);
+
+    /**
+     * The same, ignoring one contest: the one being announced, which may of
+     * course hold its own questions.
+     *
+     * @param contestId null when the contest is being created and has no id yet
+     */
+    @Query("""
+            select count(cp) > 0 from ContestProblem cp
+            where cp.problem.id = :problemId
+              and (:contestId is null or cp.contest.id <> :contestId)
+              and cp.contest.published = true and cp.contest.problemsReleasedAt is null
+            """)
+    boolean isHoldingProblemOutside(@Param("problemId") Long problemId, @Param("contestId") Long contestId);
+
+    /**
+     * Which contest is holding each of these problems, for the authoring
+     * screens.
+     *
+     * <p>At most one per problem in practice, since announcing refuses a
+     * question another contest already holds.
+     */
+    @Query("""
+            select cp.problem.id as problemId, c.id as contestId, c.slug as contestSlug, c.title as contestTitle
+            from ContestProblem cp join cp.contest c
+            where cp.problem.id in :problemIds
+              and c.published = true and c.problemsReleasedAt is null
+            """)
+    List<ProblemHold> findHolds(@Param("problemIds") Collection<Long> problemIds);
+
+    /** Announced contests that have ended without releasing their problems yet. */
+    @Query("""
+            select c.id from Contest c
+            where c.published = true and c.problemsReleasedAt is null and c.endsAt <= :now
+            """)
+    List<Long> findDueForRelease(@Param("now") Instant now);
+
+    /**
+     * One contest, locked for the row that seals it or releases its problems.
      *
      * <p>Sealing is a read that writes, triggered by whoever happens to load the
      * contest first after it starts — which, at the start of a popular contest,
@@ -122,4 +189,15 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Contest c where c.id = :id")
     Optional<Contest> findForSealing(@Param("id") Long id);
+
+    /** Projection for {@link #findHolds}. */
+    interface ProblemHold {
+        Long getProblemId();
+
+        Long getContestId();
+
+        String getContestSlug();
+
+        String getContestTitle();
+    }
 }

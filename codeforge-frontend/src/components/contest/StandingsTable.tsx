@@ -24,8 +24,11 @@ import { formatContestTime } from './contest';
  * <p>The wrong-attempt count is drawn small and red under the time rather than
  * as a separate column, because it is a footnote on the solve — five minutes
  * each, already inside the total to the left.
+ *
+ * <p>Exported for {@link StandingsLegend}, which explains the grid with this very
+ * cell rather than a drawing of it, so the two cannot drift apart.
  */
-const ProblemCell = ({ result }: { result?: ContestResult['problems'][number] }) => {
+export const ProblemCell = ({ result }: { result?: ContestResult['problems'][number] }) => {
   const { t } = useTranslation();
 
   if (result === undefined || (!result.solved && result.wrongAttempts === 0)) {
@@ -95,7 +98,7 @@ export const StandingsTable = ({
               </Tooltip>
             </TableCell>
             <TableCell align="right" sx={{ width: 96 }}>
-              <Tooltip title={t('contest.penaltyHint')}>
+              <Tooltip title={t('contest.timeHint')}>
                 <span>{t('contest.totalTime')}</span>
               </Tooltip>
             </TableCell>

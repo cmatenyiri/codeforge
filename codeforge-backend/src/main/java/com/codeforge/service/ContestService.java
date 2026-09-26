@@ -83,6 +83,13 @@ public class ContestService {
         return contestRepository.findPublished(pageable);
     }
 
+    /** Announced contests that are over, newest first — the lobby's archive, a page at a time. */
+    @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
+    public Page<Contest> past(Pageable pageable) {
+        return contestRepository.findPast(Instant.now(), pageable);
+    }
+
     /** The next few, soonest first — the rail at the top of the lobby. */
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
@@ -118,6 +125,11 @@ public class ContestService {
         }
 
         sealIfDue(contest.getId());
+        // Checked before the call so that the row lock is only taken in the
+        // moment a release is actually owed, not on every page view afterwards.
+        if (contest.isHoldingProblems() && contest.hasEnded(Instant.now())) {
+            releaseIfDue(contest.getId());
+        }
 
         // Re-read so the caller sees the snapshots the seal has just written,
         // rather than the copies this persistence context loaded before it.
@@ -459,6 +471,49 @@ public class ContestService {
 
         snapshotProblems(contest);
         contest.setSealedAt(now);
+    }
+
+    /**
+     * Publishes a finished contest's problems, if it has ended and has not done
+     * so already.
+     *
+     * <p>The other end of the hold that announcing puts on them: nobody outside
+     * the contest can read a question before or during the round, and everybody
+     * can practise it from the catalogue afterwards. Reached two ways — by the
+     * first request that touches the contest after it ends, so the standings
+     * never link to a problem that is still hidden, and by
+     * {@link ContestReleaseJob}, so that a contest nobody opens is not left
+     * holding its problems for good.
+     *
+     * <p>Publishing needs no completeness check of its own. Announcing refused
+     * any question that was not ready to publish, and the problem form has kept
+     * every held problem that way since — a release that could fail would have
+     * to fail with nobody watching.
+     *
+     * <p>Seals first if nothing has, which is the case for a contest nobody
+     * opened while it ran. Once a problem is public it can be edited like any
+     * other, and the contest must by then be answering from its frozen copy
+     * rather than following those edits.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void releaseIfDue(Long contestId) {
+        Contest contest = contestRepository.findForSealing(contestId).orElse(null);
+        if (contest == null || !contest.isHoldingProblems()) {
+            return;
+        }
+        Instant now = Instant.now();
+        if (!contest.hasEnded(now)) {
+            return;
+        }
+
+        if (!contest.isSealed()) {
+            snapshotProblems(contest);
+            contest.setSealedAt(now);
+        }
+        for (ContestProblem contestProblem : contest.getProblems()) {
+            contestProblem.getProblem().setPublished(true);
+        }
+        contest.setProblemsReleasedAt(now);
     }
 
     /**

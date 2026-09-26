@@ -192,7 +192,11 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
      * <p>Search matches the slug as well as the title: an author looking for a
      * problem generally remembers the URL they were last testing against.
      *
-     * @param state null for any, otherwise DRAFT, PUBLISHED or ARCHIVED
+     * @param state null for any, otherwise a {@link com.codeforge.domain.ProblemState}
+     *     name. DRAFT and IN_CONTEST split the unpublished problems between them
+     *     by whether an announced contest is holding one back
+     * @param neverPublished true to leave out every problem that has ever been
+     *     public — what a contest's question picker asks for
      */
     @Query(
             """
@@ -203,16 +207,25 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
                    or lower(p.slug) like lower(concat('%', :search, '%')))
               and (:difficulty is null or p.difficulty = :difficulty)
               and (:tagSlug is null or t.slug = :tagSlug)
+              and (:neverPublished = false or p.firstPublishedAt is null)
               and (:state is null
                    or (:state = 'ARCHIVED' and p.archived = true)
                    or (:state = 'PUBLISHED' and p.archived = false and p.published = true)
-                   or (:state = 'DRAFT' and p.archived = false and p.published = false))
+                   or (:state = 'IN_CONTEST' and p.archived = false and p.published = false and exists (
+                         select 1 from ContestProblem held
+                         where held.problem = p
+                           and held.contest.published = true and held.contest.problemsReleasedAt is null))
+                   or (:state = 'DRAFT' and p.archived = false and p.published = false and not exists (
+                         select 1 from ContestProblem held
+                         where held.problem = p
+                           and held.contest.published = true and held.contest.problemsReleasedAt is null)))
             """)
     Page<Problem> searchForAuthor(
             @Param("search") String search,
             @Param("difficulty") Difficulty difficulty,
             @Param("tagSlug") String tagSlug,
             @Param("state") String state,
+            @Param("neverPublished") boolean neverPublished,
             Pageable pageable);
 
     /**

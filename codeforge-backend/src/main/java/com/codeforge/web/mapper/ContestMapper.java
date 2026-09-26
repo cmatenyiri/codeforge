@@ -281,6 +281,7 @@ public class ContestMapper {
                 contest.getUnratedReason(),
                 contest.isSealed(),
                 contest.getSealedAt(),
+                contest.getProblemsReleasedAt(),
                 contest.getRatingsAppliedAt(),
                 counts.registrations(),
                 counts.participants(),
@@ -314,10 +315,11 @@ public class ContestMapper {
                 problem.getSlug(),
                 problem.getTitle(),
                 problem.getDifficulty(),
-                ProblemState.of(problem),
+                ProblemState.of(problem, slot.getContest().isHoldingProblems()),
                 slot.getPoints(),
                 problem.getFunctionName() != null && problem.getReturnType() != null,
-                problem.getTestCases().size());
+                problem.getTestCases().size(),
+                problem.getFirstPublishedAt() != null);
     }
 
     /** True once a contest's places have stopped moving. */

@@ -104,6 +104,23 @@ public class ContestController {
     }
 
     /**
+     * Contests that have ended, a page at a time — the archive under the rail.
+     *
+     * <p>Ten a page by default: each row is a card with the caller's own result
+     * on it, and a longer page mostly scrolls past contests nobody is looking for.
+     */
+    @GetMapping("/past")
+    public ResponseEntity<PageResponse<ContestSummaryResponse>> past(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+
+        Instant now = Instant.now();
+        Page<Contest> contests = contestService.past(pageable(page, size));
+        SummaryContext context = contestService.summaryContext(contests.getContent());
+
+        return ResponseEntity.ok(PageResponse.of(contests, summaries(contests.getContent(), context, now)));
+    }
+
+    /**
      * One contest's page.
      *
      * <p>The call that seals a contest whose start time has passed — see

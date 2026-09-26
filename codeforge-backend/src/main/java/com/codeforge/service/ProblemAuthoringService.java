@@ -84,14 +84,17 @@ public class ProblemAuthoringService {
     /**
      * The authoring catalogue: drafts, published problems and archived ones
      * together, narrowed by the same filters plus their state.
+     *
+     * @param neverPublished true to leave out every problem that has ever been
+     *     public, which is what a contest may still ask
      */
     @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ADMIN')")
     public Page<Problem> search(String search, Difficulty difficulty, String tagSlug, ProblemState state,
-            Pageable pageable) {
+            boolean neverPublished, Pageable pageable) {
 
         Page<Problem> problems = problemRepository.searchForAuthor(
-                search, difficulty, tagSlug, state == null ? null : state.name(), pageable);
+                search, difficulty, tagSlug, state == null ? null : state.name(), neverPublished, pageable);
 
         // Mapping happens outside this transaction and `open-in-view` is off, so
         // the tags every row shows have to be pulled in here; @BatchSize makes it
@@ -114,6 +117,26 @@ public class ProblemAuthoringService {
             counts.put(row.getProblemId(), new TestCaseCounts((int) row.getTotal(), (int) row.getHidden()));
         }
         return counts;
+    }
+
+    /**
+     * Which announced contest is holding each of these problems, in one query.
+     * Problems no contest holds are simply absent.
+     */
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<Long, ContestHold> holds(List<Long> problemIds) {
+        if (problemIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, ContestHold> holds = new HashMap<>();
+        for (ContestRepository.ProblemHold row : contestRepository.findHolds(problemIds)) {
+            holds.putIfAbsent(
+                    row.getProblemId(),
+                    new ContestHold(row.getContestId(), row.getContestSlug(), row.getContestTitle()));
+        }
+        return holds;
     }
 
     /** Which of these problems have an editorial, in one query. */
@@ -148,7 +171,8 @@ public class ProblemAuthoringService {
             editorial.getSolutions().size();
         }
 
-        return new Authored(problem, editorial, codeTemplateService.starterCode(problem));
+        return new Authored(
+                problem, editorial, codeTemplateService.starterCode(problem), holds(List.of(id)).get(id));
     }
 
     @Transactional
@@ -178,7 +202,7 @@ public class ProblemAuthoringService {
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void update(Long id, ProblemUpsertRequest request) {
-        problemValidator.validate(request, id);
+        problemValidator.validate(request, id, contestRepository.isHoldingProblem(id));
 
         Problem problem = load(id);
         problem.getTags().size();
@@ -259,6 +283,7 @@ public class ProblemAuthoringService {
         Problem problem = authored.problem();
 
         if (published) {
+            requireNotHeld(id);
             problemValidator.validate(asRequest(authored, true), id);
         }
         problem.setPublished(published);
@@ -269,6 +294,9 @@ public class ProblemAuthoringService {
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void setArchived(Long id, boolean archived) {
+        if (archived) {
+            requireNotHeld(id);
+        }
         Problem problem = load(id);
         problem.setArchived(archived);
         problemRepository.save(problem);
@@ -514,6 +542,18 @@ public class ProblemAuthoringService {
 
     // ── Small helpers ─────────────────────────────────────────────────────
 
+    /**
+     * Refuses the row-menu moves a held problem may not make — the same rule the
+     * form enforces through the validator, for the route that bypasses the form.
+     */
+    private void requireNotHeld(Long id) {
+        if (contestRepository.isHoldingProblem(id)) {
+            throw new BusinessRuleException(
+                    "error.problem.inContest",
+                    "An announced contest is using this problem; it is published when the contest ends");
+        }
+    }
+
     private Problem load(Long id) {
         return problemRepository.findById(id).orElseThrow(() -> NotFoundException.of("problem", id));
     }
@@ -589,7 +629,15 @@ public class ProblemAuthoringService {
     }
 
     /** A problem with the two things stored beside it that the form also edits. */
-    public record Authored(Problem problem, Editorial editorial, Map<Language, String> starterCode) {}
+    /**
+     * @param hold the announced contest holding this problem out of the
+     *     catalogue, or null when none is
+     */
+    public record Authored(
+            Problem problem, Editorial editorial, Map<Language, String> starterCode, ContestHold hold) {}
+
+    /** An announced contest that is keeping a problem out of the catalogue until it ends. */
+    public record ContestHold(Long contestId, String slug, String title) {}
 
     /** How many cases a problem has, split the way the catalogue row shows them. */
     public record TestCaseCounts(int total, int hidden) {

@@ -40,9 +40,9 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <h2>What can still be changed, and when</h2>
  *
- * <p>Everything, until the contest starts. After that the questions and the
- * clock are settled — the validator refuses them outright rather than ignoring
- * them — and what is left are the three deliberate acts of repair:
+ * <p>Everything, until the contest starts. After that the questions, their
+ * points and the clock are settled — the validator refuses them outright rather
+ * than ignoring them — and what is left are the three deliberate acts of repair:
  *
  * <ul>
  *   <li>{@link #setRated} withdraws the contest's effect on everybody's rating,
@@ -120,8 +120,12 @@ public class ContestAuthoringService {
      * <p>The questions are rebuilt from scratch each time rather than diffed.
      * They are a short ordered list whose identity is entirely positional, and a
      * diff would exist only to preserve row ids that nothing refers to — while a
-     * sealed contest cannot reach this code at all, because the validator has
-     * already refused any change to them.
+     * contest that has started cannot reach this code at all, because the
+     * validator has already refused any change to them.
+     *
+     * <p>Taking the announcement back is held to the same rules here as on the
+     * toggle. Otherwise the form would be the way round them — and round the
+     * lock on a started contest too, which lifts once it is a draft again.
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -131,10 +135,17 @@ public class ContestAuthoringService {
                 .orElseThrow(() -> NotFoundException.of("contest", id));
 
         validator.validate(request, Optional.of(contest));
+        if (contest.isPublished() && !request.published()) {
+            requireWithdrawable(contest);
+        }
         apply(contest, request);
     }
 
     private void apply(Contest contest, ContestUpsertRequest request) {
+        // Read before anything is written: the lock depends on the stored
+        // announcement, which this very request may be about to change.
+        boolean locked = contest.isLocked(Instant.now());
+
         contest.setTitle(ValidationRules.trimToNull(request.title()));
         contest.setSlug(slugOf(request));
         contest.setDescription(ValidationRules.trimToNull(request.description()));
@@ -147,7 +158,7 @@ public class ContestAuthoringService {
         // of us. Once it has run, changing it moves real ratings, and that goes
         // through setRated so the ledger is replayed rather than silently
         // contradicted.
-        if (!contest.isSealed()) {
+        if (!locked) {
             contest.setRated(request.rated());
             if (request.rated()) {
                 contest.setUnratedReason(null);
@@ -155,18 +166,10 @@ public class ContestAuthoringService {
         }
 
         List<ContestProblemPayload> payloads = request.problems() == null ? List.of() : request.problems();
-        if (!contest.isSealed()) {
+        // A started contest keeps its questions and their points: the validator
+        // has already refused any change to either, so there is nothing to write.
+        if (!locked) {
             rebuildProblems(contest, payloads);
-        } else {
-            // Points remain editable: they rescale the standings rather than
-            // change what anybody solved, and correcting a mis-weighted question
-            // is exactly what a rejudge is then for.
-            for (int position = 0; position < payloads.size() && position < contest.getProblems().size(); position++) {
-                Integer points = payloads.get(position).points();
-                if (points != null) {
-                    contest.getProblems().get(position).setPoints(points);
-                }
-            }
         }
     }
 
@@ -198,6 +201,22 @@ public class ContestAuthoringService {
         // and it is what lets an author preview the contest exactly as a
         // competitor will see it.
         contestService.snapshotProblems(contest);
+    }
+
+    /** The stored contest expressed as the request that would recreate it. */
+    private static ContestUpsertRequest asRequest(Contest contest, boolean published) {
+        return new ContestUpsertRequest(
+                contest.getTitle(),
+                contest.getSlug(),
+                contest.getDescription(),
+                contest.getType(),
+                contest.getStartsAt(),
+                contest.getDurationMinutes(),
+                published,
+                contest.isRated(),
+                contest.getProblems().stream()
+                        .map(slot -> new ContestProblemPayload(slot.getProblem().getId(), slot.getPoints()))
+                        .toList());
     }
 
     private static String slugOf(ContestUpsertRequest request) {
@@ -232,26 +251,37 @@ public class ContestAuthoringService {
                 throw new BusinessRuleException(
                         "error.contest.startsAtPast", "An announced contest has to start in the future");
             }
+            // And for the same reason, everything else announcing asks of the
+            // questions: announcing is what hides them until the contest ends and
+            // then publishes them, whichever route it came through.
+            validator.validate(asRequest(contest, true), Optional.of(contest));
         }
 
         if (!published) {
-            // Withdrawn on the same principle as deletion, one step softer:
-            // refused once anybody has invested something in it. A contest people
-            // sat is their record; a contest people signed up for is a promise
-            // already made. Anything else — including one that has slipped into
-            // its window with nobody registered and nobody competing — can be
-            // taken back, and that is the only way out of an accidental live
-            // contest short of waiting for the clock.
-            if (participationRepository.countByContestIdAndSubmissionCountGreaterThan(id, 0) > 0) {
-                throw new BusinessRuleException(
-                        "error.contest.hasParticipants", "People have competed in this contest");
-            }
-            if (contest.hasStarted(Instant.now()) && participationRepository.countByContestId(id) > 0) {
-                throw new BusinessRuleException(
-                        "error.contest.started", "That contest has started and people have registered for it");
-            }
+            requireWithdrawable(contest);
         }
         contest.setPublished(published);
+    }
+
+    /**
+     * Refuses to take back an announcement somebody is already invested in.
+     *
+     * <p>The same principle as deletion, one step softer: a contest people sat is
+     * their record; a contest people signed up for is a promise already made.
+     * Anything else — including one that has slipped into its window with nobody
+     * registered and nobody competing — can be taken back, and that is the only
+     * way out of an accidental live contest short of waiting for the clock: once
+     * it is a draft again the lock lifts, and it can be rescheduled.
+     */
+    private void requireWithdrawable(Contest contest) {
+        if (participationRepository.countByContestIdAndSubmissionCountGreaterThan(contest.getId(), 0) > 0) {
+            throw new BusinessRuleException(
+                    "error.contest.hasParticipants", "People have competed in this contest");
+        }
+        if (contest.hasStarted(Instant.now()) && participationRepository.countByContestId(contest.getId()) > 0) {
+            throw new BusinessRuleException(
+                    "error.contest.started", "That contest has started and people have registered for it");
+        }
     }
 
     /**

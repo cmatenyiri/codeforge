@@ -40,12 +40,18 @@ const remove = (key: string): void => {
 /** How long typing has to pause before the draft is written. */
 const PERSIST_DELAY_MS = 400;
 
-export const useCodeDraft = (slug: string, language: Language, starterCode: string) => {
+/**
+ * @param restoredCode what to show when this browser has no draft — the code the
+ *     server last judged, so a solution written elsewhere is not replaced by the
+ *     stub. Only ever a fallback: a local draft is newer by construction, since it
+ *     is written as the solver types. `reset` still returns to the stub.
+ */
+export const useCodeDraft = (slug: string, language: Language, starterCode: string, restoredCode?: string) => {
   const key = draftKey(slug, language);
 
   // The draft and the key it belongs to are stored together, so the two can never
   // disagree about which language the code on screen is written in.
-  const [draft, setDraft] = useState(() => ({ key, code: read(key) ?? starterCode }));
+  const [draft, setDraft] = useState(() => ({ key, code: read(key) ?? restoredCode ?? starterCode }));
 
   // Adjusted during render rather than in an effect. An effect would leave one
   // committed render where the key is the new language but the code is still the
@@ -53,7 +59,7 @@ export const useCodeDraft = (slug: string, language: Language, starterCode: stri
   // previous language's source. React re-runs this component immediately
   // instead, before anything reaches the screen.
   if (draft.key !== key) {
-    setDraft({ key, code: read(key) ?? starterCode });
+    setDraft({ key, code: read(key) ?? restoredCode ?? starterCode });
   }
 
   const setCode = useCallback((code: string) => {

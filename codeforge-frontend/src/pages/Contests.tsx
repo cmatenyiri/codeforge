@@ -1,15 +1,30 @@
-import { Alert, Box, CircularProgress, Container, Divider, Paper, Stack, Typography } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Divider,
+  Pagination,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import { toApiError } from '../api/api-error';
 import { contestsApi } from '../api/contests-api';
 import { type ContestSummary } from '../api/types';
 import { ContestCard } from '../components/contest/ContestCard';
+import { ContestRulesButton } from '../components/contest/ContestRulesButton';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
 
 /** How often the lobby re-reads the clock while something is imminent or live. */
 const POLL_INTERVAL_MS = 30_000;
+
+/** Past contests per page. */
+const PAST_PAGE_SIZE = 10;
 
 const EmptyState = ({ title, body }: { title: string; body: string }) => (
   <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
@@ -31,8 +46,15 @@ export const ContestsPage = () => {
   const { t } = useTranslation();
   const message = useMessages();
 
+  // The archive page lives in the URL, one-based as it reads, so the back button
+  // returns to it and a link to page 4 is a link to page 4.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pastPage = Math.max(1, Number(searchParams.get('page')) || 1);
+  const pastHeading = useRef<HTMLHeadingElement>(null);
+
   const [upcoming, setUpcoming] = useState<ContestSummary[]>([]);
   const [past, setPast] = useState<ContestSummary[]>([]);
+  const [pastPages, setPastPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState<string | null>(null);
@@ -43,14 +65,14 @@ export const ContestsPage = () => {
         setLoading(true);
       }
 
-      Promise.all([contestsApi.upcoming(), contestsApi.list(0, 20)])
+      // The archive is only contests that have ended, asked for as such: the
+      // upcoming rail already leads with anything live or imminent, and a page
+      // filtered after the fact would be short by however many that was.
+      Promise.all([contestsApi.upcoming(), contestsApi.past(pastPage - 1, PAST_PAGE_SIZE)])
         .then(([next, page]) => {
           setUpcoming(next);
-          // The upcoming rail already leads with anything live or imminent, so
-          // the list below is the archive — showing a contest twice would make
-          // the page read as though there were two.
-          const shown = new Set(next.map((contest) => contest.id));
-          setPast(page.content.filter((contest) => !shown.has(contest.id)));
+          setPast(page.content);
+          setPastPages(page.totalPages);
           setError(null);
         })
         .catch((caught: unknown) => {
@@ -61,11 +83,15 @@ export const ContestsPage = () => {
           setLoading(false);
         });
     },
-    [message],
+    [message, pastPage],
   );
 
+  // The spinner is for the first load only. Turning a page re-reads in place,
+  // so the upcoming rail and the heading the page scrolls to stay where they are.
+  const loadedOnce = useRef(false);
   useEffect(() => {
-    load(true);
+    load(!loadedOnce.current);
+    loadedOnce.current = true;
   }, [load]);
 
   useEffect(() => {
@@ -103,12 +129,19 @@ export const ContestsPage = () => {
 
       <Container maxWidth="lg" sx={{ py: 5 }}>
         <Stack spacing={4}>
-          <Box>
-            <Typography variant="h1">{t('contest.title')}</Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1 }}>
-              {t('contest.subtitle')}
-            </Typography>
-          </Box>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}
+          >
+            <Box>
+              <Typography variant="h1">{t('contest.title')}</Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1 }}>
+                {t('contest.subtitle')}
+              </Typography>
+            </Box>
+            <ContestRulesButton />
+          </Stack>
 
           {error ? <Alert severity="error">{error}</Alert> : null}
 
@@ -137,28 +170,29 @@ export const ContestsPage = () => {
               <Divider />
 
               <Stack spacing={2}>
-                <Typography variant="h3">{t('contest.past')}</Typography>
+                <Typography ref={pastHeading} variant="h3" sx={{ scrollMarginTop: 80 }}>
+                  {t('contest.past')}
+                </Typography>
                 {past.length === 0 ? (
                   <EmptyState title={t('contest.noPast')} body={t('contest.noPastBody')} />
                 ) : (
                   past.map((contest) => <ContestCard key={contest.id} contest={contest} />)
                 )}
+
+                {pastPages > 1 ? (
+                  <Stack sx={{ alignItems: 'center', pt: 1 }}>
+                    <Pagination
+                      count={pastPages}
+                      page={Math.min(pastPage, pastPages)}
+                      onChange={(_, value) => {
+                        setSearchParams(value === 1 ? {} : { page: String(value) });
+                        pastHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                    />
+                  </Stack>
+                ) : null}
               </Stack>
 
-              <Paper variant="outlined" sx={{ p: 2.5 }}>
-                <Typography variant="h4" sx={{ mb: 1 }}>
-                  {t('contest.rulesTitle')}
-                </Typography>
-                <Stack component="ul" spacing={0.75} sx={{ m: 0, pl: 2.5, color: 'text.secondary' }}>
-                  {(
-                    ['rulesClock', 'rulesScore', 'rulesPenalty', 'rulesFrozen', 'rulesRating'] as const
-                  ).map((key) => (
-                    <Typography key={key} component="li" variant="body2">
-                      {t(`contest.${key}`)}
-                    </Typography>
-                  ))}
-                </Stack>
-              </Paper>
             </>
           )}
         </Stack>

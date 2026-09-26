@@ -12,6 +12,7 @@ import { type AdminQueryState } from './admin-problem-query';
 
 const STATE_LABEL_KEY = {
   DRAFT: 'admin.state.draft',
+  IN_CONTEST: 'admin.state.inContest',
   PUBLISHED: 'admin.state.published',
   ARCHIVED: 'admin.state.archived',
 } as const satisfies Record<ProblemState, string>;

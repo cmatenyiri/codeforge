@@ -5,9 +5,11 @@ import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemHint;
 import com.codeforge.domain.ProblemState;
 import com.codeforge.service.ProblemAuthoringService.Authored;
+import com.codeforge.service.ProblemAuthoringService.ContestHold;
 import com.codeforge.service.ProblemAuthoringService.TestCaseCounts;
 import com.codeforge.web.dto.admin.AdminProblemDetailResponse;
 import com.codeforge.web.dto.admin.AdminProblemSummaryResponse;
+import com.codeforge.web.dto.admin.ContestHoldResponse;
 import com.codeforge.web.dto.admin.EditorialPayload;
 import com.codeforge.web.dto.admin.ProblemExamplePayload;
 import com.codeforge.web.dto.admin.ProblemParameterPayload;
@@ -31,13 +33,15 @@ public class AdminProblemMapper {
 
     private final ProblemMapper problemMapper;
 
-    public AdminProblemSummaryResponse toSummary(Problem problem, TestCaseCounts counts, boolean hasEditorial) {
+    /** @param hold the contest holding it back, or null */
+    public AdminProblemSummaryResponse toSummary(
+            Problem problem, TestCaseCounts counts, boolean hasEditorial, ContestHold hold) {
         return new AdminProblemSummaryResponse(
                 problem.getId(),
                 problem.getSlug(),
                 problem.getTitle(),
                 problem.getDifficulty(),
-                ProblemState.of(problem),
+                ProblemState.of(problem, hold != null),
                 tags(problem),
                 counts.total(),
                 counts.samples(),
@@ -45,7 +49,8 @@ public class AdminProblemMapper {
                 problem.getFunctionName() != null && problem.getReturnType() != null,
                 problem.getTotalSubmissions(),
                 problem.getAcceptanceRate(),
-                problem.getUpdatedAt());
+                problem.getUpdatedAt(),
+                toHoldResponse(hold));
     }
 
     public AdminProblemDetailResponse toDetail(Authored authored) {
@@ -58,7 +63,7 @@ public class AdminProblemMapper {
                 problem.getDifficulty(),
                 problem.getDescription(),
                 problem.getConstraintsMarkdown(),
-                ProblemState.of(problem),
+                ProblemState.of(problem, authored.hold() != null),
                 problem.isPublished(),
                 problem.isArchived(),
                 tags(problem),
@@ -84,7 +89,12 @@ public class AdminProblemMapper {
                 problem.getTotalSubmissions(),
                 problem.getAcceptedSubmissions(),
                 problem.getCreatedAt(),
-                problem.getUpdatedAt());
+                problem.getUpdatedAt(),
+                toHoldResponse(authored.hold()));
+    }
+
+    private static ContestHoldResponse toHoldResponse(ContestHold hold) {
+        return hold == null ? null : new ContestHoldResponse(hold.contestId(), hold.slug(), hold.title());
     }
 
     private EditorialPayload toEditorialPayload(Editorial editorial) {

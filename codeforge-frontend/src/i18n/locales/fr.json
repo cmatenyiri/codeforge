@@ -178,6 +178,10 @@
         "examples": "Un problème publié a besoin d'au moins un exemple.",
         "testCases": "Un problème publié a besoin de cas de test.",
         "samples": "Un problème publié a besoin d'au moins un cas visible sur lequel s'exécuter."
+      },
+      "held": {
+        "published": "Un concours annoncé publie ce problème à sa fin.",
+        "archived": "Un concours annoncé utilise ce problème, il ne peut donc pas être archivé."
       }
     },
     "tag": {
@@ -212,15 +216,21 @@
       },
       "problems": {
         "required": "An announced contest needs at least one question",
-        "sealed": "A contest that has started keeps the questions it ran with"
+        "sealed": "A contest that has started keeps the questions it ran with",
+        "pointsSealed": "A contest that has started keeps the points it ran with"
       },
       "problem": {
         "required": "Choose a problem",
         "duplicate": "That problem is already in this contest",
         "unknown": "That problem no longer exists",
         "noSignature": "That problem has no solution signature yet",
+        "noExamples": "That problem has no example yet",
         "noTestCases": "That problem has no test cases yet",
+        "noSamples": "That problem has no sample case to run against",
         "archived": "That problem has been retired",
+        "public": "That problem is already public, so anyone could read it before the contest",
+        "previouslyPublic": "That problem has been public before, so it is not new to everyone",
+        "held": "Another announced contest is already using that problem",
         "points": "A question is worth between 1 and 100 points"
       }
     }
@@ -275,7 +285,8 @@
       "notFound": "Ce problème n'existe pas.",
       "hasSubmissions": "Des personnes ont soumis sur ce problème. Archive-le plutôt que de le supprimer.",
       "usedByInterviews": "Ce problème a été posé en entretien. Archive-le plutôt que de le supprimer.",
-      "usedByContests": "This problem has been asked in a contest; archive it instead."
+      "usedByContests": "This problem has been asked in a contest; archive it instead.",
+      "inContest": "Un concours annoncé utilise ce problème. Il reste caché jusqu'à la fin du concours, puis il est publié."
     },
     "contest": {
       "notFound": "That contest does not exist.",
@@ -554,8 +565,10 @@
   "admin": {
     "state": {
       "draft": "Brouillon",
+      "inContest": "En concours",
       "published": "Publié",
-      "archived": "Archivé"
+      "archived": "Archivé",
+      "inContestHint": "Réservé par « {{title}} ». Publié automatiquement à la fin du concours."
     },
     "list": {
       "title": "Problèmes",
@@ -626,9 +639,11 @@
       "difficulty": "Difficulté",
       "state": "État",
       "stateHelpDraft": "Invisible pour ceux qui résolvent. Toi seul peux l'ouvrir.",
+      "stateHelpInContest": "Réservé par « {{title}} » : caché jusqu'à la fin du concours, puis publié automatiquement.",
       "stateHelpPublished": "En ligne dans le catalogue.",
       "stateHelpArchived": "Retiré du catalogue ; les soumissions passées restent consultables.",
       "publishBlocked": "Ce problème ne peut pas encore être publié :",
+      "heldBlocked": "Un concours annoncé publie ce problème à sa fin, il doit donc rester prêt à être publié :",
       "topics": "Thèmes",
       "topicsPlaceholder": "Arrays, Hash Table…",
       "newTopic": "Nouveau thème",
@@ -709,7 +724,9 @@
       "people": "People",
       "rejudge": "Rejudge",
       "sealed": "Sealed",
-      "sealedHint": "The questions and the clock are settled; a contest that has started keeps what it ran with.",
+      "lockedTitle": "This contest has started",
+      "sealedHint": "The questions, their points and the clock are settled; a contest that has started keeps what it ran with.",
+      "problemsReleased": "Problems released",
       "ratingsApplied": "Rated",
       "ratingsPending": "Awaiting rating",
       "basics": "Basics",
@@ -727,14 +744,15 @@
       "ratedField": "Rated",
       "ratedHelp": "A rated contest moves everybody's rating when it is settled.",
       "questions": "Questions",
-      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6.",
+      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6. Questions stay hidden until the contest ends, then they are published automatically.",
       "addQuestion": "Add a question",
       "pickProblem": "Problem",
       "points": "Points",
       "removeQuestion": "Remove",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "publishedProblemWarning": "This problem is already in the catalogue, so anyone could read it — and its editorial — before the contest starts.",
+      "publishedProblemWarning": "This problem is already public, so anyone could read it — and its editorial — before the contest. Replace it with a draft before announcing.",
+      "previouslyPublicWarning": "This problem has been public before, so people may already know it. Contest questions have to be new; replace it with one that has never been published before announcing.",
       "notSolvable": "This problem has no solution signature or no test cases yet.",
       "save": "Save",
       "saving": "Saving…",
@@ -780,7 +798,7 @@
   },
   "contest": {
     "title": "Concours",
-    "subtitle": "Quatre-vingt-dix minutes, quatre problèmes, tout le monde en même temps.",
+    "subtitle": "Des manches chronométrées que tout le monde dispute au même moment.",
     "type": {
       "weekly": "Hebdomadaire",
       "biweekly": "Bimensuel",
@@ -857,14 +875,26 @@
     "solvedAt": "Résolu à {{time}}",
     "notSolved": "Non résolu",
     "submissions": "Soumissions",
-    "penaltyHint": "5 minutes par soumission erronée, uniquement sur les problèmes résolus.",
-    "scoreHint": "Le score d'abord, puis le temps de fin plus la pénalité.",
-    "rulesTitle": "Comment ça marche",
-    "rulesClock": "Quatre-vingt-dix minutes sur une horloge qui démarre pour tous en même temps.",
-    "rulesScore": "Chaque problème vaut des points ; le score prime, le temps ne départage qu'en cas d'égalité.",
-    "rulesPenalty": "Une soumission erronée coûte cinq minutes — mais seulement sur un problème que vous finissez par résoudre.",
-    "rulesFrozen": "Les problèmes sont figés au démarrage, pour que tous soient jugés sur les mêmes tests.",
-    "rulesRating": "Un concours classé fait évoluer votre classement face à tous les participants.",
+    "scoreHint": "Points des problèmes résolus. La valeur de chaque problème est indiquée sous son libellé.",
+    "timeHint": "Moment où le dernier problème a été résolu, plus 5 minutes par soumission erronée sur un problème résolu.",
+    "legend": {
+      "title": "Comment lire le classement",
+      "ranking": "Plus de points classe plus haut. À points égaux, le temps le plus court l'emporte.",
+      "score": "Le score correspond aux points des problèmes résolus — le nombre sous Q1, Q2… est la valeur de chacun.",
+      "time": "Le temps est le moment où le dernier problème a été résolu, compté depuis le début, plus 5 minutes par soumission erronée sur un problème résolu.",
+      "solved": "Résolu, ce temps après le début.",
+      "solvedAfterWrong": "Résolu après 1 soumission erronée, qui a ajouté 5 minutes au temps.",
+      "wrongUnsolved": "2 soumissions erronées, jamais résolu — ni points ni pénalité.",
+      "untouched": "Pas tenté."
+    },
+    "rulesButton": "Fonctionnement des concours",
+    "rulesTitle": "Fonctionnement des concours",
+    "rulesClock": "Tout le monde commence et termine au même moment. Chaque concours indique sa durée et son nombre de problèmes.",
+    "rulesAccess": "Inscrivez-vous pour participer. Les problèmes restent cachés jusqu'au démarrage. Vous pouvez encore vous inscrire pendant un concours en cours — seul le temps écoulé est perdu.",
+    "rulesScore": "Chaque problème vaut les points indiqués à côté. Plus de points classe plus haut ; à points égaux, le temps le plus court l'emporte.",
+    "rulesPenalty": "Votre temps est le moment où vous avez résolu votre dernier problème, plus cinq minutes par soumission refusée — erreurs de compilation comprises — sur un problème résolu. « Exécuter » ne compte pas, et soumettre à nouveau après une résolution ne coûte rien.",
+    "rulesFrozen": "Les problèmes sont figés au démarrage, pour que tous soient jugés sur les mêmes tests. Après la fin, ils deviennent des problèmes d'entraînement ordinaires et les soumissions ne comptent plus.",
+    "rulesRating": "Un concours classé fait évoluer le classement de tous les inscrits, à la hausse ou à la baisse, selon leur place. S'inscrire sans rien soumettre compte comme un score nul. Les classements sont appliqués une fois les résultats vérifiés.",
     "yourRating": "Votre classement",
     "unrankedHint": "Inscrivez-vous pour participer.",
     "registerToView": "Inscrivez-vous pour voir les problèmes",

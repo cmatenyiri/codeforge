@@ -268,8 +268,20 @@ export type DifficultyProgress = { difficulty: Difficulty; solved: number; total
 /* Authoring (admin only)                                                     */
 /* ------------------------------------------------------------------------- */
 
-/** Where a problem is in its authoring life. Mirrors `com.codeforge.domain.ProblemState`. */
-export type ProblemState = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+/**
+ * Where a problem is in its authoring life. Mirrors `com.codeforge.domain.ProblemState`.
+ *
+ * `IN_CONTEST` is derived from contests rather than stored: an unpublished problem
+ * an announced contest is holding back until it ends, and publishes then.
+ */
+export type ProblemState = 'DRAFT' | 'IN_CONTEST' | 'PUBLISHED' | 'ARCHIVED';
+
+/** The announced contest keeping a problem out of the catalogue. Mirrors `ContestHoldResponse`. */
+export type ContestHold = {
+  contestId: number;
+  slug: string;
+  title: string;
+};
 
 /**
  * The value shapes a solution signature can be built from.
@@ -360,6 +372,8 @@ export type AdminProblemSummary = {
   totalSubmissions: number;
   acceptanceRate?: number;
   updatedAt: string;
+  /** Set while an announced contest holds the problem; it publishes it when it ends. */
+  heldBy?: ContestHold;
 };
 
 /**
@@ -392,6 +406,8 @@ export type AdminProblemDetail = {
   acceptedSubmissions: number;
   createdAt: string;
   updatedAt: string;
+  /** Set while an announced contest holds the problem; it publishes it when it ends. */
+  heldBy?: ContestHold;
 };
 
 /** A signature to render starter code for, before it has been saved. */
@@ -822,6 +838,8 @@ export type AdminContestProblem = {
   /** Without a signature and cases the arena renders an editor that cannot run. */
   solvable: boolean;
   testCaseCount: number;
+  /** Whether it has ever been public — which rules it out even as a draft again. */
+  everPublished: boolean;
 };
 
 /** A contest in full, for the authoring form. Mirrors `AdminContestDetailResponse`. */
@@ -840,6 +858,8 @@ export type AdminContestDetail = {
   unratedReason?: string;
   sealed: boolean;
   sealedAt?: string;
+  /** When the questions went into the catalogue; absent while the contest still holds them. */
+  problemsReleasedAt?: string;
   ratingsAppliedAt?: string;
   registrationCount: number;
   participantCount: number;

@@ -178,6 +178,10 @@
         "examples": "A published problem needs at least one example.",
         "testCases": "A published problem needs test cases.",
         "samples": "A published problem needs at least one sample case to run against."
+      },
+      "held": {
+        "published": "An announced contest publishes this problem when it ends.",
+        "archived": "An announced contest is using this problem, so it cannot be archived."
       }
     },
     "tag": {
@@ -212,15 +216,21 @@
       },
       "problems": {
         "required": "An announced contest needs at least one question",
-        "sealed": "A contest that has started keeps the questions it ran with"
+        "sealed": "A contest that has started keeps the questions it ran with",
+        "pointsSealed": "A contest that has started keeps the points it ran with"
       },
       "problem": {
         "required": "Choose a problem",
         "duplicate": "That problem is already in this contest",
         "unknown": "That problem no longer exists",
         "noSignature": "That problem has no solution signature yet",
+        "noExamples": "That problem has no example yet",
         "noTestCases": "That problem has no test cases yet",
+        "noSamples": "That problem has no sample case to run against",
         "archived": "That problem has been retired",
+        "public": "That problem is already public, so anyone could read it before the contest",
+        "previouslyPublic": "That problem has been public before, so it is not new to everyone",
+        "held": "Another announced contest is already using that problem",
         "points": "A question is worth between 1 and 100 points"
       }
     }
@@ -275,7 +285,8 @@
       "notFound": "That problem does not exist.",
       "hasSubmissions": "People have submitted to this problem. Archive it instead of deleting it.",
       "usedByInterviews": "This problem has been asked in an interview. Archive it instead of deleting it.",
-      "usedByContests": "This problem has been asked in a contest; archive it instead."
+      "usedByContests": "This problem has been asked in a contest; archive it instead.",
+      "inContest": "An announced contest is using this problem. It stays hidden until the contest ends and is published then."
     },
     "contest": {
       "notFound": "That contest does not exist.",
@@ -554,8 +565,10 @@
   "admin": {
     "state": {
       "draft": "Draft",
+      "inContest": "In contest",
       "published": "Published",
-      "archived": "Archived"
+      "archived": "Archived",
+      "inContestHint": "Held by “{{title}}”. Published automatically when the contest ends."
     },
     "list": {
       "title": "Problems",
@@ -626,9 +639,11 @@
       "difficulty": "Difficulty",
       "state": "State",
       "stateHelpDraft": "Invisible to solvers. Only you can open it.",
+      "stateHelpInContest": "Held by “{{title}}”: hidden until the contest ends, then published automatically.",
       "stateHelpPublished": "Live in the catalogue.",
       "stateHelpArchived": "Out of the catalogue; past submissions still resolve.",
       "publishBlocked": "This problem cannot be published yet:",
+      "heldBlocked": "An announced contest publishes this problem when it ends, so it has to stay ready to publish:",
       "topics": "Topics",
       "topicsPlaceholder": "Arrays, Hash Table…",
       "newTopic": "New topic",
@@ -709,7 +724,9 @@
       "people": "People",
       "rejudge": "Rejudge",
       "sealed": "Sealed",
-      "sealedHint": "The questions and the clock are settled; a contest that has started keeps what it ran with.",
+      "lockedTitle": "This contest has started",
+      "sealedHint": "The questions, their points and the clock are settled; a contest that has started keeps what it ran with.",
+      "problemsReleased": "Problems released",
       "ratingsApplied": "Rated",
       "ratingsPending": "Awaiting rating",
       "basics": "Basics",
@@ -727,14 +744,15 @@
       "ratedField": "Rated",
       "ratedHelp": "A rated contest moves everybody's rating when it is settled.",
       "questions": "Questions",
-      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6.",
+      "questionsHelp": "In order. Q1 should be the gentlest; points default to 3, 4, 5, 6. Questions stay hidden until the contest ends, then they are published automatically.",
       "addQuestion": "Add a question",
       "pickProblem": "Problem",
       "points": "Points",
       "removeQuestion": "Remove",
       "moveUp": "Move up",
       "moveDown": "Move down",
-      "publishedProblemWarning": "This problem is already in the catalogue, so anyone could read it — and its editorial — before the contest starts.",
+      "publishedProblemWarning": "This problem is already public, so anyone could read it — and its editorial — before the contest. Replace it with a draft before announcing.",
+      "previouslyPublicWarning": "This problem has been public before, so people may already know it. Contest questions have to be new; replace it with one that has never been published before announcing.",
       "notSolvable": "This problem has no solution signature or no test cases yet.",
       "save": "Save",
       "saving": "Saving…",
@@ -780,7 +798,7 @@
   },
   "contest": {
     "title": "Contests",
-    "subtitle": "Ninety minutes, four problems, everybody at once.",
+    "subtitle": "Timed rounds that everybody sits at the same moment.",
     "type": {
       "weekly": "Weekly",
       "biweekly": "Biweekly",
@@ -857,14 +875,26 @@
     "solvedAt": "Solved at {{time}}",
     "notSolved": "Not solved",
     "submissions": "Submissions",
-    "penaltyHint": "5 minutes per wrong submission, on solved problems only.",
-    "scoreHint": "Score first, then finish time plus penalty.",
-    "rulesTitle": "How it works",
-    "rulesClock": "Ninety minutes on a clock that starts for everybody at once.",
-    "rulesScore": "Each problem is worth points; more points wins, and time only breaks a tie.",
-    "rulesPenalty": "A wrong submission costs five minutes — but only on a problem you go on to solve.",
-    "rulesFrozen": "The problems are frozen when the contest starts, so everybody is judged on the same tests.",
-    "rulesRating": "A rated contest moves your rating, up or down, against everybody who competed.",
+    "scoreHint": "Points from solved problems. What each problem is worth is shown under its label.",
+    "timeHint": "When the last problem was solved, plus 5 minutes for each wrong submission on a problem that was solved.",
+    "legend": {
+      "title": "How to read the standings",
+      "ranking": "More points ranks higher. On equal points, the lower time wins.",
+      "score": "Score is the points from solved problems — the number under Q1, Q2… is what each one is worth.",
+      "time": "Time is when the last problem was solved, counted from the start, plus 5 minutes for each wrong submission on a problem that was solved.",
+      "solved": "Solved, this long after the start.",
+      "solvedAfterWrong": "Solved after 1 wrong submission, which added 5 minutes to the time.",
+      "wrongUnsolved": "2 wrong submissions, never solved — no points and no penalty.",
+      "untouched": "Not attempted."
+    },
+    "rulesButton": "How contests work",
+    "rulesTitle": "How contests work",
+    "rulesClock": "Everybody starts and finishes at the same moment. Each contest shows how long it runs and how many problems it has.",
+    "rulesAccess": "Register to take part. The problems stay hidden until the start. You can still register while a contest is running, but the time already gone is lost.",
+    "rulesScore": "Each problem is worth the points shown next to it. More points ranks higher; on equal points, the lower time wins.",
+    "rulesPenalty": "Your time is when you solved your last problem, plus five minutes for each rejected submission — compile errors included — on a problem you solved. Run doesn't count, and submitting again after a solve costs nothing.",
+    "rulesFrozen": "The problems are frozen when the contest starts, so everybody is judged on the same tests. Once it ends they become ordinary practice problems, and submissions no longer count.",
+    "rulesRating": "A rated contest moves the rating of everybody who registered, up or down, by where they finished. Registering and then submitting nothing counts the same as scoring nothing. Ratings are applied once the results have been checked.",
     "yourRating": "Your rating",
     "unrankedHint": "Register to take part.",
     "registerToView": "Register to see the problems",

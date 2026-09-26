@@ -258,7 +258,7 @@ export const AdminProblemEditorPage = () => {
               <Typography variant="h1">
                 {problemId === null ? t('admin.form.newTitle') : form.title || t('admin.form.untitled')}
               </Typography>
-              {saved ? <ProblemStateChip state={saved.state} /> : null}
+              {saved ? <ProblemStateChip state={saved.state} heldBy={saved.heldBy} /> : null}
               {saved ? (
                 <MuiLink
                   component={Link}
@@ -288,6 +288,7 @@ export const AdminProblemEditorPage = () => {
             onChange={change}
             errorOf={errorOf}
             publishErrors={publishErrors}
+            heldBy={saved?.heldBy}
             tags={tags}
             onTagCreated={(tag) => {
               setTags((current) => [...current, tag].sort((a, b) => a.name.localeCompare(b.name)));

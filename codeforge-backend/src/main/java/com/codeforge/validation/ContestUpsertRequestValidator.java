@@ -1,8 +1,10 @@
 package com.codeforge.validation;
 
 import com.codeforge.domain.Contest;
+import com.codeforge.domain.ContestProblem;
 import com.codeforge.domain.Problem;
 import com.codeforge.domain.Slugs;
+import com.codeforge.domain.TestCase;
 import com.codeforge.repository.ContestRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.web.dto.contest.ContestProblemPayload;
@@ -28,10 +30,12 @@ import org.springframework.stereotype.Component;
  *   <li><b>Only when announcing</b>: completeness. Questions, each of them
  *       actually solvable, and a start time that has not already gone by. A draft
  *       is allowed to be half-written — that is what a draft is for.
- *   <li><b>Never, once it has started</b>: the questions and the clock. A sealed
- *       contest is being sat, or has been sat, against a fixed set of problems in
- *       a fixed window, and changing either would rewrite a round somebody has
- *       already competed in. This is the rule the whole snapshot mechanism exists
+ *   <li><b>Never, once it has started</b>: the questions, their points and the
+ *       clock. A started contest is being sat, or has been sat, against a fixed
+ *       set of problems worth fixed points in a fixed window, and changing any of
+ *       them would rewrite a round somebody has already competed in. "Started"
+ *       is the clock's call — see {@link Contest#isLocked} — not whether anybody
+ *       has opened it yet. This is the rule the whole snapshot mechanism exists
  *       to enforce, and refusing the edit outright is the honest version of it —
  *       silently ignoring the change would leave the author believing it landed.
  * </ul>
@@ -47,7 +51,7 @@ public class ContestUpsertRequestValidator {
     private static final int MIN_DURATION_MINUTES = 5;
 
     /** A contest may not take a slug the contest routes already mean something by. */
-    private static final Set<String> RESERVED_SLUGS = Set.of("new", "upcoming", "running");
+    private static final Set<String> RESERVED_SLUGS = Set.of("new", "upcoming", "running", "past");
 
     private final ContestRepository contestRepository;
     private final ProblemRepository problemRepository;
@@ -134,8 +138,8 @@ public class ContestUpsertRequestValidator {
                     "A contest runs between " + MIN_DURATION_MINUTES + " and " + MAX_DURATION_MINUTES + " minutes");
         }
 
-        boolean sealed = existing.map(Contest::isSealed).orElse(false);
-        if (sealed) {
+        boolean locked = existing.map(contest -> contest.isLocked(Instant.now())).orElse(false);
+        if (locked) {
             Contest contest = existing.orElseThrow();
             // The clock a field competed against is part of the result. Moving
             // either end of it after the fact would re-score finish times that
@@ -168,21 +172,36 @@ public class ContestUpsertRequestValidator {
 
         List<ContestProblemPayload> problems = request.problems() == null ? List.of() : request.problems();
 
-        if (existing.map(Contest::isSealed).orElse(false)) {
+        if (existing.map(contest -> contest.isLocked(Instant.now())).orElse(false)) {
             List<Long> frozen = existing.orElseThrow().getProblems().stream()
                     .map(slot -> slot.getProblem().getId())
                     .toList();
             List<Long> sent = problems.stream().map(ContestProblemPayload::problemId).toList();
 
+            if (!frozen.equals(sent)) {
+                errors.add(
+                        "problems",
+                        "validation.contest.problems.sealed",
+                        "A contest that has started keeps the questions it ran with");
+                return;
+            }
+            // The points too. Everybody competed for the points that were
+            // announced, and re-weighting a question afterwards would rank the
+            // field by rules nobody played under. A question that turns out to
+            // have been worth the wrong amount is a reason to make the contest
+            // unrated, not to change the scoring after the fact. A point value the
+            // request leaves out is left as it is.
+            List<ContestProblem> slots = existing.orElseThrow().getProblems();
+            boolean repointed = false;
+            for (int position = 0; position < problems.size(); position++) {
+                Integer points = problems.get(position).points();
+                repointed |= points != null && points != slots.get(position).getPoints();
+            }
             errors.addIf(
-                    !frozen.equals(sent),
+                    repointed,
                     "problems",
-                    "validation.contest.problems.sealed",
-                    "A contest that has started keeps the questions it ran with");
-            // Points are still editable on a sealed contest, deliberately: they
-            // rescale the standings rather than rewrite what anybody solved, and
-            // an author who mis-weighted Q3 should be able to fix it and rejudge.
-            validatePoints(problems, errors);
+                    "validation.contest.problems.pointsSealed",
+                    "A contest that has started keeps the points it ran with");
             return;
         }
 
@@ -206,25 +225,7 @@ public class ContestUpsertRequestValidator {
                 continue;
             }
             if (request.published()) {
-                // An unsolvable question is a wasted ninety minutes for the whole
-                // field, and unlike a typo it cannot be fixed once the contest has
-                // sealed. Checked at announcement rather than at save, so a draft
-                // can be assembled before the problems behind it are finished.
-                errors.addIf(
-                        problem.getFunctionName() == null || problem.getReturnType() == null,
-                        field,
-                        "validation.contest.problem.noSignature",
-                        "That problem has no solution signature yet");
-                errors.addIf(
-                        problem.getTestCases().isEmpty(),
-                        field,
-                        "validation.contest.problem.noTestCases",
-                        "That problem has no test cases yet");
-                errors.addIf(
-                        problem.isArchived(),
-                        field,
-                        "validation.contest.problem.archived",
-                        "That problem has been retired");
+                validateAnnounceable(problem, existing, field, errors);
             }
         }
 
@@ -235,6 +236,74 @@ public class ContestUpsertRequestValidator {
                 "An announced contest needs at least one question");
 
         validatePoints(problems, errors);
+    }
+
+    /**
+     * What announcing asks of each question.
+     *
+     * <p>Checked at announcement rather than at save, so a draft contest can be
+     * assembled before the problems behind it are finished. From announcement
+     * on, the contest holds each problem out of the catalogue and publishes it
+     * itself when it ends, which sets the two halves of this:
+     *
+     * <ul>
+     *   <li>The problem has to be new: never public, not merely private now. One
+     *       in the catalogue can be read — editorial and all — by anybody before
+     *       the contest starts; one that has been in it and was taken back out
+     *       has been read already, and whoever solved it still has their code.
+     *       And one another contest holds would be published at the end of
+     *       whichever round finished first.
+     *   <li>It has to be exactly what publishing it by hand would demand — the
+     *       same four rules {@link ProblemUpsertRequestValidator} applies —
+     *       because nobody will be watching when it is. An unsolvable question
+     *       is also a wasted ninety minutes for the whole field, and unlike a
+     *       typo it cannot be fixed once the contest has sealed.
+     * </ul>
+     */
+    private void validateAnnounceable(
+            Problem problem, Optional<Contest> existing, String field, ValidationErrors errors) {
+
+        if (problem.isArchived()) {
+            errors.add(field, "validation.contest.problem.archived", "That problem has been retired");
+            return;
+        }
+        if (problem.isPublished()) {
+            errors.add(
+                    field,
+                    "validation.contest.problem.public",
+                    "That problem is already public, so anyone could read it before the contest");
+        } else {
+            errors.addIf(
+                    problem.getFirstPublishedAt() != null,
+                    field,
+                    "validation.contest.problem.previouslyPublic",
+                    "That problem has been public before, so it is not new to everyone");
+        }
+        errors.addIf(
+                contestRepository.isHoldingProblemOutside(problem.getId(), existing.map(Contest::getId).orElse(null)),
+                field,
+                "validation.contest.problem.held",
+                "Another announced contest is already using that problem");
+
+        errors.addIf(
+                problem.getFunctionName() == null || problem.getReturnType() == null,
+                field,
+                "validation.contest.problem.noSignature",
+                "That problem has no solution signature yet");
+        errors.addIf(
+                problem.getExamples().isEmpty(),
+                field,
+                "validation.contest.problem.noExamples",
+                "That problem has no example yet");
+        if (problem.getTestCases().isEmpty()) {
+            errors.add(field, "validation.contest.problem.noTestCases", "That problem has no test cases yet");
+        } else {
+            errors.addIf(
+                    problem.getTestCases().stream().allMatch(TestCase::isHidden),
+                    field,
+                    "validation.contest.problem.noSamples",
+                    "That problem has no sample case to run against");
+        }
     }
 
     private static void validatePoints(List<ContestProblemPayload> problems, ValidationErrors errors) {

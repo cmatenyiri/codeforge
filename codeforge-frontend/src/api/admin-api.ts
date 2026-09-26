@@ -21,6 +21,8 @@ export type AdminProblemQuery = {
   difficulty?: Difficulty | '';
   tag?: string;
   state?: ProblemState | '';
+  /** Leaves out every problem that has ever been public — what a contest may still ask. */
+  neverPublished?: boolean;
   sort?: AdminProblemSort;
   order?: 'asc' | 'desc';
   page?: number;

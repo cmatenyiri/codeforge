@@ -6,6 +6,7 @@ import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemState;
 import com.codeforge.service.ExecutionService;
 import com.codeforge.service.ProblemAuthoringService;
+import com.codeforge.service.ProblemAuthoringService.ContestHold;
 import com.codeforge.service.ProblemAuthoringService.TestCaseCounts;
 import com.codeforge.web.dto.admin.AdminProblemDetailResponse;
 import com.codeforge.web.dto.admin.AdminProblemSummaryResponse;
@@ -72,24 +73,27 @@ public class AdminProblemController {
             @RequestParam(required = false) Difficulty difficulty,
             @RequestParam(required = false) String tag,
             @RequestParam(required = false) ProblemState state,
+            @RequestParam(defaultValue = "false") boolean neverPublished,
             @RequestParam(defaultValue = "updated") String sort,
             @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), sortOf(sort, order));
-        Page<Problem> problems =
-                authoringService.search(blankToNull(search), difficulty, blankToNull(tag), state, pageable);
+        Page<Problem> problems = authoringService.search(
+                blankToNull(search), difficulty, blankToNull(tag), state, neverPublished, pageable);
 
         List<Long> ids = problems.getContent().stream().map(Problem::getId).toList();
         Map<Long, TestCaseCounts> counts = authoringService.testCaseCounts(ids);
         Set<Long> withEditorial = authoringService.problemIdsWithEditorial(ids);
+        Map<Long, ContestHold> holds = authoringService.holds(ids);
 
         List<AdminProblemSummaryResponse> rows = problems.getContent().stream()
                 .map(problem -> adminProblemMapper.toSummary(
                         problem,
                         counts.getOrDefault(problem.getId(), new TestCaseCounts(0, 0)),
-                        withEditorial.contains(problem.getId())))
+                        withEditorial.contains(problem.getId()),
+                        holds.get(problem.getId())))
                 .toList();
 
         return ResponseEntity.ok(PageResponse.of(problems, rows));

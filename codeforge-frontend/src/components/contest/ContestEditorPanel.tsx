@@ -43,7 +43,11 @@ const ContestWorkspace = ({
   // empty editor mid-contest and orphaning what they had written. A question's
   // place in the contest is the one identifier nothing can move.
   const draftKey = `contest-${contestSlug}-${problem.position}`;
-  const { code, setCode, reset } = useCodeDraft(draftKey, language, starterCode);
+  // What the judge last saw, in the language it was written in, for a browser
+  // that has no draft of its own — a solution accepted elsewhere should come back
+  // as it was, not as the stub.
+  const restoredCode = language === problem.submittedLanguage ? problem.submittedSourceCode : undefined;
+  const { code, setCode, reset } = useCodeDraft(draftKey, language, starterCode, restoredCode);
 
   const [settings, setSettings] = useState<EditorSettings>(DEFAULT_EDITOR_SETTINGS);
   const [outcome, setOutcome] = useState<ConsoleOutcome | null>(null);
@@ -183,7 +187,14 @@ export const ContestEditorPanel = ({
 }) => {
   const { t } = useTranslation();
   const languages = useMemo(() => Object.keys(problem.starterCode) as Language[], [problem.starterCode]);
-  const initialLanguage = languages.includes(DEFAULT_LANGUAGE) ? DEFAULT_LANGUAGE : languages[0];
+  // Reopen in the language of the last submission, so the code it restores is
+  // the code on screen rather than one language-switch away.
+  const initialLanguage =
+    problem.submittedLanguage !== undefined && languages.includes(problem.submittedLanguage)
+      ? problem.submittedLanguage
+      : languages.includes(DEFAULT_LANGUAGE)
+        ? DEFAULT_LANGUAGE
+        : languages[0];
 
   if (initialLanguage === undefined) {
     return (

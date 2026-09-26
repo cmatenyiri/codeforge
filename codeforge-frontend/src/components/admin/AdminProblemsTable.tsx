@@ -95,6 +95,10 @@ const RowMenu = ({
     onAction(action, problem);
   };
 
+  // The contest publishes a problem it holds when it ends; until then it may be
+  // edited, but not released, retired or removed from under the contest.
+  const held = problem.state === 'IN_CONTEST';
+
   return (
     <>
       <IconButton
@@ -139,7 +143,7 @@ const RowMenu = ({
             <ListItemText>{t('admin.list.unpublish')}</ListItemText>
           </MenuItem>
         ) : (
-          <MenuItem onClick={choose('publish')} disabled={problem.state === 'ARCHIVED'}>
+          <MenuItem onClick={choose('publish')} disabled={problem.state === 'ARCHIVED' || held}>
             <ListItemIcon>
               <PublishRounded fontSize="small" />
             </ListItemIcon>
@@ -155,7 +159,7 @@ const RowMenu = ({
             <ListItemText>{t('admin.list.restore')}</ListItemText>
           </MenuItem>
         ) : (
-          <MenuItem onClick={choose('archive')}>
+          <MenuItem onClick={choose('archive')} disabled={held}>
             <ListItemIcon>
               <ArchiveRounded fontSize="small" />
             </ListItemIcon>
@@ -163,7 +167,7 @@ const RowMenu = ({
           </MenuItem>
         )}
 
-        <MenuItem onClick={choose('delete')} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={choose('delete')} disabled={held} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteOutlineRounded fontSize="small" color="error" />
           </ListItemIcon>
@@ -278,7 +282,7 @@ export const AdminProblemsTable = ({
 
                 <TableCell>
                   <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-                    <ProblemStateChip state={problem.state} size="small" />
+                    <ProblemStateChip state={problem.state} heldBy={problem.heldBy} size="small" />
                     {problem.hasEditorial ? (
                       <Tooltip title={t('admin.list.hasEditorial')}>
                         <Chip size="small" label={t('admin.list.editorialShort')} />

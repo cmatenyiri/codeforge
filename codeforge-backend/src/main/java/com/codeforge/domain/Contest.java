@@ -147,6 +147,19 @@ public class Contest extends AuditableEntity {
     private Instant sealedAt;
 
     /**
+     * When the questions went into the public catalogue.
+     *
+     * <p>Null while the contest is holding them back — from the moment it is
+     * announced until it ends, its problems exist nowhere but inside the contest
+     * itself, and nobody but an author can publish, archive or open them. Set
+     * once, by the first request or sweep after the end, and never cleared: an
+     * author who later unpublishes one of them is not overruled a minute
+     * afterwards. See {@link #isHoldingProblems()}.
+     */
+    @Column(name = "problems_released_at")
+    private Instant problemsReleasedAt;
+
+    /**
      * When ratings were last applied.
      *
      * <p>Also the flag that decides how much a rejudge has to undo: before this
@@ -263,6 +276,30 @@ public class Contest extends AuditableEntity {
     /** True once the problems may no longer follow the live catalogue. */
     public boolean isSealed() {
         return sealedAt != null;
+    }
+
+    /**
+     * Whether its questions, their points and its clock are settled for good.
+     *
+     * <p>From the moment an announced contest's start time passes — not from the
+     * moment it seals. Sealing waits for the first request after the start, and a
+     * lock that waited too would leave a live contest open to rescheduling for as
+     * long as nobody happened to look at it. A draft is not locked however late
+     * its start time: nobody can see it.
+     */
+    public boolean isLocked(Instant now) {
+        return isSealed() || (published && hasStarted(now));
+    }
+
+    /**
+     * Whether this contest is keeping its problems out of the catalogue:
+     * announced, and not released yet.
+     *
+     * <p>Derived rather than stored on the problem, so that withdrawing or
+     * deleting the announcement lets go of them with no second write to forget.
+     */
+    public boolean isHoldingProblems() {
+        return published && problemsReleasedAt == null;
     }
 
     public Optional<ContestProblem> problemAt(int position) {

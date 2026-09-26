@@ -6,6 +6,7 @@ import com.codeforge.domain.Problem;
 import com.codeforge.domain.ProblemStatusFilter;
 import com.codeforge.exception.NotFoundException;
 import com.codeforge.domain.TestCase;
+import com.codeforge.repository.ContestRepository;
 import com.codeforge.repository.EditorialRepository;
 import com.codeforge.repository.ProblemRepository;
 import com.codeforge.repository.SubmissionRepository;
@@ -31,6 +32,7 @@ public class ProblemService {
     private final SubmissionRepository submissionRepository;
     private final TestCaseRepository testCaseRepository;
     private final EditorialRepository editorialRepository;
+    private final ContestRepository contestRepository;
 
     /**
      * Searches the catalogue. All filters are optional.
@@ -141,12 +143,19 @@ public class ProblemService {
      *   <li>Its author, who has to preview and test-run it before release — that
      *       is what a draft is for.
      *   <li>Anyone who has already met it — submitted to it, or been asked it in
-     *       an interview — which can only have happened while it was published.
-     *       Their submission history and their interview debrief both link
-     *       straight here, and "your own history still resolves" has to mean the
-     *       page still opens. Two exists queries, and only on this rare path.
+     *       an interview. Their submission history and their interview debrief
+     *       both link straight here, and "your own history still resolves" has
+     *       to mean the page still opens. Two exists queries, and only on this
+     *       rare path.
      *   <li>Everybody else: a 404, so a draft cannot be found by guessing a URL.
      * </ul>
+     *
+     * <p>Except while an announced contest is holding the problem back, when
+     * history does not count. A competitor's submission to a contest question
+     * is recorded against this very problem, and the contest hands out its
+     * slug — so honouring that history would let one wrong answer to Q3 open
+     * the editorial for Q3 halfway through the round. Authors still get in: they
+     * wrote it.
      *
      * <p>Note that visibility follows {@code published} alone. An archived
      * problem that was once in the catalogue stays readable by everyone —
@@ -161,7 +170,9 @@ public class ProblemService {
     private Problem requireVisible(String slug) {
         Problem problem = problemRepository.findBySlug(slug).orElseThrow(() -> NotFoundException.of("problem", slug));
 
-        if (!problem.isPublished() && !SecurityUtils.isAdmin() && !hasHistory(problem)) {
+        if (!problem.isPublished()
+                && !SecurityUtils.isAdmin()
+                && (contestRepository.isHoldingProblem(problem.getId()) || !hasHistory(problem))) {
             throw NotFoundException.of("problem", slug);
         }
         return problem;

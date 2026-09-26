@@ -1,3 +1,4 @@
+import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
 import { Box, Chip, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,20 @@ export const ContestProblemPanel = ({ problem }: { problem: ContestProblemDetail
           <Typography variant="h3">{problem.title}</Typography>
           <DifficultyChip difficulty={problem.difficulty} />
           <Chip label={t('contest.points', { count: problem.points })} variant="outlined" />
+          {/* The answer to "am I done with this one?". There is no finish button:
+              a solve is final the moment it is accepted, the finish time is taken
+              from it, and anything submitted afterwards is free. */}
+          {problem.solved ? (
+            <Chip
+              icon={<CheckCircleRounded />}
+              label={t('problems.solved')}
+              sx={{
+                color: 'verdict.accepted',
+                backgroundColor: 'verdict.acceptedBg',
+                '& .MuiChip-icon': { color: 'inherit' },
+              }}
+            />
+          ) : null}
         </Stack>
 
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
