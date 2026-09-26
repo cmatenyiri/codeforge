@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { type InterviewSession } from '../../api/types';
 
-/** How often the countdown is checked against the server's answer. */
-export const RESYNC_INTERVAL_MS = 20_000;
-
 /**
  * Seconds left in the round, for display.
  *
  * <p>The number that decides anything is the server's: every session read
  * recomputes it from the stored start time, and every action re-checks it. This
  * hook exists only so the clock on screen moves between those reads, and it
- * re-anchors to the server on each one — a browser that has been asleep, or
- * whose system clock is wrong, is corrected within one poll.
+ * re-anchors to the server on each one. It counts from the moment of the read
+ * rather than from the browser's idea of the start time, so a system clock that
+ * is simply wrong makes no difference.
  *
  * <p>Elapsed wall time is measured rather than ticks counted, because a
  * background tab has its timers throttled to once a minute and a tick-counting

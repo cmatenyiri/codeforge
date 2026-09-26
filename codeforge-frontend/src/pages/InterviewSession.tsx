@@ -8,20 +8,23 @@ import { type InterviewProblemDetail, type InterviewSession } from '../api/types
 import { InterviewEditorPanel } from '../components/interview/InterviewEditorPanel';
 import { InterviewProblemPanel } from '../components/interview/InterviewProblemPanel';
 import { InterviewToolbar } from '../components/interview/InterviewToolbar';
-import { RESYNC_INTERVAL_MS, useInterviewClock } from '../components/interview/use-interview-clock';
+import { useInterviewClock } from '../components/interview/use-interview-clock';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
+import { type InterviewChanged, topics } from '../realtime/topics';
+import { useTopic } from '../realtime/use-topic';
 import { interviewReportPath, paths } from '../routes/paths';
 
 /**
  * The interview workspace: clock on top, problem left, editor right.
  *
  * <p>Two things make it different from the solving page, and both are about the
- * clock rather than the code. The countdown is resynchronised against the server
- * on a timer and after every action, because the server's answer is the only one
- * that decides anything. And the moment the round is over — the buzzer, the
- * finish button, or another tab having ended it — the page leaves for the
- * report rather than sitting on a workspace that can no longer submit.
+ * clock rather than the code. The countdown is re-anchored to the server after
+ * every action and whenever the round changes anywhere, because the server's
+ * answer is the only one that decides anything. And the moment the round is over
+ * — the buzzer, the finish button, or another tab having ended it — the page
+ * leaves for the report rather than sitting on a workspace that can no longer
+ * submit.
  */
 export const InterviewSessionPage = () => {
   const { t } = useTranslation();
@@ -90,8 +93,9 @@ export const InterviewSessionPage = () => {
     [message, t],
   );
 
-  // Initial load, then a slow poll. The poll is a correction, not the clock:
-  // between ticks the countdown runs locally, and this is what stops it drifting.
+  // The initial load. Between reads the countdown runs locally, measured
+  // against the wall clock, so it needs no timer against the server to stay
+  // right — only a re-read when something actually changes, below.
   useEffect(() => {
     if (!Number.isFinite(interviewId)) {
       navigate(paths.interviews, { replace: true });
@@ -100,35 +104,44 @@ export const InterviewSessionPage = () => {
 
     let cancelled = false;
 
-    const load = () => {
-      interviewsApi
-        .session(interviewId)
-        .then((next) => {
-          if (!cancelled) {
-            applySession(next);
-            setError(null);
-          }
-        })
-        .catch((caught: unknown) => {
-          if (!cancelled) {
-            fail(caught);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setLoading(false);
-          }
-        });
-    };
-
-    load();
-    const timer = setInterval(load, RESYNC_INTERVAL_MS);
+    interviewsApi
+      .session(interviewId)
+      .then((next) => {
+        if (!cancelled) {
+          applySession(next);
+          setError(null);
+        }
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          fail(caught);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
 
     return () => {
       cancelled = true;
-      clearInterval(timer);
     };
   }, [interviewId, navigate, fail, applySession]);
+
+  // Re-read whenever the round changes — a verdict, a hint, a skip, the round
+  // closing — whether this tab did it or another one did, and after a dropped
+  // connection, which may have missed exactly that.
+  const resync = useCallback(() => {
+    interviewsApi
+      .session(interviewId)
+      .then((next) => {
+        applySession(next);
+        setError(null);
+      })
+      .catch(fail);
+  }, [interviewId, applySession, fail]);
+
+  useTopic<InterviewChanged>(Number.isFinite(interviewId) ? topics.interview(interviewId) : null, resync, resync);
 
   // The round is over, however it ended — go and read about it. Not while the
   // judge still has a submission, though: one started with ten seconds left is
@@ -177,8 +190,8 @@ export const InterviewSessionPage = () => {
       cancelled = true;
     };
     // Keyed on whether a session has loaded rather than on the session itself:
-    // a poll every twenty seconds must not re-fetch the problem and blank the
-    // panel under the candidate.
+    // re-reading the session on every change must not re-fetch the problem and
+    // blank the panel under the candidate.
   }, [interviewId, position, sessionLoaded, fail]);
 
   const act = useCallback(

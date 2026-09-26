@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 
-/** How often the countdown is re-anchored to the server's answer. */
-export const RESYNC_INTERVAL_MS = 20_000;
-
 /**
  * Seconds remaining, for display.
  *
  * <p>The number that decides anything is the server's: every read recomputes it
  * from the stored start time, and every submission re-checks it. This hook
  * exists only so the clock on screen moves between those reads, and it
- * re-anchors on each one — a browser that has been asleep, or whose system clock
- * is wrong, is corrected within one poll.
+ * re-anchors on each one. It counts from the moment of the read rather than from
+ * the browser's idea of the start time, so a system clock that is simply wrong
+ * makes no difference.
  *
  * <p>Elapsed wall time is measured rather than ticks counted, because a
  * background tab has its timers throttled to about once a minute and a

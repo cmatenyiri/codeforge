@@ -12,6 +12,8 @@ import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.Submission;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
+import com.codeforge.realtime.ContestChanged;
+import com.codeforge.realtime.ContestChanged.Change;
 import com.codeforge.repository.ContestParticipationRepository;
 import com.codeforge.repository.ContestProblemRepository;
 import com.codeforge.repository.ContestRatingChangeRepository;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -74,6 +77,7 @@ public class ContestService {
     private final UserRepository userRepository;
     private final ContestRatingChangeRepository ratingChangeRepository;
     private final ContestStandingsService standingsService;
+    private final ApplicationEventPublisher events;
 
     // ── Browsing ──────────────────────────────────────────────────────────
 
@@ -308,6 +312,8 @@ public class ContestService {
         entry.setUser(userRepository.getReferenceById(userId));
         entry.setRegisteredAt(Instant.now());
         participationRepository.save(entry);
+
+        events.publishEvent(new ContestChanged(contest.getId(), Change.REGISTRATION));
     }
 
     /**
@@ -329,6 +335,8 @@ public class ContestService {
         }
         participationRepository.deleteByContestIdAndUserId(
                 contest.getId(), SecurityUtils.requireCurrentUserId());
+
+        events.publishEvent(new ContestChanged(contest.getId(), Change.REGISTRATION));
     }
 
     // ── Inside the contest ────────────────────────────────────────────────
@@ -444,6 +452,7 @@ public class ContestService {
                     submissionId,
                     accepted,
                     target.secondsIntoContest());
+            events.publishEvent(new ContestChanged(contest.getId(), Change.STANDINGS));
         }
     }
 
@@ -477,6 +486,11 @@ public class ContestService {
 
         snapshotProblems(contest);
         contest.setSealedAt(now);
+
+        // The moment the contest goes live, as far as anybody watching can tell:
+        // this runs once, at the start, whether the alarm or a request got here
+        // first.
+        events.publishEvent(new ContestChanged(contest.getId(), Change.STATUS));
     }
 
     /**
@@ -521,6 +535,9 @@ public class ContestService {
             contestProblem.getProblem().setPublished(true);
         }
         contest.setProblemsReleasedAt(now);
+
+        // Likewise the end: once, whichever of the alarm and a request was first.
+        events.publishEvent(new ContestChanged(contest.getId(), Change.STATUS));
     }
 
     /**

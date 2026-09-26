@@ -160,9 +160,10 @@ public class AdminContestController {
      * Re-runs every submission against the corrected problems.
      *
      * <p>Returns immediately with the contest marked as rejudging; the work
-     * happens on a background worker and can take minutes. The screen polls
-     * {@code GET /{id}} for the progress, which is why this hands back the same
-     * shape rather than a job handle nothing else understands.
+     * happens on a background worker and can take minutes. The screen is told
+     * over its WebSocket topic whenever the progress moves and re-reads
+     * {@code GET /{id}}, which is why this hands back the same shape rather than
+     * a job handle nothing else understands.
      */
     @PostMapping("/{id}/rejudge")
     public ResponseEntity<AdminContestDetailResponse> rejudge(@PathVariable Long id) {
@@ -171,7 +172,7 @@ public class AdminContestController {
         // has gone and can only record a failure nobody asked to see.
         authoringService.requireRejudgeable(id);
 
-        // Marked before the job is queued, so a screen that polls immediately
+        // Marked before the job is queued, so a screen that reads it immediately
         // sees RUNNING rather than a state indistinguishable from nothing having
         // happened. The worker re-marks it with the real total once it knows how
         // many submissions there are.

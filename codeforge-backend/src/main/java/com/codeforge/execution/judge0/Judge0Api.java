@@ -20,6 +20,8 @@ final class Judge0Api {
      * @param sourceCode base64 of the complete program
      * @param stdin base64 of the input for this case
      * @param compilerOptions extra compiler flags, omitted when null
+     * @param callbackUrl where Judge0 PUTs the finished submission, in the
+     *     {@link Result} shape and always base64-encoded
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Submission(
@@ -29,7 +31,8 @@ final class Judge0Api {
             @JsonProperty("compiler_options") String compilerOptions,
             @JsonProperty("cpu_time_limit") double cpuTimeLimit,
             @JsonProperty("wall_time_limit") double wallTimeLimit,
-            @JsonProperty("memory_limit") int memoryLimit) {}
+            @JsonProperty("memory_limit") int memoryLimit,
+            @JsonProperty("callback_url") String callbackUrl) {}
 
     record BatchRequest(@JsonProperty("submissions") List<Submission> submissions) {}
 
@@ -38,6 +41,9 @@ final class Judge0Api {
     record CreatedToken(@JsonProperty("token") String token) {}
 
     /**
+     * One submission's outcome: the body of a callback, or an entry of a batch
+     * read.
+     *
      * @param time seconds as a decimal string, e.g. {@code "0.392"}; null if it never ran
      * @param memory peak memory in KB; null if it never ran
      */

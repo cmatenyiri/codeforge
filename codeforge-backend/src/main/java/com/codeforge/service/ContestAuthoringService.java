@@ -7,6 +7,8 @@ import com.codeforge.domain.RejudgeState;
 import com.codeforge.domain.Slugs;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
+import com.codeforge.realtime.ContestChanged;
+import com.codeforge.realtime.ContestChanged.Change;
 import com.codeforge.repository.ContestParticipationRepository;
 import com.codeforge.repository.ContestProblemRepository;
 import com.codeforge.repository.ContestRepository;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -67,6 +70,7 @@ public class ContestAuthoringService {
     private final ContestRatingService ratingService;
     private final ContestUpsertRequestValidator validator;
     private final ContestAlarms alarms;
+    private final ApplicationEventPublisher events;
 
     // ── Reading ───────────────────────────────────────────────────────────
 
@@ -114,6 +118,7 @@ public class ContestAuthoringService {
 
         Long id = contestRepository.save(contest).getId();
         alarms.arm(contest);
+        changed(id, Change.STATUS);
         return id;
     }
 
@@ -143,6 +148,7 @@ public class ContestAuthoringService {
         }
         apply(contest, request);
         alarms.arm(contest);
+        changed(id, Change.STATUS);
     }
 
     private void apply(Contest contest, ContestUpsertRequest request) {
@@ -271,6 +277,7 @@ public class ContestAuthoringService {
         }
         contest.setPublished(published);
         alarms.arm(contest);
+        changed(id, Change.STATUS);
     }
 
     /**
@@ -358,6 +365,7 @@ public class ContestAuthoringService {
         submissionRepository.detachFromContest(id);
         contestRepository.delete(contest);
         alarms.disarm(id);
+        changed(id, Change.STATUS);
     }
 
     // ── Settling ──────────────────────────────────────────────────────────
@@ -386,6 +394,8 @@ public class ContestAuthoringService {
         // they have been derived on each read of the standings, and the rating
         // pass needs a number that will not move again.
         standingsService.assignRanks(contest);
+        changed(id, Change.STATUS);
+        changed(id, Change.STANDINGS);
 
         if (!contest.isRated()) {
             return 0;
@@ -411,12 +421,15 @@ public class ContestAuthoringService {
         if (contest.isRated() == rated) {
             if (!rated) {
                 contest.setUnratedReason(ValidationRules.trimToNull(reason));
+                changed(id, Change.STATUS);
             }
             return;
         }
 
         contest.setRated(rated);
         contest.setUnratedReason(rated ? null : ValidationRules.trimToNull(reason));
+        changed(id, Change.STATUS);
+        changed(id, Change.STANDINGS);
 
         if (contest.hasEnded(Instant.now())) {
             // Only a contest that has already run has anything in the ledger to
@@ -468,12 +481,14 @@ public class ContestAuthoringService {
         contest.setRejudgeTotal(total);
         contest.setRejudgeDone(0);
         contest.setRejudgeError(null);
+        changed(contestId, Change.REJUDGE);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void markRejudgeProgress(Long contestId, int done) {
         contestRepository.findById(contestId).ifPresent(contest -> contest.setRejudgeDone(done));
+        changed(contestId, Change.REJUDGE);
     }
 
     @Transactional
@@ -484,6 +499,7 @@ public class ContestAuthoringService {
             contest.setRejudgeFinishedAt(Instant.now());
             contest.setRejudgeError(error);
         });
+        changed(contestId, Change.REJUDGE);
     }
 
     /**
@@ -550,6 +566,17 @@ public class ContestAuthoringService {
         if (contest.getRatingsAppliedAt() != null) {
             ratingService.replayFrom(contest.getStartsAt());
         }
+        changed(contestId, Change.STANDINGS);
+    }
+
+    /**
+     * Tells whoever is watching the contest, once this transaction commits.
+     *
+     * <p>Only that something changed: a watching screen re-reads what it shows
+     * through the ordinary endpoints — see {@link com.codeforge.realtime.LiveUpdates}.
+     */
+    private void changed(Long contestId, Change change) {
+        events.publishEvent(new ContestChanged(contestId, change));
     }
 
     /**

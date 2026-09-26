@@ -35,10 +35,12 @@ import { ContestStatusChip } from '../components/contest/ContestStatusChip';
 import { CONTEST_TYPE_LABEL_KEY } from '../components/contest/contest';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
+import { type ContestChange, topics } from '../realtime/topics';
+import { useContestChanges } from '../realtime/use-topic';
 import { adminContestEditPath, contestPath, paths } from '../routes/paths';
 
-/** While a rejudge is running the screen polls for its progress. */
-const REJUDGE_POLL_MS = 3_000;
+/** The only thing pushed to the authoring screen: how far a rejudge has got. */
+const REJUDGE_CHANGES: ContestChange[] = ['REJUDGE'];
 
 const CONTEST_TYPES: ContestType[] = ['WEEKLY', 'BIWEEKLY', 'SPECIAL'];
 
@@ -162,27 +164,27 @@ export const AdminContestEditorPage = () => {
     };
   }, [contestId, adopt, capture]);
 
-  // A rejudge outlives the request that asked for it, so the screen watches the
-  // progress recorded on the contest rather than waiting on a response.
-  useEffect(() => {
-    if (contestId === null || contest?.rejudgeState !== 'RUNNING') {
+  // A rejudge outlives the request that asked for it, so the screen is told as
+  // its progress moves and re-reads the contest rather than waiting on a
+  // response. Subscribed for as long as the contest is open, not only while a
+  // rejudge is known to be running: a small one can finish before a
+  // subscription made in response to starting it would be in place.
+  //
+  // Only the contest is replaced, never the form. A rejudge changes nothing the
+  // form edits, and an author part way through typing must not lose it to a
+  // progress tick — or to a reconnect, which re-reads the same way.
+  useContestChanges(contestId === null ? null : topics.adminContest(contestId), REJUDGE_CHANGES, () => {
+    if (contestId === null) {
       return;
     }
-
-    const timer = setInterval(() => {
-      adminContestsApi
-        .get(contestId)
-        .then(adopt)
-        .catch(() => {
-          // A failed poll is not worth surfacing: the next one is three seconds
-          // away and the job is unaffected either way.
-        });
-    }, REJUDGE_POLL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [contestId, contest?.rejudgeState, adopt]);
+    adminContestsApi
+      .get(contestId)
+      .then(setContest)
+      .catch(() => {
+        // Not worth surfacing: the next progress update re-reads it anyway, and
+        // the job is unaffected either way.
+      });
+  });
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));

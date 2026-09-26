@@ -13,6 +13,7 @@ import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.Submission;
 import com.codeforge.exception.BusinessRuleException;
 import com.codeforge.exception.NotFoundException;
+import com.codeforge.realtime.InterviewChanged;
 import com.codeforge.repository.InterviewRepository;
 import com.codeforge.repository.ProblemRepository.InterviewCandidate;
 import com.codeforge.repository.ProblemRepository;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -92,6 +94,7 @@ public class InterviewService {
     private final ProblemRepository problemRepository;
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher events;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -167,7 +170,7 @@ public class InterviewService {
      * One of the caller's interviews, closed out first if its time has run.
      *
      * <p>This is what makes the buzzer real without a scheduler: the next read of
-     * an expired round — a poll from the session screen, a visit to the report —
+     * an expired round — the session screen re-reading it, a visit to the report —
      * is what ends it.
      */
     @Transactional
@@ -227,6 +230,7 @@ public class InterviewService {
         interview.setStatus(InterviewStatus.ABANDONED);
         interview.setEndedAt(Instant.now());
         interview.setScore((int) interview.solvedCount());
+        changed(interview);
 
         return interview;
     }
@@ -272,7 +276,7 @@ public class InterviewService {
         boolean editable = interview.isActive() && !slot.isResolved();
 
         // Loaded only for a closed problem, and only when it is opened — never on
-        // the session poll, which reads this same interview every few seconds and
+        // the session read, which re-reads this same interview on every change and
         // has no use for a source blob.
         Submission judged = editable ? null : slot.displayedSubmission();
 
@@ -311,6 +315,7 @@ public class InterviewService {
             throw new BusinessRuleException("error.interview.noMoreHints", "There are no further hints");
         }
         slot.setHintsRevealed(slot.getHintsRevealed() + 1);
+        changed(interview);
 
         // Sliced here rather than by the caller: the unrevealed ones are the
         // thing being paid for, and they must not leave the server at all.
@@ -335,6 +340,7 @@ public class InterviewService {
         InterviewProblem slot = requireActiveSlot(interview, position);
 
         slot.setSkipped(true);
+        changed(interview);
 
         return interview;
     }
@@ -386,7 +392,7 @@ public class InterviewService {
         if (interview.isActive() && interview.isExpired(Instant.now())) {
             close(interview, interview.deadline());
         } else if (newlySolved && interview.getStatus() == InterviewStatus.COMPLETED) {
-            // The buzzer beat the judge. Something else — a poll from the session
+            // The buzzer beat the judge. Something else — a read from the session
             // screen, another tab — closed the round while this submission was
             // still in the sandbox, freezing a score that did not yet include it.
             // The submission was legally started, so it counts, and the frozen
@@ -394,6 +400,7 @@ public class InterviewService {
             interview.setScore((int) interview.solvedCount());
             interview.setOutcome(outcomeOf(interview, interview.getEndedAt()));
         }
+        changed(interview);
     }
 
     // ── The debrief ───────────────────────────────────────────────────────
@@ -566,6 +573,15 @@ public class InterviewService {
         interview.setEndedAt(endedAt);
         interview.setScore((int) interview.solvedCount());
         interview.setOutcome(outcomeOf(interview, endedAt));
+        changed(interview);
+    }
+
+    /**
+     * Tells the round's other open tabs, once this transaction commits, so a
+     * round finished or solved in one of them is re-read in all of them.
+     */
+    private void changed(Interview interview) {
+        events.publishEvent(new InterviewChanged(interview.getId()));
     }
 
     /** Sweeps rounds left running by a closed tab, at the deadline they expired on. */
@@ -643,7 +659,7 @@ public class InterviewService {
     /**
      * A slot put on screen.
      *
-     * @param status the interview's, so a client polling across the buzzer learns
+     * @param status the interview's, so a client reading across the buzzer learns
      *     the round is over from the same call that asked for the problem
      * @param editable false for a problem already moved on from — it can still be
      *     read, but nothing more may be sent against it

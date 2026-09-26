@@ -7,7 +7,7 @@ import java.time.Instant;
 /**
  * One row in the contest list.
  *
- * @param secondsUntilStart counted down by the client between polls; the server
+ * @param secondsUntilStart counted down by the client between reads; the server
  *     recomputes it on every call and is the only clock that decides anything
  * @param registered whether the caller has signed up — the difference between a
  *     "Register" button and a "Registered" tick

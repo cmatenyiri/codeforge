@@ -25,6 +25,7 @@ import com.codeforge.web.mapper.InterviewMapper;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -104,11 +105,12 @@ public class InterviewController {
     }
 
     /**
-     * The session state, polled by the session screen.
+     * The session state, re-read by the session screen whenever it is told the
+     * round changed.
      *
      * <p>{@code remainingSeconds} is recomputed here on every call and is the
      * only clock that decides anything; the browser counts down from it so the
-     * timer moves smoothly between polls. A round whose time ran out comes back
+     * timer moves smoothly between reads. A round whose time ran out comes back
      * already finished, which is the client's cue to go to the report.
      */
     @GetMapping("/{id}")
@@ -196,11 +198,12 @@ public class InterviewController {
 
     /** Runs against the sample cases. Nothing recorded, but the clock still has to be running. */
     @PostMapping("/{id}/problems/{position}/run")
-    public ResponseEntity<RunResponse> run(
+    public CompletableFuture<ResponseEntity<RunResponse>> run(
             @PathVariable Long id, @PathVariable int position, @RequestBody RunRequest request) {
 
-        return ResponseEntity.ok(interviewExecutionService.run(
-                id, position, request.language(), request.sourceCode()));
+        return interviewExecutionService
+                .run(id, position, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     /**
@@ -210,11 +213,12 @@ public class InterviewController {
      * is a different way to be handed a problem, not a different kind of solving.
      */
     @PostMapping("/{id}/problems/{position}/submit")
-    public ResponseEntity<SubmissionResultResponse> submit(
+    public CompletableFuture<ResponseEntity<SubmissionResultResponse>> submit(
             @PathVariable Long id, @PathVariable int position, @RequestBody SubmitRequest request) {
 
-        return ResponseEntity.ok(interviewExecutionService.submit(
-                id, position, request.language(), request.sourceCode()));
+        return interviewExecutionService
+                .submit(id, position, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     private InterviewReportResponse toReport(Interview interview) {

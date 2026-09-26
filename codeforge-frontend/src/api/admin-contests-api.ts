@@ -68,7 +68,8 @@ export const adminContestsApi = {
    * Re-runs every submission against the corrected problems.
    *
    * <p>Returns immediately with the contest marked as rejudging; the work
-   * happens on a background worker and can take minutes. Poll `get` for progress.
+   * happens on a background worker and can take minutes. Progress is pushed on
+   * `topics.adminContest(id)`; re-read `get` when it arrives.
    */
   async rejudge(id: number): Promise<AdminContestDetail> {
     const { data } = await apiClient.post<AdminContestDetail>(`/api/admin/contests/${id}/rejudge`);

@@ -2,6 +2,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material';
 import { BrowserRouter } from 'react-router';
 import { AuthProvider } from '../auth/AuthProvider';
 import '../i18n';
+import { RealtimeProvider } from '../realtime/RealtimeProvider';
 import { AppRoutes } from '../routes/AppRoutes';
 import { codeForgeTheme } from '../theme';
 
@@ -10,7 +11,9 @@ export const App = () => (
     <CssBaseline />
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <RealtimeProvider>
+          <AppRoutes />
+        </RealtimeProvider>
       </AuthProvider>
     </BrowserRouter>
   </ThemeProvider>

@@ -1,0 +1,34 @@
+# The backend inside Docker Compose, activated there by SPRING_PROFILES_ACTIVE=docker
+# (see codeforge-orchestration/docker-compose.yml).
+#
+# Only addresses change. application.yml is written for a backend on the host —
+# run from the IDE or `./gradlew bootRun` — where every dependency is a
+# published port on localhost. Inside the Compose network localhost is the
+# container itself, and each dependency is reached by its service name instead.
+
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/codeforge?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+
+  rabbitmq:
+    host: rabbitmq
+
+server:
+  # Behind nginx: take the client's address and scheme from the X-Forwarded-*
+  # headers it sets, rather than reporting every request as coming from nginx.
+  forward-headers-strategy: native
+
+codeforge:
+  websocket:
+    relay:
+      host: rabbitmq
+
+  execution:
+    judge0:
+      base-url: http://judge0-server:2358
+      # Each instance names itself. HOSTNAME is the container's hostname, which
+      # the Compose network resolves to that container, so Judge0 calls the
+      # instance that is waiting for the result straight back — no hop through
+      # nginx, and nothing forwarded between instances. Should a callback land
+      # elsewhere anyway, the receiving instance forwards it over RabbitMQ.
+      callback-url: http://${HOSTNAME}:8080

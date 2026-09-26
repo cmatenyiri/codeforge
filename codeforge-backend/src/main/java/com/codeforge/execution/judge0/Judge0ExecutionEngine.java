@@ -9,15 +9,19 @@ import com.codeforge.execution.ExecutionResult;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -26,17 +30,29 @@ import org.springframework.web.util.UriComponentsBuilder;
 /**
  * Runs code on a <a href="https://judge0.com">Judge0</a> instance.
  *
- * <p>All the cases of one run go out as a single batch, then the whole batch is
- * polled until every entry has left the queue. Judge0 does offer a synchronous
- * {@code wait=true} mode, but it is unavailable for batches and its own docs
- * discourage it — it holds an HTTP connection open for the length of the run.
+ * <p>All the cases of one run go out as a single batch, and then nothing asks
+ * Judge0 anything: every submission carries a callback URL, Judge0 calls it the
+ * moment that submission finishes, and the batch completes when the last one
+ * has reported — see {@link Judge0Batches}. No thread waits in between, and
+ * Judge0 is not asked the same question every few hundred milliseconds by
+ * every run in flight.
+ *
+ * <p>The alternatives were both worse at scale. Polling costs a request per
+ * batch per interval whether anything has changed or not, and Judge0's
+ * synchronous {@code wait=true} is unavailable for batches and holds a
+ * connection open for the length of the run.
+ *
+ * <p>A callback can still be lost — Judge0 gives up on one after a few failed
+ * tries — so a batch that has not completed by
+ * {@link Judge0Properties#resultTimeout()} is read back from Judge0 once, and
+ * only fails if it is genuinely still unfinished.
  */
 @Component
 public class Judge0ExecutionEngine implements ExecutionEngine {
 
     private static final Logger log = LoggerFactory.getLogger(Judge0ExecutionEngine.class);
 
-    /** Asking for only what is used keeps a 5MB program out of every poll response. */
+    /** Asking for only what is used keeps a 5MB program out of the read-back response. */
     private static final String RESULT_FIELDS = "token,status,stdout,stderr,compile_output,message,time,memory";
 
     /**
@@ -49,13 +65,25 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
 
     private final RestClient restClient;
     private final Judge0Properties properties;
+    private final Judge0Batches batches;
+    private final Judge0CallbackRouter router;
 
-    public Judge0ExecutionEngine(Judge0Properties properties) {
+    /** Only for the rare read after a lost callback, which blocks on Judge0. */
+    private final Executor reconciler;
+
+    public Judge0ExecutionEngine(
+            Judge0Properties properties, Judge0Batches batches, Judge0CallbackRouter router) {
         this.properties = properties;
+        this.batches = batches;
+        this.router = router;
+
+        SimpleAsyncTaskExecutor reconcilerExecutor = new SimpleAsyncTaskExecutor("judge0-reconcile-");
+        reconcilerExecutor.setVirtualThreads(true);
+        this.reconciler = reconcilerExecutor;
 
         // Built here rather than injected from an auto-configured builder: the
         // timeouts that matter for a judge are not the ones an application-wide
-        // default would give it, and they belong next to the polling settings
+        // default would give it, and they belong next to the result timeout
         // they have to stay consistent with.
         //
         // Two deliberate choices here, both learned from Judge0 rejecting
@@ -86,14 +114,26 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
         this.restClient = builder.build();
     }
 
+    /**
+     * Sends the batch and returns without waiting for it.
+     *
+     * <p>Sending is synchronous — Judge0 answers the create call as soon as the
+     * batch is queued — so a judge that is down or refuses the batch fails the
+     * call here and now. Everything after that arrives through the future.
+     */
     @Override
-    public List<ExecutionResult> execute(ExecutionRequest request) {
+    public CompletableFuture<List<ExecutionResult>> execute(ExecutionRequest request) {
         if (request.stdins().isEmpty()) {
-            return List.of();
+            return CompletableFuture.completedFuture(List.of());
         }
 
         int languageId = languageId(request.language());
         String encodedProgram = encode(request.program());
+
+        Judge0Batches.Batch batch = batches.open();
+        String callbackUrl = UriComponentsBuilder.fromUriString(properties.callbackUrl())
+                .pathSegment("api", "judge0", "callbacks", router.instanceId(), batch.key())
+                .toUriString();
 
         List<Judge0Api.Submission> submissions = request.stdins().stream()
                 .map(stdin -> new Judge0Api.Submission(
@@ -103,19 +143,31 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
                         request.compilerOptions(),
                         properties.cpuTimeLimitSeconds(),
                         properties.wallTimeLimitSeconds(),
-                        properties.memoryLimitKb()))
+                        properties.memoryLimitKb(),
+                        callbackUrl))
                 .toList();
 
         List<String> tokens = new ArrayList<>(submissions.size());
-        for (int from = 0; from < submissions.size(); from += MAX_BATCH_SIZE) {
-            tokens.addAll(createBatch(submissions.subList(from, Math.min(from + MAX_BATCH_SIZE, submissions.size()))));
+        try {
+            for (int from = 0; from < submissions.size(); from += MAX_BATCH_SIZE) {
+                tokens.addAll(
+                        createBatch(submissions.subList(from, Math.min(from + MAX_BATCH_SIZE, submissions.size()))));
+            }
+        } catch (ExecutionException e) {
+            // Stop waiting on callbacks for a batch that was never (fully) sent.
+            batch.future().completeExceptionally(e);
+            throw e;
         }
+        batch.expect(tokens);
 
-        // Polled as one set: they were all queued before the first poll, so
-        // waiting on them together costs no more than waiting on them in turn.
-        return awaitBatch(tokens).stream()
-                .map(Judge0ExecutionEngine::toExecutionResult)
-                .toList();
+        return batch.future()
+                .orTimeout(properties.resultTimeout().toMillis(), TimeUnit.MILLISECONDS)
+                .exceptionallyCompose(failure -> unwrap(failure) instanceof TimeoutException
+                        ? CompletableFuture.supplyAsync(() -> reconcile(batch.tokens()), reconciler)
+                        : CompletableFuture.failedFuture(unwrap(failure)))
+                .thenApply(results -> results.stream()
+                        .map(Judge0ExecutionEngine::toExecutionResult)
+                        .toList());
     }
 
     private List<String> createBatch(List<Judge0Api.Submission> submissions) {
@@ -154,30 +206,29 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
         return tokens;
     }
 
-    /** Polls until nothing is left in the queue, or the deadline passes. */
-    private List<Judge0Api.Result> awaitBatch(List<String> tokens) {
-        Instant deadline = Instant.now().plus(properties.pollTimeout());
-        long intervalMillis = Math.max(properties.pollInterval().toMillis(), 50);
-
-        while (true) {
-            List<Judge0Api.Result> results = new ArrayList<>(tokens.size());
-            for (int from = 0; from < tokens.size(); from += MAX_BATCH_SIZE) {
-                results.addAll(fetch(tokens.subList(from, Math.min(from + MAX_BATCH_SIZE, tokens.size()))));
-            }
-
-            boolean settled = results.stream()
-                    .allMatch(result -> result.status() != null && !Judge0Verdict.isPending(result.status().id()));
-            if (settled) {
-                return results;
-            }
-
-            if (Instant.now().isAfter(deadline)) {
-                log.warn("Judge0 batch {} still queued after {}", tokens, properties.pollTimeout());
-                throw new ExecutionException("The judge did not finish in time");
-            }
-
-            sleep(intervalMillis);
+    /**
+     * Reads a batch whose callbacks did not all arrive in time, once.
+     *
+     * <p>The safety net under the callbacks, not a way of waiting: it runs only
+     * after {@link Judge0Properties#resultTimeout()}, and a batch that Judge0
+     * still reports as queued at that point has failed.
+     */
+    private List<Judge0Api.Result> reconcile(List<String> tokens) {
+        List<Judge0Api.Result> results = new ArrayList<>(tokens.size());
+        for (int from = 0; from < tokens.size(); from += MAX_BATCH_SIZE) {
+            results.addAll(fetch(tokens.subList(from, Math.min(from + MAX_BATCH_SIZE, tokens.size()))));
         }
+
+        boolean settled = results.size() == tokens.size()
+                && results.stream()
+                        .allMatch(result -> result.status() != null && !Judge0Verdict.isPending(result.status().id()));
+        if (!settled) {
+            log.warn("Judge0 batch {} still queued after {}", tokens, properties.resultTimeout());
+            throw new ExecutionException("The judge did not finish in time");
+        }
+
+        log.warn("Judge0 batch {} finished but not every callback arrived; read it back instead", tokens);
+        return results;
     }
 
     private List<Judge0Api.Result> fetch(List<String> tokens) {
@@ -192,7 +243,7 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
         try {
             batch = restClient.get().uri(uri).retrieve().body(Judge0Api.BatchResults.class);
         } catch (RestClientException e) {
-            throw new ExecutionException("Judge0 poll failed: " + e.getMessage(), e);
+            throw new ExecutionException("Judge0 could not be read: " + e.getMessage(), e);
         }
 
         if (batch == null || batch.submissions() == null) {
@@ -268,12 +319,7 @@ public class Judge0ExecutionEngine implements ExecutionEngine {
         }
     }
 
-    private static void sleep(long millis) {
-        try {
-            Thread.sleep(Duration.ofMillis(millis));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ExecutionException("Interrupted while waiting for the judge", e);
-        }
+    private static Throwable unwrap(Throwable failure) {
+        return failure instanceof CompletionException && failure.getCause() != null ? failure.getCause() : failure;
     }
 }

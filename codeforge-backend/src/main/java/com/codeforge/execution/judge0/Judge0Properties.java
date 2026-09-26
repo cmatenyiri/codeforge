@@ -18,12 +18,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     {@code MAX_CPU_TIME_LIMIT}, 15s by default
  * @param wallTimeLimit per-case wall-clock budget, capped at 20s by default
  * @param memoryLimitKb per-case address-space cap
- * @param pollInterval how often to ask whether a batch has finished
- * @param pollTimeout how long to keep asking before giving up on the batch
+ * @param callbackUrl this backend's root as Judge0 can reach it. Every
+ *     submission carries a callback under it, which Judge0 calls once the
+ *     submission is finished — see {@link Judge0CallbackController}
+ * @param resultTimeout how long to wait for a batch's callbacks. When it passes,
+ *     Judge0 is asked once for whatever is still missing, in case a callback was
+ *     lost, and the batch fails if it has still not finished
  * @param connectTimeout TCP connect budget for one call to Judge0
  * @param readTimeout budget for one call's response. Each call is short — the
- *     waiting happens across polls, not inside one — so this stays well below
- *     {@code pollTimeout}
+ *     waiting happens between the call and the callbacks, not inside a call — so
+ *     this stays well below {@code resultTimeout}
  */
 @ConfigurationProperties(prefix = "codeforge.execution.judge0")
 public record Judge0Properties(
@@ -33,8 +37,8 @@ public record Judge0Properties(
         Duration cpuTimeLimit,
         Duration wallTimeLimit,
         int memoryLimitKb,
-        Duration pollInterval,
-        Duration pollTimeout,
+        String callbackUrl,
+        Duration resultTimeout,
         Duration connectTimeout,
         Duration readTimeout) {
 

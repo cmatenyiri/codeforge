@@ -3,6 +3,7 @@ package com.codeforge.config;
 import com.codeforge.security.JwtAuthenticationFilter;
 import com.codeforge.security.RestAccessDeniedHandler;
 import com.codeforge.security.RestAuthenticationEntryPoint;
+import jakarta.servlet.DispatcherType;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -53,11 +54,22 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        // The second pass of an asynchronous request — a run or a
+                        // submission, written once the judge has answered. The
+                        // original request was authorised on the way in; this
+                        // pass carries no token of its own to check again.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC)
+                        .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout")
                         .permitAll()
                         .requestMatchers("/actuator/health")
+                        .permitAll()
+                        // Judge0 reporting a finished submission. It cannot sign in;
+                        // the random batch key in the URL is what it proves instead —
+                        // see Judge0CallbackController.
+                        .requestMatchers(HttpMethod.PUT, "/api/judge0/callbacks/**")
                         .permitAll()
                         // Authoring. Also enforced per method in the service layer;
                         // this is the rule that is obvious from the URL alone.

@@ -21,12 +21,17 @@ import { useAuth } from '../auth/use-auth';
 import { StandingsTable } from '../components/contest/StandingsTable';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
+import { type ContestChange, topics } from '../realtime/topics';
+import { useContestChanges } from '../realtime/use-topic';
 import { contestPath } from '../routes/paths';
 
 const PAGE_SIZE = 25;
 
-/** While a contest is live the board moves; once it is over it never does again. */
-const LIVE_POLL_INTERVAL_MS = 20_000;
+/**
+ * The board moves with every counted verdict while the contest runs, and again
+ * afterwards if it is rejudged, settled or has its rating withdrawn.
+ */
+const STANDINGS_CHANGES: ContestChange[] = ['STATUS', 'STANDINGS'];
 
 /**
  * The scoreboard.
@@ -77,18 +82,9 @@ export const ContestRankingPage = () => {
     load(true);
   }, [load]);
 
-  useEffect(() => {
-    if (contest?.status !== 'RUNNING') {
-      return;
-    }
-    const timer = setInterval(() => {
-      load(false);
-    }, LIVE_POLL_INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [contest?.status, load]);
+  useContestChanges(contest === null ? null : topics.contest(contest.id), STANDINGS_CHANGES, () => {
+    load(false);
+  });
 
   // Only once the ratings have actually landed; before that the column would be
   // a page of dashes promising something that has not happened.

@@ -492,7 +492,7 @@ export type InterviewSlot = {
  * A running interview. Mirrors `InterviewSessionResponse`.
  *
  * `remainingSeconds` is the server's answer and the only one that counts; the
- * screen ticks down from it between polls purely so the clock moves.
+ * screen ticks down from it between reads purely so the clock moves.
  */
 export type InterviewSession = {
   id: number;
@@ -643,7 +643,7 @@ export type ContestSummary = {
   unratedReason?: string;
   registrationCount: number;
   participantCount: number;
-  /** Recomputed server-side on every call; the client counts down from it between polls. */
+  /** Recomputed server-side on every call; the client counts down from it between reads. */
   secondsUntilStart: number;
   remainingSeconds: number;
   registered: boolean;

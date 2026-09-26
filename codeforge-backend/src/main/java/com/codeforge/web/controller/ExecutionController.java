@@ -5,6 +5,7 @@ import com.codeforge.web.dto.execution.RunRequest;
 import com.codeforge.web.dto.execution.RunResponse;
 import com.codeforge.web.dto.execution.SubmitRequest;
 import com.codeforge.web.dto.submission.SubmissionResultResponse;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,10 +27,18 @@ public class ExecutionController {
      * <p>Nothing is recorded: this is the fast feedback loop, not a submission.
      * A judge failure surfaces as a 409 through {@code BusinessRuleException}
      * rather than a 500, because the request was fine — the sandbox was not.
+     *
+     * <p>Returned as a future, like every judging endpoint: the request thread is
+     * released while the sandbox works, and the response is written when Judge0
+     * calls back with the last result.
      */
     @PostMapping("/run")
-    public ResponseEntity<RunResponse> run(@PathVariable String slug, @RequestBody RunRequest request) {
-        return ResponseEntity.ok(executionService.run(slug, request.language(), request.sourceCode()));
+    public CompletableFuture<ResponseEntity<RunResponse>> run(
+            @PathVariable String slug, @RequestBody RunRequest request) {
+
+        return executionService
+                .run(slug, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     /**
@@ -41,8 +50,11 @@ public class ExecutionController {
      * not.
      */
     @PostMapping("/submit")
-    public ResponseEntity<SubmissionResultResponse> submit(
+    public CompletableFuture<ResponseEntity<SubmissionResultResponse>> submit(
             @PathVariable String slug, @RequestBody SubmitRequest request) {
-        return ResponseEntity.ok(executionService.submit(slug, request.language(), request.sourceCode()));
+
+        return executionService
+                .submit(slug, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 }

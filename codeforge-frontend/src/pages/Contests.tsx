@@ -19,9 +19,11 @@ import { ContestCard } from '../components/contest/ContestCard';
 import { ContestRulesButton } from '../components/contest/ContestRulesButton';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
+import { type ContestChange, topics } from '../realtime/topics';
+import { useContestChanges } from '../realtime/use-topic';
 
-/** How often the lobby re-reads the clock while something is imminent or live. */
-const POLL_INTERVAL_MS = 30_000;
+/** A card shows a contest's clock and turnout, not its scoreboard. */
+const LOBBY_CHANGES: ContestChange[] = ['STATUS', 'REGISTRATION'];
 
 /** Past contests per page. */
 const PAST_PAGE_SIZE = 10;
@@ -38,9 +40,10 @@ const EmptyState = ({ title, body }: { title: string; body: string }) => (
 /**
  * The contest lobby: what is on now, what is next, and what has already run.
  *
- * <p>Polled rather than loaded once. A contest starting is a moment, not an
- * event the client is told about, and somebody sitting on this page waiting for
- * ten o'clock should see the card turn into "Enter" without reaching for reload.
+ * <p>Live rather than loaded once. Somebody sitting on this page waiting for ten
+ * o'clock should see the card turn into "Enter" without reaching for reload, so
+ * the page listens on the lobby topic and re-reads whenever a contest starts,
+ * ends, is announced or changes, or gains a registration.
  */
 export const ContestsPage = () => {
   const { t } = useTranslation();
@@ -94,15 +97,9 @@ export const ContestsPage = () => {
     loadedOnce.current = true;
   }, [load]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      load(false);
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [load]);
+  useContestChanges(topics.contests, LOBBY_CHANGES, () => {
+    load(false);
+  });
 
   const register = useCallback(
     (contest: ContestSummary) => {

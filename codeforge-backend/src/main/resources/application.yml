@@ -26,6 +26,23 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  # Run and submit answer asynchronously: the request thread is let go while the
+  # judge works, and the response is written when Judge0 calls back. Tomcat's
+  # own default of 30s would cut a slow submission off, so this has to outlast
+  # `codeforge.execution.judge0.result-timeout` with room to spare.
+  mvc:
+    async:
+      request-timeout: PT90S
+
+  # Shared by every backend instance: AMQP carries Judge0 callbacks between
+  # them, and `codeforge.websocket.relay` below is the STOMP side of the same
+  # broker. See codeforge-orchestration/docker-compose.yml.
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: codeforge
+    password: codeforge
+
   quartz:
     # Triggers are stored in this database, so they outlive a restart: one that
     # fell due while the server was down counts as misfired, and Quartz fires it
@@ -39,6 +56,22 @@ spring:
       initialize-schema: always
       schema: classpath:quartz/tables_mysql_innodb.sql
       continue-on-error: false
+    # Clustered, because several backend instances can share this database —
+    # the Docker setup runs two. Without it each instance would fire every
+    # contest alarm; clustered, they share the triggers through row locks in
+    # QRTZ_LOCKS and exactly one of them fires each. An instance that dies
+    # mid-job is noticed by the others' check-ins, and its recoverable jobs are
+    # run again elsewhere. A single instance is simply a cluster of one.
+    properties:
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.jobStore.isClustered: true
+
+logging:
+  level:
+    # Netty looks for its native macOS DNS library as soon as the STOMP relay's
+    # TCP client loads, and logs an ERROR when it is absent. Nothing depends on
+    # it: the relay resolves through the JVM instead (see WebSocketConfig).
+    io.netty.resolver.dns.DnsServerAddressStreamProviders: 'OFF'
 
 codeforge:
   jwt:
@@ -74,6 +107,17 @@ codeforge:
     allowed-origins:
       - http://localhost:5173
 
+  websocket:
+    # The STOMP broker the WebSocket endpoint relays to. An in-memory broker
+    # would only reach browsers connected to this instance; relaying to RabbitMQ
+    # is what lets an event raised on one instance reach all of them.
+    relay:
+      host: localhost
+      port: 61613
+      login: codeforge
+      passcode: codeforge
+      virtual-host: /
+
   execution:
     judge0:
       base-url: http://localhost:2358
@@ -94,7 +138,13 @@ codeforge:
       cpu-time-limit: PT5S
       wall-time-limit: PT10S
       memory-limit-kb: 256000
-      poll-interval: PT0.3S
-      poll-timeout: PT60S
+      # Where Judge0 reports each finished submission — this backend as seen from
+      # inside the Judge0 containers. Behind several instances, point it at the
+      # load balancer: whichever instance receives a callback forwards it over
+      # RabbitMQ to the one waiting for it.
+      callback-url: http://host.docker.internal:8080
+      # How long to wait for the callbacks before asking Judge0 directly, once,
+      # and giving up if it still has not finished.
+      result-timeout: PT60S
       connect-timeout: PT5S
       read-timeout: PT30S

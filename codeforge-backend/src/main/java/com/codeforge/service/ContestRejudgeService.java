@@ -5,6 +5,7 @@ import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.service.SubmissionService.RejudgeItem;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,8 @@ import org.springframework.stereotype.Service;
  *
  * <p>None of that fits in a request. A contest with two thousand competitors is
  * tens of thousands of sandbox runs, so this hands back immediately and reports
- * progress on the contest row for the authoring screen to poll.
+ * progress on the contest row, which is pushed to the authoring screen as it
+ * moves.
  *
  * <h2>Transactions</h2>
  *
@@ -71,7 +73,7 @@ public class ContestRejudgeService {
      * Re-judges a contest in the background.
      *
      * <p>Returns as soon as the job is queued. The caller has already marked the
-     * contest as rejudging, so a screen that polls immediately sees RUNNING
+     * contest as rejudging, so a screen that reads it immediately sees RUNNING
      * rather than a state that looks like nothing happened.
      */
     @Async("contestTaskExecutor")
@@ -121,9 +123,18 @@ public class ContestRejudgeService {
             return;
         }
 
-        submissionService.applyRejudgedVerdict(
-                submissionId,
-                executionService.judgeSnapshot(snapshot, item.language(), item.sourceCode()));
+        // One at a time, waited on here: this is already a background thread,
+        // and running the whole contest through the sandbox at once would only
+        // queue it there instead — see AsyncConfig.
+        ExecutionService.Verdict verdict;
+        try {
+            verdict = executionService
+                    .judgeSnapshot(snapshot, item.language(), item.sourceCode())
+                    .join();
+        } catch (CompletionException e) {
+            throw e.getCause() instanceof RuntimeException cause ? cause : e;
+        }
+        submissionService.applyRejudgedVerdict(submissionId, verdict);
     }
 
     private static String truncate(String value) {

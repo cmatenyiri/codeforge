@@ -25,16 +25,19 @@ import { ContestProblemPanel } from '../components/contest/ContestProblemPanel';
 import { useContestClock } from '../components/contest/use-contest-clock';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
+import { type ContestChange, topics } from '../realtime/topics';
+import { useContestChanges } from '../realtime/use-topic';
 import { contestPath, contestProblemPath, contestRankingPath } from '../routes/paths';
 
 /**
- * How often the header re-reads the contest.
+ * What the workspace re-reads for: the contest starting, ending or being
+ * changed under it.
  *
- * <p>Slower than the overview page's poll: this one is loaded while somebody is
- * actually working, and the only things it refreshes are the clock anchor and
- * the solved ticks in the tab strip.
+ * <p>Not the standings, which move with everybody's verdicts and are not on this
+ * screen. The only other thing it shows that changes is the solver's own solved
+ * ticks, and their own verdict already refreshes those.
  */
-const POLL_INTERVAL_MS = 30_000;
+const ARENA_CHANGES: ContestChange[] = ['STATUS'];
 
 /**
  * The contest workspace: question on the left, editor on the right, clock above.
@@ -87,13 +90,7 @@ export const ContestArenaPage = () => {
     };
   }, [slug, refreshKey, message]);
 
-  useEffect(() => {
-    const timer = setInterval(refresh, POLL_INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [refresh]);
+  useContestChanges(contest === null ? null : topics.contest(contest.id), ARENA_CHANGES, refresh);
 
   // The question on screen, refetched when the tab changes or a verdict lands.
   useEffect(() => {

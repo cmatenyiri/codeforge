@@ -5,6 +5,7 @@ import com.codeforge.domain.SubmissionStatus;
 import com.codeforge.service.ContestService.JudgingTarget;
 import com.codeforge.web.dto.execution.RunResponse;
 import com.codeforge.web.dto.submission.SubmissionResultResponse;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -42,10 +43,11 @@ public class ContestExecutionService {
 
     private final ContestService contestService;
     private final ExecutionService executionService;
+    private final ContinuationExecutor continuations;
 
     /** Sample cases only, nothing recorded — the fast loop, inside the clock. */
     @PreAuthorize("isAuthenticated()")
-    public RunResponse run(String slug, int position, Language language, String sourceCode) {
+    public CompletableFuture<RunResponse> run(String slug, int position, Language language, String sourceCode) {
         JudgingTarget target = contestService.requireJudgingTarget(slug, position);
 
         return executionService.runSnapshot(target.snapshot(), language, sourceCode);
@@ -56,16 +58,19 @@ public class ContestExecutionService {
      * still running when it was sent.
      */
     @PreAuthorize("isAuthenticated()")
-    public SubmissionResultResponse submit(
+    public CompletableFuture<SubmissionResultResponse> submit(
             String slug, int position, Language language, String sourceCode) {
 
         JudgingTarget target = contestService.requireJudgingTarget(slug, position);
-        SubmissionResultResponse result =
-                executionService.submitSnapshot(target.snapshot(), language, sourceCode);
 
-        contestService.recordAttempt(
-                target, result.submissionId(), result.status() == SubmissionStatus.ACCEPTED);
-
-        return result;
+        return executionService
+                .submitSnapshot(target.snapshot(), language, sourceCode)
+                .thenApplyAsync(
+                        result -> {
+                            contestService.recordAttempt(
+                                    target, result.submissionId(), result.status() == SubmissionStatus.ACCEPTED);
+                            return result;
+                        },
+                        continuations.asCurrentCaller());
     }
 }

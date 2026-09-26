@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -171,10 +172,14 @@ public class AdminProblemController {
      * does not pass, the cases are wrong, not the solver.
      */
     @PostMapping("/{id}/validate")
-    public ResponseEntity<RunResponse> validate(@PathVariable Long id, @RequestBody RunRequest request) {
+    public CompletableFuture<ResponseEntity<RunResponse>> validate(
+            @PathVariable Long id, @RequestBody RunRequest request) {
+
         String slug = authoringService.get(id).problem().getSlug();
 
-        return ResponseEntity.ok(executionService.dryRun(slug, request.language(), request.sourceCode()));
+        return executionService
+                .dryRun(slug, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     /** The stubs a signature would generate, before it is saved. */

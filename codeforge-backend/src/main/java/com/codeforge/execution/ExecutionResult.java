@@ -25,7 +25,7 @@ public record ExecutionResult(
         Integer runtimeMs,
         Integer memoryKb) {
 
-    /** The sandbox itself failed — unreachable, timed out polling, malformed reply. */
+    /** The sandbox itself failed — unreachable, never finished, malformed reply. */
     public static ExecutionResult internalError(String message) {
         return new ExecutionResult(SubmissionStatus.INTERNAL_ERROR, null, message, null, null, null);
     }

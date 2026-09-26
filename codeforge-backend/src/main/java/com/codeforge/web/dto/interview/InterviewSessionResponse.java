@@ -13,7 +13,7 @@ import java.util.List;
  *     that decides anything — a suspended laptop, a clock skew or a devtools
  *     console must not be able to buy time
  * @param status included even though this endpoint only ever serves a running
- *     interview: a session polled across the buzzer comes back finished, and
+ *     interview: a session read across the buzzer comes back finished, and
  *     that is the client's cue to go to the report
  * @param activePosition the problem the round is on, or null once every one has
  *     been solved or skipped and only the debrief is left

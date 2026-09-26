@@ -5,6 +5,7 @@ import com.codeforge.domain.ProblemSnapshot;
 import com.codeforge.domain.SubmissionStatus;
 import com.codeforge.web.dto.execution.RunResponse;
 import com.codeforge.web.dto.submission.SubmissionResultResponse;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -36,10 +37,11 @@ public class InterviewExecutionService {
 
     private final InterviewService interviewService;
     private final ExecutionService executionService;
+    private final ContinuationExecutor continuations;
 
     /** Sample cases only, nothing recorded — the fast loop, inside the clock. */
     @PreAuthorize("isAuthenticated()")
-    public RunResponse run(Long interviewId, int position, Language language, String sourceCode) {
+    public CompletableFuture<RunResponse> run(Long interviewId, int position, Language language, String sourceCode) {
         ProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
 
         return executionService.runSnapshot(snapshot, language, sourceCode);
@@ -55,15 +57,22 @@ public class InterviewExecutionService {
      * that grace is worth exactly one submission.
      */
     @PreAuthorize("isAuthenticated()")
-    public SubmissionResultResponse submit(
+    public CompletableFuture<SubmissionResultResponse> submit(
             Long interviewId, int position, Language language, String sourceCode) {
 
         ProblemSnapshot snapshot = interviewService.requireRunningSnapshot(interviewId, position);
-        SubmissionResultResponse result = executionService.submitSnapshot(snapshot, language, sourceCode);
 
-        interviewService.recordAttempt(
-                interviewId, position, result.submissionId(), result.status() == SubmissionStatus.ACCEPTED);
-
-        return result;
+        return executionService
+                .submitSnapshot(snapshot, language, sourceCode)
+                .thenApplyAsync(
+                        result -> {
+                            interviewService.recordAttempt(
+                                    interviewId,
+                                    position,
+                                    result.submissionId(),
+                                    result.status() == SubmissionStatus.ACCEPTED);
+                            return result;
+                        },
+                        continuations.asCurrentCaller());
     }
 }

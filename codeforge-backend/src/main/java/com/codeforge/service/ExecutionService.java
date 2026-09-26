@@ -21,6 +21,9 @@ import com.codeforge.web.dto.submission.SubmissionResultResponse;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +49,12 @@ import org.springframework.stereotype.Service;
  * <p>Both load the problem through {@link ProblemService}, whose transaction has
  * committed by the time the judge is called. Holding a database connection open
  * for the seconds a sandbox takes would exhaust the pool under load.
+ *
+ * <p>Every judging call returns a future and holds no thread while the sandbox
+ * works. Everything up to queueing the work — validation, loading the problem,
+ * building the program — happens on the caller's thread, so a request that was
+ * never going to be judged fails there and then. What follows the verdict runs
+ * as the same caller, on {@link ContinuationExecutor}.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,27 +72,20 @@ public class ExecutionService {
     private final SubmissionService submissionService;
     private final CodeTemplateService codeTemplateService;
     private final ExecutionEngine executionEngine;
+    private final ContinuationExecutor continuations;
 
     /** Runs against the sample cases only, and records nothing. */
     @PreAuthorize("isAuthenticated()")
-    public RunResponse run(String slug, Language language, String sourceCode) {
+    public CompletableFuture<RunResponse> run(String slug, Language language, String sourceCode) {
         validate(sourceCode);
 
         Plan plan = planFromCatalogue(slug, language, sourceCode, false, false);
         if (plan.cases().isEmpty()) {
-            return new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of());
+            return CompletableFuture.completedFuture(
+                    new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of()));
         }
 
-        Judged judged = judge(plan, execute(plan, slug, language));
-
-        return new RunResponse(
-                judged.status(),
-                judged.compileOutput(),
-                judged.passed(),
-                judged.total(),
-                judged.runtimeMs(),
-                judged.memoryKb(),
-                judged.results());
+        return judge(plan, slug, language, ExecutionService::toRunResponse);
     }
 
     /**
@@ -100,7 +102,7 @@ public class ExecutionService {
      * whole point of the call.
      */
     @PreAuthorize("hasRole('ADMIN')")
-    public RunResponse dryRun(String slug, Language language, String sourceCode) {
+    public CompletableFuture<RunResponse> dryRun(String slug, Language language, String sourceCode) {
         validate(sourceCode);
 
         Plan plan = planFromCatalogue(slug, language, sourceCode, true, false);
@@ -109,16 +111,7 @@ public class ExecutionService {
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
         }
 
-        Judged judged = judge(plan, execute(plan, slug, language));
-
-        return new RunResponse(
-                judged.status(),
-                judged.compileOutput(),
-                judged.passed(),
-                judged.total(),
-                judged.runtimeMs(),
-                judged.memoryKb(),
-                judged.results());
+        return judge(plan, slug, language, ExecutionService::toRunResponse);
     }
 
     /**
@@ -129,7 +122,7 @@ public class ExecutionService {
      * problem nobody has solved.
      */
     @PreAuthorize("isAuthenticated()")
-    public SubmissionResultResponse submit(String slug, Language language, String sourceCode) {
+    public CompletableFuture<SubmissionResultResponse> submit(String slug, Language language, String sourceCode) {
         validate(sourceCode);
 
         return judgeAndRecord(
@@ -147,26 +140,18 @@ public class ExecutionService {
      * states describe a catalogue this code is no longer reading.
      */
     @PreAuthorize("isAuthenticated()")
-    public RunResponse runSnapshot(
+    public CompletableFuture<RunResponse> runSnapshot(
             ProblemSnapshot snapshot, Language language, String sourceCode) {
 
         validate(sourceCode);
 
         Plan plan = planFromSnapshot(snapshot, language, sourceCode, false);
         if (plan.cases().isEmpty()) {
-            return new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of());
+            return CompletableFuture.completedFuture(
+                    new RunResponse(SubmissionStatus.ACCEPTED, null, 0, 0, null, null, List.of()));
         }
 
-        Judged judged = judge(plan, execute(plan, snapshot.slug(), language));
-
-        return new RunResponse(
-                judged.status(),
-                judged.compileOutput(),
-                judged.passed(),
-                judged.total(),
-                judged.runtimeMs(),
-                judged.memoryKb(),
-                judged.results());
+        return judge(plan, snapshot.slug(), language, ExecutionService::toRunResponse);
     }
 
     /**
@@ -177,7 +162,7 @@ public class ExecutionService {
      * kind of solving.
      */
     @PreAuthorize("isAuthenticated()")
-    public SubmissionResultResponse submitSnapshot(
+    public CompletableFuture<SubmissionResultResponse> submitSnapshot(
             ProblemSnapshot snapshot, Language language, String sourceCode) {
 
         validate(sourceCode);
@@ -205,7 +190,7 @@ public class ExecutionService {
      * a draft when the contest that used it is corrected.
      */
     @PreAuthorize("hasRole('ADMIN')")
-    public Verdict judgeSnapshot(ProblemSnapshot snapshot, Language language, String sourceCode) {
+    public CompletableFuture<Verdict> judgeSnapshot(ProblemSnapshot snapshot, Language language, String sourceCode) {
         validate(sourceCode);
 
         Plan plan = planFromSnapshot(snapshot, language, sourceCode, true);
@@ -214,15 +199,13 @@ public class ExecutionService {
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
         }
 
-        Judged judged = judge(plan, execute(plan, snapshot.slug(), language));
-
-        return new Verdict(
+        return judge(plan, snapshot.slug(), language, judged -> new Verdict(
                 judged.status(),
                 judged.passed(),
                 judged.total(),
                 judged.runtimeMs(),
                 judged.memoryKb(),
-                failureMessage(judged));
+                failureMessage(judged)));
     }
 
     /** A verdict, in exactly the shape a submission row stores it. */
@@ -235,7 +218,7 @@ public class ExecutionService {
             String failureMessage) {}
 
     /** Judges a prepared plan and writes the attempt down. */
-    private SubmissionResultResponse judgeAndRecord(
+    private CompletableFuture<SubmissionResultResponse> judgeAndRecord(
             Plan plan, String slug, Language language, String sourceCode) {
 
         if (plan.cases().isEmpty()) {
@@ -243,7 +226,11 @@ public class ExecutionService {
                     "error.execution.noTestCases", "This problem has no test cases to judge against");
         }
 
-        Judged judged = judge(plan, execute(plan, slug, language));
+        return judge(plan, slug, language, judged -> record(plan, language, sourceCode, judged));
+    }
+
+    /** Writes a judged attempt down, and shapes it for the solver. Runs as the caller. */
+    private SubmissionResultResponse record(Plan plan, Language language, String sourceCode, Judged judged) {
         String failureMessage = failureMessage(judged);
 
         Recorded recorded = submissionService.record(new NewSubmission(
@@ -278,17 +265,60 @@ public class ExecutionService {
                 visible);
     }
 
-    private List<ExecutionResult> execute(Plan plan, String slug, Language language) {
+    /**
+     * Sends a plan to the sandbox and, once it answers, turns the results into a
+     * verdict and hands that to {@code then} — as the caller, off the thread
+     * that delivered the results.
+     */
+    private <T> CompletableFuture<T> judge(
+            Plan plan, String slug, Language language, Function<Judged, T> then) {
+
+        return execute(plan, slug, language)
+                .thenApplyAsync(results -> then.apply(judge(plan, results)), continuations.asCurrentCaller());
+    }
+
+    /**
+     * Queues the plan on the sandbox.
+     *
+     * <p>A sandbox failure reaches the solver as a 409 either way: thrown here
+     * when the work could not be queued at all, or as the future's failure when
+     * it was queued and never finished.
+     */
+    private CompletableFuture<List<ExecutionResult>> execute(Plan plan, String slug, Language language) {
+        CompletableFuture<List<ExecutionResult>> results;
         try {
-            return executionEngine.execute(new ExecutionRequest(
+            results = executionEngine.execute(new ExecutionRequest(
                     language,
                     plan.program(),
                     plan.compilerOptions(),
                     plan.cases().stream().map(JudgedCase::input).toList()));
         } catch (ExecutionException e) {
-            log.error("Execution failed for problem {} in {}", slug, language, e);
-            throw new BusinessRuleException("error.execution.unavailable", e.getMessage());
+            throw unavailable(e, slug, language);
         }
+
+        return results.exceptionallyCompose(failure -> {
+            Throwable cause = failure instanceof CompletionException && failure.getCause() != null
+                    ? failure.getCause()
+                    : failure;
+            return CompletableFuture.failedFuture(
+                    cause instanceof ExecutionException e ? unavailable(e, slug, language) : cause);
+        });
+    }
+
+    private static BusinessRuleException unavailable(ExecutionException e, String slug, Language language) {
+        log.error("Execution failed for problem {} in {}", slug, language, e);
+        return new BusinessRuleException("error.execution.unavailable", e.getMessage());
+    }
+
+    private static RunResponse toRunResponse(Judged judged) {
+        return new RunResponse(
+                judged.status(),
+                judged.compileOutput(),
+                judged.passed(),
+                judged.total(),
+                judged.runtimeMs(),
+                judged.memoryKb(),
+                judged.results());
     }
 
     /**

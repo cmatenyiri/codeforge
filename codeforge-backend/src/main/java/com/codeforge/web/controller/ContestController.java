@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,7 +57,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>The clock is entirely the server's. Every response recomputes the
  * countdowns from a single reading of it, and the browser ticking down between
- * polls decides nothing.
+ * reads decides nothing.
  */
 @RestController
 @RequestMapping("/api/contests")
@@ -197,11 +198,12 @@ public class ContestController {
 
     /** Runs against the sample cases. Nothing recorded, and it costs no penalty. */
     @PostMapping("/{slug}/problems/{position}/run")
-    public ResponseEntity<RunResponse> run(
+    public CompletableFuture<ResponseEntity<RunResponse>> run(
             @PathVariable String slug, @PathVariable int position, @RequestBody RunRequest request) {
 
-        return ResponseEntity.ok(
-                contestExecutionService.run(slug, position, request.language(), request.sourceCode()));
+        return contestExecutionService
+                .run(slug, position, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     /**
@@ -212,11 +214,12 @@ public class ContestController {
      * different way to be handed a problem, not a different kind of solving.
      */
     @PostMapping("/{slug}/problems/{position}/submit")
-    public ResponseEntity<SubmissionResultResponse> submit(
+    public CompletableFuture<ResponseEntity<SubmissionResultResponse>> submit(
             @PathVariable String slug, @PathVariable int position, @RequestBody SubmitRequest request) {
 
-        return ResponseEntity.ok(
-                contestExecutionService.submit(slug, position, request.language(), request.sourceCode()));
+        return contestExecutionService
+                .submit(slug, position, request.language(), request.sourceCode())
+                .thenApply(ResponseEntity::ok);
     }
 
     /** The caller's own attempts at one question, newest first. */

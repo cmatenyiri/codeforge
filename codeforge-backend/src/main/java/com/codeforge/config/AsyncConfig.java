@@ -14,7 +14,8 @@ import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecu
  * <p>At present that means one thing: re-judging a contest, which re-runs every
  * submission every competitor made through the sandbox. That is minutes of work
  * on a busy contest — far past any HTTP timeout — so the request starts it and
- * returns, and the authoring screen polls the progress recorded on the contest.
+ * returns, and the progress recorded on the contest is pushed to the authoring
+ * screen as it moves.
  *
  * <p>A single thread, deliberately. Two rejudges at once would compete for the
  * sandbox and finish later than if they had queued, and two rejudges of the

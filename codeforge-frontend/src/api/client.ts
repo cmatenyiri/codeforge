@@ -1,7 +1,14 @@
 import axios from 'axios';
 import { toApiError } from './api-error';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+/**
+ * The backend origin, shared with the WebSocket connection in `realtime/`.
+ *
+ * <p>Unset in development, where the Vite dev server and the backend listen on
+ * different ports. Set to an empty string by the Docker build, where nginx
+ * serves the app and the API on one origin and every call is relative.
+ */
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
 /**
  * The one HTTP client.
@@ -12,7 +19,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
  * the property that keeps an XSS bug from stealing the session.
  */
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: apiBaseUrl,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,

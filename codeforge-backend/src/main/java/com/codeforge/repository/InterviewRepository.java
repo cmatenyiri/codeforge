@@ -49,6 +49,9 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
 
     boolean existsByUserIdAndStatus(Long userId, InterviewStatus status);
 
+    /** Whether a live-update subscription to this interview is its owner's. */
+    boolean existsByIdAndUserId(Long id, Long userId);
+
     /**
      * Problems this user has already been given in a recent interview.
      *

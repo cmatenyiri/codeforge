@@ -19,6 +19,9 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
 
     boolean existsBySlug(String slug);
 
+    /** Whether a contest is announced, and so open to live-update subscribers. */
+    boolean existsByIdAndPublishedTrue(Long id);
+
     boolean existsBySlugAndIdNot(String slug, Long id);
 
     boolean existsByTitleIgnoreCase(String title);

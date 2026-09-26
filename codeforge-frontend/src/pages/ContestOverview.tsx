@@ -33,18 +33,21 @@ import { AppHeader } from '../components/layout/AppHeader';
 import { DifficultyChip } from '../components/problems/DifficultyChip';
 import { MarkdownBody } from '../components/solve/MarkdownBody';
 import { useMessages } from '../i18n/use-messages';
+import { type ContestChange, topics } from '../realtime/topics';
+import { useContestChanges } from '../realtime/use-topic';
 import { contestProblemPath, contestRankingPath, paths } from '../routes/paths';
 
-/** Fast enough that the page turns over within seconds of the contest starting. */
-const POLL_INTERVAL_MS = 15_000;
+/** The status and turnout up top, the caller's result and the solve counts below. */
+const OVERVIEW_CHANGES: ContestChange[] = ['STATUS', 'REGISTRATION', 'STANDINGS'];
 
 /**
  * A contest's own page: the announcement before it starts, the way in while it
  * runs, and the result afterwards.
  *
- * <p>Polled, and for one reason: this is the page people sit on waiting for the
- * clock. When it reaches zero the server starts serving the problems, and the
- * page has to notice without being reloaded.
+ * <p>Live, and mostly for one reason: this is the page people sit on waiting for
+ * the clock. When it reaches zero the server seals the contest and says so on
+ * the contest's topic, and the page re-reads and opens the problems without
+ * being reloaded.
  */
 export const ContestOverviewPage = () => {
   const { t, i18n } = useTranslation();
@@ -87,15 +90,9 @@ export const ContestOverviewPage = () => {
     load(true);
   }, [load]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      load(false);
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [load]);
+  useContestChanges(contest === null ? null : topics.contest(contest.id), OVERVIEW_CHANGES, () => {
+    load(false);
+  });
 
   const scheduled = contest?.status === 'SCHEDULED';
   const running = contest?.status === 'RUNNING';
