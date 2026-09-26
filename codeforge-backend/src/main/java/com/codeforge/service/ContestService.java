@@ -53,10 +53,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <h2>Sealing</h2>
  *
- * <p>Nothing has to run on a schedule for a contest to start. The first request
- * that touches a contest whose start time has passed is the one that freezes its
- * problems — see {@link #sealIfDue} — which is the same trick the mock interview
- * uses to end a round nobody came back to.
+ * <p>A contest's problems are frozen at its start time whether anybody has
+ * opened it or not: announcing it sets an alarm for that instant, which calls
+ * {@link #sealIfDue} — see {@link ContestAlarms}. A request that lands in the
+ * moment before the alarm has done its work seals the contest itself, so nobody
+ * is ever answered from problems that have not been frozen yet.
  */
 @Service
 @RequiredArgsConstructor
@@ -108,8 +109,9 @@ public class ContestService {
     /**
      * One contest by its slug, sealed first if its start time has passed.
      *
-     * <p>Not read-only, because sealing is a write. This is the call every
-     * contest screen makes on load, and it is where the problems get frozen.
+     * <p>Not read-only, because sealing is a write. The seal is the start alarm's
+     * to take, but this is the call every contest screen makes on load, and one
+     * that lands at 10:00:00 may well beat it there.
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
@@ -124,10 +126,14 @@ public class ContestService {
             throw NotFoundException.of("contest", slug);
         }
 
-        sealIfDue(contest.getId());
-        // Checked before the call so that the row lock is only taken in the
-        // moment a release is actually owed, not on every page view afterwards.
-        if (contest.isHoldingProblems() && contest.hasEnded(Instant.now())) {
+        // Both checked before the call so that the row lock is only taken in the
+        // moment a seal or release is actually owed, not on every page view
+        // afterwards.
+        Instant now = Instant.now();
+        if (contest.isPublished() && !contest.isSealed() && contest.hasStarted(now)) {
+            sealIfDue(contest.getId());
+        }
+        if (contest.isHoldingProblems() && contest.hasEnded(now)) {
             releaseIfDue(contest.getId());
         }
 
@@ -480,20 +486,21 @@ public class ContestService {
      * <p>The other end of the hold that announcing puts on them: nobody outside
      * the contest can read a question before or during the round, and everybody
      * can practise it from the catalogue afterwards. Reached two ways — by the
-     * first request that touches the contest after it ends, so the standings
-     * never link to a problem that is still hidden, and by
-     * {@link ContestReleaseJob}, so that a contest nobody opens is not left
-     * holding its problems for good.
+     * alarm {@link ContestAlarms} sets for the end, so that a contest nobody
+     * opens is not left holding its problems, and by the first request that
+     * touches the contest after it ends, should that beat the alarm, so the
+     * standings never link to a problem that is still hidden.
      *
      * <p>Publishing needs no completeness check of its own. Announcing refused
      * any question that was not ready to publish, and the problem form has kept
      * every held problem that way since — a release that could fail would have
      * to fail with nobody watching.
      *
-     * <p>Seals first if nothing has, which is the case for a contest nobody
-     * opened while it ran. Once a problem is public it can be edited like any
-     * other, and the contest must by then be answering from its frozen copy
-     * rather than following those edits.
+     * <p>Seals first if nothing has, which happens when the server was down for
+     * the whole of the contest and both of its alarms go off together on the way
+     * back up. Once a problem is public it can be edited like any other, and the
+     * contest must by then be answering from its frozen copy rather than
+     * following those edits.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void releaseIfDue(Long contestId) {

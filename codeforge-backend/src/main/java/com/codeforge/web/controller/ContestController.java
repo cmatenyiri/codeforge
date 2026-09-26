@@ -123,9 +123,10 @@ public class ContestController {
     /**
      * One contest's page.
      *
-     * <p>The call that seals a contest whose start time has passed — see
-     * {@link ContestService#sealIfDue}. Everybody loading this at 10:00:00 races
-     * to be the one that freezes the problems, and exactly one of them wins.
+     * <p>Seals a contest whose start time has passed, if its alarm has not got
+     * there first — see {@link ContestService#getBySlug}. Everybody loading this
+     * at 10:00:00 races the alarm to freeze the problems, and exactly one of them
+     * wins.
      */
     @GetMapping("/{slug}")
     public ResponseEntity<ContestDetailResponse> detail(@PathVariable String slug) {

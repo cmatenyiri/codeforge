@@ -127,7 +127,7 @@ export const AdminContestEditorPage = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState<'unrate' | 'rejudge' | 'delete' | null>(null);
+  const [confirm, setConfirm] = useState<'unrate' | 'rejudge' | 'delete' | 'withdraw' | null>(null);
   const [unratedReason, setUnratedReason] = useState('');
 
   const adopt = useCallback((data: AdminContestDetail) => {
@@ -259,6 +259,14 @@ export const AdminContestEditorPage = () => {
   const locked =
     sealed || contest?.status === 'RUNNING' || contest?.status === 'ENDED' || contest?.status === 'FINALIZED';
   const ended = contest?.status === 'ENDED' || contest?.status === 'FINALIZED';
+  // Live from its start time, and the server will not take a live contest back
+  // to draft — so the switch stops offering it.
+  const live = contest?.published === true && (contest.status === 'RUNNING' || ended);
+  // Taking an announcement back cancels every registration, so it is asked
+  // about first, the same as deleting — but only when there is somebody to
+  // cancel on.
+  const withdrawing =
+    contest !== null && contest.published && !form.published && contest.registrationCount > 0;
   const rejudging = contest?.rejudgeState === 'RUNNING';
 
   return (
@@ -401,6 +409,7 @@ export const AdminContestEditorPage = () => {
                 control={
                   <Switch
                     checked={form.published}
+                    disabled={live}
                     onChange={(event) => {
                       update('published', event.target.checked);
                     }}
@@ -410,7 +419,7 @@ export const AdminContestEditorPage = () => {
                   <Box>
                     <Typography variant="body2">{t('admin.contest.published')}</Typography>
                     <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-                      {t('admin.contest.publishedHelp')}
+                      {t(live ? 'admin.contest.publishedLive' : 'admin.contest.publishedHelp')}
                     </Typography>
                   </Box>
                 }
@@ -458,7 +467,16 @@ export const AdminContestEditorPage = () => {
           </FormSection>
 
           <Stack direction="row" spacing={2}>
-            <Button onClick={save} disabled={saving}>
+            <Button
+              onClick={() => {
+                if (withdrawing) {
+                  setConfirm('withdraw');
+                } else {
+                  save();
+                }
+              }}
+              disabled={saving}
+            >
               {t(saving ? 'admin.contest.saving' : contestId === null ? 'admin.contest.create' : 'admin.contest.save')}
             </Button>
             {/* Offered on exactly the terms the server accepts: nobody has
@@ -582,7 +600,9 @@ export const AdminContestEditorPage = () => {
             ? t('admin.contest.unratedConfirm')
             : confirm === 'rejudge'
               ? t('admin.contest.rejudgeConfirm')
-              : t('admin.contest.deleteConfirm')}
+              : confirm === 'withdraw'
+                ? t('admin.contest.withdrawConfirm')
+                : t('admin.contest.deleteConfirm')}
         </DialogTitle>
         <DialogContent>
           {confirm === 'unrate' ? (
@@ -602,6 +622,10 @@ export const AdminContestEditorPage = () => {
             </Stack>
           ) : confirm === 'rejudge' ? (
             <DialogContentText>{t('admin.contest.rejudgeConfirmBody')}</DialogContentText>
+          ) : confirm === 'withdraw' ? (
+            <DialogContentText>
+              {t('admin.contest.withdrawConfirmBody', { count: contest?.registrationCount ?? 0 })}
+            </DialogContentText>
           ) : (
             /* Deleting an announced contest cancels it on people who signed up.
                They are not a reason to refuse — an author has to be able to
@@ -618,7 +642,7 @@ export const AdminContestEditorPage = () => {
             {t('common.cancel')}
           </Button>
           <Button
-            color={confirm === 'delete' ? 'error' : 'primary'}
+            color={confirm === 'delete' || confirm === 'withdraw' ? 'error' : 'primary'}
             onClick={() => {
               if (contest === null) {
                 return;
@@ -627,6 +651,9 @@ export const AdminContestEditorPage = () => {
                 act(adminContestsApi.setRated(contest.id, false, unratedReason));
               } else if (confirm === 'rejudge') {
                 act(adminContestsApi.rejudge(contest.id));
+              } else if (confirm === 'withdraw') {
+                setConfirm(null);
+                save();
               } else {
                 setConfirm(null);
                 adminContestsApi

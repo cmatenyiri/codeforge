@@ -144,7 +144,8 @@ export const ContestOverviewPage = () => {
     );
   }
 
-  const started = contest.status !== 'SCHEDULED' && contest.status !== 'DRAFT';
+  const draft = contest.status === 'DRAFT';
+  const started = contest.status !== 'SCHEDULED' && !draft;
   const over = contest.status === 'ENDED' || contest.status === 'FINALIZED';
 
   return (
@@ -227,7 +228,10 @@ export const ContestOverviewPage = () => {
                   <ContestCountdown seconds={remaining} mode="remaining" durationMinutes={contest.durationMinutes} />
                 ) : null}
 
-                {over ? null : contest.registered ? (
+                {/* Only an admin can reach a draft, and the server refuses to
+                    register anybody for one — including them — so there is no
+                    button to offer; the notice below says why. */}
+                {over || draft ? null : contest.registered ? (
                   <Button variant="outlined" onClick={toggleRegistration} disabled={busy || started}>
                     {t(started ? 'contest.registered' : 'contest.unregister')}
                   </Button>
@@ -246,6 +250,13 @@ export const ContestOverviewPage = () => {
           </Box>
 
           {error ? <Alert severity="error">{error}</Alert> : null}
+
+          {draft ? (
+            <Alert severity="info">
+              <AlertTitle>{t('contest.draftTitle')}</AlertTitle>
+              {t('contest.draftBody')}
+            </Alert>
+          ) : null}
 
           {contest.rated ? null : (
             <Alert severity="warning">

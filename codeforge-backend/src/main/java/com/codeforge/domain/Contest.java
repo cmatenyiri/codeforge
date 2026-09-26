@@ -152,9 +152,9 @@ public class Contest extends AuditableEntity {
      * <p>Null while the contest is holding them back — from the moment it is
      * announced until it ends, its problems exist nowhere but inside the contest
      * itself, and nobody but an author can publish, archive or open them. Set
-     * once, by the first request or sweep after the end, and never cleared: an
-     * author who later unpublishes one of them is not overruled a minute
-     * afterwards. See {@link #isHoldingProblems()}.
+     * once, at the end — by its alarm, or by a request that beats the alarm to
+     * it — and never cleared: an author who later unpublishes one of them is not
+     * overruled a minute afterwards. See {@link #isHoldingProblems()}.
      */
     @Column(name = "problems_released_at")
     private Instant problemsReleasedAt;
@@ -282,10 +282,10 @@ public class Contest extends AuditableEntity {
      * Whether its questions, their points and its clock are settled for good.
      *
      * <p>From the moment an announced contest's start time passes — not from the
-     * moment it seals. Sealing waits for the first request after the start, and a
-     * lock that waited too would leave a live contest open to rescheduling for as
-     * long as nobody happened to look at it. A draft is not locked however late
-     * its start time: nobody can see it.
+     * moment it seals. Sealing happens at the start too, but by an alarm that can
+     * be a moment late, or much later across a restart, and a lock that waited
+     * for it would leave a live contest open to rescheduling in between. A draft
+     * is not locked however late its start time: nobody can see it.
      */
     public boolean isLocked(Instant now) {
         return isSealed() || (published && hasStarted(now));

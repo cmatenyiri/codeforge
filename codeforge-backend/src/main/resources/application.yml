@@ -26,6 +26,20 @@ spring:
   jackson:
     default-property-inclusion: non_null
 
+  quartz:
+    # Triggers are stored in this database, so they outlive a restart: one that
+    # fell due while the server was down counts as misfired, and Quartz fires it
+    # as soon as the scheduler starts again. Scheduling from inside a
+    # @Transactional method joins that transaction, so a trigger commits or rolls
+    # back with the change that set it.
+    job-store-type: jdbc
+    jdbc:
+      # Not Quartz's stock script, which drops every table first and would wipe
+      # the stored triggers on each start — see the file for what differs.
+      initialize-schema: always
+      schema: classpath:quartz/tables_mysql_innodb.sql
+      continue-on-error: false
+
 codeforge:
   jwt:
     # Dev-only secret. Must be at least 32 bytes for HS256 — move this to an

@@ -168,23 +168,16 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
             """)
     List<ProblemHold> findHolds(@Param("problemIds") Collection<Long> problemIds);
 
-    /** Announced contests that have ended without releasing their problems yet. */
-    @Query("""
-            select c.id from Contest c
-            where c.published = true and c.problemsReleasedAt is null and c.endsAt <= :now
-            """)
-    List<Long> findDueForRelease(@Param("now") Instant now);
-
     /**
      * One contest, locked for the row that seals it or releases its problems.
      *
-     * <p>Sealing is a read that writes, triggered by whoever happens to load the
-     * contest first after it starts — which, at the start of a popular contest,
-     * is several hundred people in the same second. The lock makes exactly one of
-     * them take the snapshots; everybody else waits a moment and finds them
-     * already taken. Without it, two requests could each snapshot the problems,
-     * and an author's edit landing between the two would be the one thing the
-     * whole mechanism exists to prevent.
+     * <p>Sealing is raced for. The alarm set for the start goes off at 10:00:00,
+     * and at the start of a popular contest several hundred people load it in
+     * that same second — any of them may get there before the alarm does. The
+     * lock makes exactly one of them take the snapshots; everybody else waits a
+     * moment and finds them already taken. Without it, two could each snapshot
+     * the problems, and an author's edit landing between the two would be the
+     * one thing the whole mechanism exists to prevent.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Contest c where c.id = :id")

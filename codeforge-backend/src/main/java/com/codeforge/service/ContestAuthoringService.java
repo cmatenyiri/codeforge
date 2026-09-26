@@ -66,6 +66,7 @@ public class ContestAuthoringService {
     private final ContestStandingsService standingsService;
     private final ContestRatingService ratingService;
     private final ContestUpsertRequestValidator validator;
+    private final ContestAlarms alarms;
 
     // ── Reading ───────────────────────────────────────────────────────────
 
@@ -111,7 +112,9 @@ public class ContestAuthoringService {
         contest.setCreatedBy(userRepository.getReferenceById(SecurityUtils.requireCurrentUserId()));
         apply(contest, request);
 
-        return contestRepository.save(contest).getId();
+        Long id = contestRepository.save(contest).getId();
+        alarms.arm(contest);
+        return id;
     }
 
     /**
@@ -124,8 +127,8 @@ public class ContestAuthoringService {
      * validator has already refused any change to them.
      *
      * <p>Taking the announcement back is held to the same rules here as on the
-     * toggle. Otherwise the form would be the way round them — and round the
-     * lock on a started contest too, which lifts once it is a draft again.
+     * toggle, and cancels the same registrations — otherwise the form would be
+     * the way round them. See {@link #withdraw}.
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -136,9 +139,10 @@ public class ContestAuthoringService {
 
         validator.validate(request, Optional.of(contest));
         if (contest.isPublished() && !request.published()) {
-            requireWithdrawable(contest);
+            withdraw(contest);
         }
         apply(contest, request);
+        alarms.arm(contest);
     }
 
     private void apply(Contest contest, ContestUpsertRequest request) {
@@ -227,9 +231,8 @@ public class ContestAuthoringService {
     /**
      * Announces a contest, or takes the announcement back.
      *
-     * <p>Unannouncing is refused once it has started. Hiding a contest people are
-     * sitting — or have already sat, and been rated on — would not undo any of
-     * it; it would only make the result unreadable to the people it happened to.
+     * <p>Taking the announcement back is refused once the contest has started,
+     * and cancels every registration before that — see {@link #withdraw}.
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -242,7 +245,8 @@ public class ContestAuthoringService {
             // happens to take. A draft may legitimately sit on a past start time
             // — it is nobody's business until it is announced — so publishing it
             // is the moment that becomes a claim about a contest that ran, with
-            // problems sealed from whenever the first read lands.
+            // problems sealed the instant it saved, from whatever was written
+            // then.
             //
             // A contest that has already sealed is exempt: it genuinely did run,
             // and re-announcing one that was withdrawn is restoring a record
@@ -257,31 +261,39 @@ public class ContestAuthoringService {
             validator.validate(asRequest(contest, true), Optional.of(contest));
         }
 
-        if (!published) {
-            requireWithdrawable(contest);
+        if (!published && contest.isPublished()) {
+            withdraw(contest);
         }
         contest.setPublished(published);
+        alarms.arm(contest);
     }
 
     /**
-     * Refuses to take back an announcement somebody is already invested in.
+     * Takes an announcement back: refused once the contest has started, and
+     * cancelling every registration when it has not.
      *
-     * <p>The same principle as deletion, one step softer: a contest people sat is
-     * their record; a contest people signed up for is a promise already made.
-     * Anything else — including one that has slipped into its window with nobody
-     * registered and nobody competing — can be taken back, and that is the only
-     * way out of an accidental live contest short of waiting for the clock: once
-     * it is a draft again the lock lifts, and it can be rescheduled.
+     * <p>From its start time a contest is live — sealed, its questions frozen and
+     * open to everybody who entered — whether or not anybody has opened it yet.
+     * The clock is the only line that can be held there: who has read a problem
+     * is not recorded, and reading one is already competing. Hiding it would not
+     * undo any of that; it would only make a contest that happened unreadable to
+     * the people it happened to.
+     *
+     * <p>Before the start, withdrawing is calling the round off, and the
+     * registrations go with it. They were made for the contest as announced;
+     * while it is a draft the people holding them can neither see it nor cancel
+     * them, and keeping them would sign everybody up for whatever is announced
+     * next, at a time they may never have agreed to. Rescheduling does not need
+     * this — an announced contest's time, questions and points stay editable
+     * until it starts. The authoring screen says how many people it cancels on
+     * before it does.
      */
-    private void requireWithdrawable(Contest contest) {
-        if (participationRepository.countByContestIdAndSubmissionCountGreaterThan(contest.getId(), 0) > 0) {
+    private void withdraw(Contest contest) {
+        if (contest.hasStarted(Instant.now())) {
             throw new BusinessRuleException(
-                    "error.contest.hasParticipants", "People have competed in this contest");
+                    "error.contest.withdrawStarted", "A contest that has started cannot go back to draft");
         }
-        if (contest.hasStarted(Instant.now()) && participationRepository.countByContestId(contest.getId()) > 0) {
-            throw new BusinessRuleException(
-                    "error.contest.started", "That contest has started and people have registered for it");
-        }
+        participationRepository.deleteByContestId(contest.getId());
     }
 
     /**
@@ -321,9 +333,9 @@ public class ContestAuthoringService {
         // sitting inside its own window would be refused for the sake of an
         // audience that cannot reach it.
         //
-        // That leaves an escape from the accidental live contest: unannounce it
-        // first, which setPublished allows precisely while nobody is invested,
-        // and then delete the draft.
+        // Nor can it be withdrawn first, once it has started, so an accidental
+        // live contest stays up until its clock runs out. After that it can be
+        // deleted if nobody competed, or made unrated if somebody did.
         if (contest.isPublished() && contest.isRunning(Instant.now())) {
             throw new BusinessRuleException(
                     "error.contest.running", "That contest is running; people can be reading it right now");
@@ -340,6 +352,7 @@ public class ContestAuthoringService {
         participationRepository.deleteByContestId(id);
         submissionRepository.detachFromContest(id);
         contestRepository.delete(contest);
+        alarms.disarm(id);
     }
 
     // ── Settling ──────────────────────────────────────────────────────────

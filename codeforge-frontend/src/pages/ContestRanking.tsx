@@ -18,7 +18,6 @@ import { toApiError } from '../api/api-error';
 import { contestsApi } from '../api/contests-api';
 import { type ContestDetail, type ContestStandings } from '../api/types';
 import { useAuth } from '../auth/use-auth';
-import { StandingsLegend } from '../components/contest/StandingsLegend';
 import { StandingsTable } from '../components/contest/StandingsTable';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useMessages } from '../i18n/use-messages';
@@ -145,8 +144,6 @@ export const ContestRankingPage = () => {
               <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                 {t(standings.finalised ? 'contest.standingsFinal' : 'contest.standingsLive')}
               </Typography>
-
-              <StandingsLegend />
 
               {standings.me ? (
                 <Paper variant="outlined" sx={{ p: 0, borderColor: 'primary.main' }}>

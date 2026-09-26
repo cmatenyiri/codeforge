@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { type ContestProblemSummary, type ContestResult } from '../../api/types';
@@ -19,29 +20,38 @@ import { RatingDelta } from './RatingDelta';
 import { formatContestTime } from './contest';
 
 /**
+ * Minutes each wrong attempt on a solved problem adds to Time. The server's
+ * rule; repeated here only so a cell can say what its own red count cost.
+ */
+const PENALTY_MINUTES = 5;
+
+/**
  * One cell of the grid: whether they solved it, when, and at what cost.
  *
  * <p>The wrong-attempt count is drawn small and red under the time rather than
  * as a separate column, because it is a footnote on the solve — five minutes
  * each, already inside the total to the left.
  *
- * <p>Exported for {@link StandingsLegend}, which explains the grid with this very
- * cell rather than a drawing of it, so the two cannot drift apart.
+ * <p>Every state says what it means on hover. The grid is dense by design — a
+ * time, a red count and a dash carry everything — and the explanation belongs
+ * on the thing being read, not in a legend somewhere above it.
  */
-export const ProblemCell = ({ result }: { result?: ContestResult['problems'][number] }) => {
+const ProblemCell = ({ result }: { result?: ContestResult['problems'][number] }) => {
   const { t } = useTranslation();
 
   if (result === undefined || (!result.solved && result.wrongAttempts === 0)) {
     return (
-      <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-        —
-      </Typography>
+      <Tooltip title={t('contest.cell.untouched')}>
+        <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          —
+        </Typography>
+      </Tooltip>
     );
   }
 
   if (!result.solved) {
     return (
-      <Tooltip title={t('contest.wrongAttempts', { count: result.wrongAttempts })}>
+      <Tooltip title={t('contest.cell.wrongUnsolved', { count: result.wrongAttempts })}>
         <Typography variant="body2" sx={{ color: 'verdict.wrongAnswer' }}>
           −{result.wrongAttempts}
         </Typography>
@@ -49,18 +59,59 @@ export const ProblemCell = ({ result }: { result?: ContestResult['problems'][num
     );
   }
 
+  const time = formatContestTime(result.solvedAtSeconds ?? 0);
+
   return (
-    <Stack sx={{ alignItems: 'center' }}>
-      <Typography variant="body2" sx={{ color: 'verdict.accepted', fontVariantNumeric: 'tabular-nums' }}>
-        {formatContestTime(result.solvedAtSeconds ?? 0)}
-      </Typography>
-      {result.wrongAttempts > 0 ? (
-        <Typography variant="caption" sx={{ color: 'verdict.wrongAnswer' }}>
-          −{result.wrongAttempts}
+    <Tooltip
+      title={
+        result.wrongAttempts > 0
+          ? t('contest.cell.solvedAfterWrong', {
+              time,
+              count: result.wrongAttempts,
+              penalty: result.wrongAttempts * PENALTY_MINUTES,
+            })
+          : t('contest.cell.solved', { time })
+      }
+    >
+      <Stack sx={{ alignItems: 'center' }}>
+        <Typography variant="body2" sx={{ color: 'verdict.accepted', fontVariantNumeric: 'tabular-nums' }}>
+          {time}
         </Typography>
-      ) : null}
-    </Stack>
+        {result.wrongAttempts > 0 ? (
+          <Typography variant="caption" sx={{ color: 'verdict.wrongAnswer' }}>
+            −{result.wrongAttempts}
+          </Typography>
+        ) : null}
+      </Stack>
+    </Tooltip>
   );
+};
+
+/** What the score is made of — "Q1 (3) + Q3 (5)" — or null when nothing was solved. */
+const scoreHint = (row: ContestResult, problems: ContestProblemSummary[]): string | null => {
+  const parts = problems
+    .filter((problem) => row.problems.some((entry) => entry.position === problem.position && entry.solved))
+    .map((problem) => `${problem.label} (${problem.points})`);
+
+  return parts.length === 0 ? null : parts.join(' + ');
+};
+
+/** How the time was reached: the last solve, plus whatever wrong attempts cost. */
+const timeHint = (row: ContestResult, t: TFunction): string => {
+  const solved = row.problems.filter((entry) => entry.solved);
+  if (solved.length === 0) {
+    return t('contest.cell.nothingSolved');
+  }
+
+  const finish = formatContestTime(row.finishSeconds);
+  if (row.penaltySeconds <= 0) {
+    return t('contest.cell.timeNoPenalty', { finish });
+  }
+  return t('contest.cell.time', {
+    finish,
+    penalty: Math.round(row.penaltySeconds / 60),
+    count: solved.reduce((sum, entry) => sum + entry.wrongAttempts, 0),
+  });
 };
 
 /**
@@ -146,16 +197,12 @@ export const StandingsTable = ({
                   </Stack>
                 </TableCell>
                 <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                  {row.score}
+                  <Tooltip title={scoreHint(row, problems) ?? t('contest.cell.nothingSolved')}>
+                    <span>{row.score}</span>
+                  </Tooltip>
                 </TableCell>
                 <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-                  <Tooltip
-                    title={
-                      row.penaltySeconds > 0
-                        ? `${formatContestTime(row.finishSeconds)} + ${Math.round(row.penaltySeconds / 60)}m`
-                        : ''
-                    }
-                  >
+                  <Tooltip title={timeHint(row, t)}>
                     <span>{formatContestTime(row.totalTimeSeconds)}</span>
                   </Tooltip>
                 </TableCell>
