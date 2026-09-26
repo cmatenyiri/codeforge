@@ -88,6 +88,7 @@ codeforge:
         PYTHON: 71 # 3.8.1
         JAVASCRIPT: 63 # Node.js 12.14.0
         TYPESCRIPT: 74 # 3.7.4
+        CPP: 54 # GCC 9.2.0
       # Judge0 caps these at its own MAX_* settings — 15s CPU and 20s wall by
       # default — and rejects the entire batch with a 422 if either is exceeded.
       cpu-time-limit: PT5S

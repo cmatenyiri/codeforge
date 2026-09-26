@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li><b>Always</b>: shape and uniqueness. A title fits its column, a slug is a
- *       slug, a parameter name is an identifier in all four languages, a test
+ *       slug, a parameter name is an identifier in every language, a test
  *       case has as many input lines as the function has arguments.
  *   <li><b>Only when publishing</b>: completeness. A signature, test cases, a
  *       sample the solver can run against, a worked example. A draft is allowed

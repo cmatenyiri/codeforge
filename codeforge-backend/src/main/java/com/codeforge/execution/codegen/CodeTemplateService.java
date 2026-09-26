@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
  * and turns a {@link Problem} into starter code or a runnable program.
  *
  * <p>Implementations are injected as a list and indexed by their own
- * {@code language()}, so supporting a fifth language is one new
- * {@code @Component} and nothing else.
+ * {@code language()}, so supporting another language is one new
+ * {@code @Component} here — see {@link Language} for the rest.
  */
 @Service
 public class CodeTemplateService {

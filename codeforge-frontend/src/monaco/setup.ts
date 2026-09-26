@@ -13,7 +13,7 @@ import {
   type CompilerOptions,
 } from 'monaco-editor/languages/features/typescript/register';
 import TypeScriptWorker from 'monaco-editor/languages/features/typescript/ts.worker?worker';
-import { JAVA_COMPLETIONS, PYTHON_COMPLETIONS } from './completions';
+import { CPP_COMPLETIONS, JAVA_COMPLETIONS, PYTHON_COMPLETIONS } from './completions';
 import { monacoThemes } from './theme';
 
 /**
@@ -22,7 +22,7 @@ import { monacoThemes } from './theme';
  * <p>`editor.main` has to be imported, not just `editor.api`: the API module is
  * only the core editor and carries none of the contributions, so there is no
  * suggest widget at all and completion silently does nothing. `editor.main` also
- * registers every language Monaco ships, which looks wasteful next to the four
+ * registers every language Monaco ships, which looks wasteful next to the few
  * that can actually be run; measured, it is not. Importing the API plus only the
  * four grammars produced a solving-page payload within about 20 kB gzipped of
  * this one, because the cost is the editor core and the TypeScript service, not
@@ -44,7 +44,7 @@ import { monacoThemes } from './theme';
  *
  * <p>It is the language service behind both JavaScript and TypeScript
  * completion — what makes `nums.` list array methods rather than words that
- * happen to appear in the file. Java and Python have no worker in Monaco at all:
+ * happen to appear in the file. Java, Python and C++ have no worker in Monaco at all:
  * they get syntax highlighting from a Monarch grammar, plus the keyword
  * completions registered below. Anything else (the css/html/json services
  * `editor.main` also registers) falls back to the plain editor worker, and is
@@ -100,17 +100,18 @@ for (const defaults of [typescriptDefaults, javascriptDefaults]) {
 }
 
 /**
- * Java and Python get a keyword list, because Monaco gives them nothing else.
+ * Java, Python and C++ get a keyword list, because Monaco gives them nothing else.
  *
  * <p>Without a language server the alternative is word-based suggestion, which
  * can only ever offer identifiers already typed somewhere in the file — so
  * `for` does not complete until you have written a loop. Real completion for
- * these two needs a language server (jdtls, Pyright) behind a WebSocket; this is
+ * these needs a language server (jdtls, Pyright, clangd) behind a WebSocket; this is
  * the useful floor beneath that.
  */
 for (const [language, completions] of [
   ['java', JAVA_COMPLETIONS],
   ['python', PYTHON_COMPLETIONS],
+  ['cpp', CPP_COMPLETIONS],
 ] as const) {
   monaco.languages.registerCompletionItemProvider(language, {
     provideCompletionItems(model, position) {

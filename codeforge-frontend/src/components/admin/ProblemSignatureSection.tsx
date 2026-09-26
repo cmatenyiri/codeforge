@@ -8,6 +8,7 @@ import { toApiError } from '../../api/api-error';
 import { type DataType, type Language } from '../../api/types';
 import { useMessages } from '../../i18n/use-messages';
 import { EditorialCode } from '../solve/EditorialCode';
+import { LANGUAGE_LABEL } from '../solve/verdict';
 import { FormSection } from './FormSection';
 import { RepeatableRow } from './RepeatableRow';
 import { DATA_TYPES, hasSignature, moveRow, newKey, type ProblemFormState } from './problem-form';
@@ -205,7 +206,7 @@ export const ProblemSignatureSection = ({ form, onChange, errorOf }: ProblemSign
             sx={{ mb: 1.5 }}
           >
             {languages.map((language) => (
-              <Tab key={language} value={language} label={language} />
+              <Tab key={language} value={language} label={LANGUAGE_LABEL[language]} />
             ))}
           </Tabs>
           <EditorialCode code={preview[previewLanguage] ?? ''} language={previewLanguage} />

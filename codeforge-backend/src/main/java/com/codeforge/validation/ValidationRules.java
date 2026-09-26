@@ -49,11 +49,11 @@ public final class ValidationRules {
     public static final int TEST_CASE_MAX_LENGTH = 4 * 1024 * 1024;
 
     /**
-     * A name that is a legal identifier in all four supported languages.
+     * A name that is a legal identifier in every supported language.
      *
      * <p>Deliberately stricter than any one of them: the same string is pasted
-     * verbatim into Java, Python, JavaScript and TypeScript source, so it has to
-     * be something all four accept — and nothing that could carry code with it.
+     * verbatim into Java, Python, JavaScript, TypeScript and C++ source, so it has
+     * to be something all five accept — and nothing that could carry code with it.
      */
     public static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 

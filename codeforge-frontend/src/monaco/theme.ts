@@ -36,7 +36,7 @@ const withHash = (color: string): string => `#${hex(color)}`;
 
 const buildTheme = (t: Scheme, base: editor.BuiltinTheme): editor.IStandaloneThemeData => ({
   base,
-  // Our rules cover the token types the four supported languages emit; anything
+  // Our rules cover the token types the supported languages emit; anything
   // else should still be coloured rather than fall back to Monaco's defaults.
   inherit: true,
   rules: [

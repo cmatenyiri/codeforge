@@ -42,4 +42,5 @@ export const LANGUAGE_LABEL = {
   PYTHON: 'Python',
   JAVASCRIPT: 'JavaScript',
   TYPESCRIPT: 'TypeScript',
+  CPP: 'C++',
 } as const;

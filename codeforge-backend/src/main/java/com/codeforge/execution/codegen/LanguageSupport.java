@@ -9,7 +9,7 @@ import com.codeforge.domain.Language;
  * starts from, and the harness that calls what they wrote. Both are derived from
  * the same {@link ProblemSignature}, so they cannot drift out of step.
  *
- * <p>The harness contract, identical in all four languages:
+ * <p>The harness contract, identical in every language:
  *
  * <ol>
  *   <li>read stdin, split into lines;
@@ -39,7 +39,7 @@ public interface LanguageSupport {
     /**
      * Compiler flags for this language, or null to use the judge's defaults.
      *
-     * <p>Only TypeScript needs them, but the hook belongs on the interface
+     * <p>Only TypeScript and C++ need them, but the hook belongs on the interface
      * rather than as a special case in the engine.
      */
     default String compilerOptions() {

@@ -163,7 +163,7 @@ public class ProblemService {
      * while one archived straight out of draft was never public and stays hidden.
      *
      * <p>Every read of a problem by slug goes through here, the editorial
-     * included: a walkthrough and four reference solutions are the answer key,
+     * included: a walkthrough and its reference solutions are the answer key,
      * and an endpoint that skipped this check would hand them out for an
      * unreleased problem to anyone who guessed the URL.
      */
@@ -216,7 +216,7 @@ public class ProblemService {
     /**
      * A problem's written solution.
      *
-     * <p>Its own call, made only when the tab is opened: the walkthrough and four
+     * <p>Its own call, made only when the tab is opened: the walkthrough and its
      * reference implementations are larger than the problem itself, and most
      * visits never ask for them.
      */

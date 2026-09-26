@@ -24,8 +24,8 @@ import lombok.Setter;
  * The written solution to a problem: how to think about it, and code that works.
  *
  * <p>A separate entity rather than columns on {@link Problem} for the same
- * reason the hidden test cases are fetched separately — a walkthrough plus four
- * reference solutions is far larger than the rest of a problem put together, and
+ * reason the hidden test cases are fetched separately — a walkthrough plus a
+ * reference solution per language is far larger than the rest of a problem put together, and
  * the solving page loads the problem on every visit while the editorial is read
  * only when somebody opens the tab.
  */

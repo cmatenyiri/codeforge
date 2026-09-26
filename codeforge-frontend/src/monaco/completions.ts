@@ -1,5 +1,5 @@
 /**
- * Keyword and snippet completions for the two languages Monaco has no language
+ * Keyword and snippet completions for the languages Monaco has no language
  * service for.
  *
  * <p>`${1:name}` and `$0` are Monaco snippet placeholders: tab stops, with `$0`
@@ -62,4 +62,25 @@ export const PYTHON_COMPLETIONS: Completion[] = [
   { label: 'fore', insertText: 'for ${1:item} in ${2:items}:\n    $0', detail: 'iterate', snippet: true },
   { label: 'enum', insertText: 'for ${1:i}, ${2:value} in enumerate(${3:items}):\n    $0', detail: 'enumerate loop', snippet: true },
   { label: 'defaultdict', insertText: 'defaultdict(${1:int})$0', detail: 'collections.defaultdict', snippet: true },
+];
+
+export const CPP_COMPLETIONS: Completion[] = [
+  ...keywords(
+    'keyword',
+    'auto', 'bool', 'break', 'case', 'char', 'class', 'const', 'constexpr', 'continue', 'default',
+    'do', 'double', 'else', 'enum', 'false', 'for', 'if', 'int', 'long', 'nullptr', 'private',
+    'public', 'return', 'short', 'sizeof', 'static', 'struct', 'switch', 'template', 'this',
+    'true', 'typename', 'unsigned', 'using', 'void', 'while',
+  ),
+  ...keywords(
+    'std',
+    'accumulate', 'deque', 'greater', 'lower_bound', 'make_pair', 'map', 'max', 'min', 'multiset',
+    'pair', 'priority_queue', 'queue', 'reverse', 'set', 'sort', 'stack', 'string', 'swap',
+    'to_string', 'unordered_map', 'unordered_set', 'upper_bound', 'vector',
+  ),
+  { label: 'cout', insertText: 'cout << $0 << endl;', detail: 'print to stdout', snippet: true },
+  { label: 'fori', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n    $0\n}', detail: 'index loop', snippet: true },
+  { label: 'foreach', insertText: 'for (auto& ${1:item} : ${2:items}) {\n    $0\n}', detail: 'range for', snippet: true },
+  { label: 'umap', insertText: 'unordered_map<${1:int}, ${2:int}> ${3:seen};$0', detail: 'new unordered_map', snippet: true },
+  { label: 'vec', insertText: 'vector<${1:int}> ${2:values};$0', detail: 'new vector', snippet: true },
 ];

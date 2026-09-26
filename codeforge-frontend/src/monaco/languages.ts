@@ -6,6 +6,7 @@ export const MONACO_LANGUAGE_ID = {
   PYTHON: 'python',
   JAVASCRIPT: 'javascript',
   TYPESCRIPT: 'typescript',
+  CPP: 'cpp',
 } as const satisfies Record<Language, string>;
 
 /**
@@ -22,4 +23,5 @@ export const MONACO_FILE_EXTENSION = {
   PYTHON: 'py',
   JAVASCRIPT: 'js',
   TYPESCRIPT: 'ts',
+  CPP: 'cpp',
 } as const satisfies Record<Language, string>;

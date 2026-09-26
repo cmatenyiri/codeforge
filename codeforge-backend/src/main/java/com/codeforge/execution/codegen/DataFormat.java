@@ -4,7 +4,7 @@ package com.codeforge.execution.codegen;
  * The canonical text form of every {@link com.codeforge.domain.DataType}.
  *
  * <p>This is the contract that lets a judged run be decided by string equality:
- * all four harnesses print a return value exactly this way, and problem authors
+ * every harness prints a return value exactly this way, and problem authors
  * write expected outputs the same way.
  *
  * <table>

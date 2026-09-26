@@ -95,7 +95,7 @@ export type ProblemExample = { input: string; output: string; explanation?: stri
 export type TestCase = { id: number; input: string; expectedOutput: string };
 
 /** Mirrors `com.codeforge.domain.Language`. */
-export type Language = 'JAVA' | 'PYTHON' | 'JAVASCRIPT' | 'TYPESCRIPT';
+export type Language = 'JAVA' | 'PYTHON' | 'JAVASCRIPT' | 'TYPESCRIPT' | 'CPP';
 
 /** Mirrors `com.codeforge.domain.SubmissionStatus`. */
 export type ExecutionStatus =

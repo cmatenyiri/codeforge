@@ -21,7 +21,7 @@ export const DATA_TYPES: DataType[] = [
 ];
 
 /** The languages a reference solution can be written in. */
-export const LANGUAGES: Language[] = ['JAVA', 'PYTHON', 'JAVASCRIPT', 'TYPESCRIPT'];
+export const LANGUAGES: Language[] = ['JAVA', 'PYTHON', 'JAVASCRIPT', 'TYPESCRIPT', 'CPP'];
 
 /**
  * A client-side row identity.
