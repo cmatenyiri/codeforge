@@ -6,17 +6,25 @@ spring:
     name: codeforge-backend
 
   datasource:
-    # `createDatabaseIfNotExist` keeps first-run friction low; the schema itself is
-    # created by Hibernate (see `ddl-auto` below) rather than a migration tool.
+    # `createDatabaseIfNotExist` keeps first-run friction low; everything inside
+    # the database is Liquibase's job (see `liquibase` below).
     url: jdbc:mysql://localhost:3306/codeforge?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: codeforge
     password: codeforge
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  # The one owner of the schema: every table, the Quartz ones included, and the
+  # first admin account. Runs before JPA and Quartz start, and when several
+  # instances start at once only one of them applies the changes — the others
+  # wait on its lock. See db/changelog/db.changelog-master.xml.
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
   jpa:
-    # No Flyway/Liquibase: entities are the single source of truth for the schema.
+    # Hibernate only checks that the entities match the tables Liquibase made,
+    # and refuses to start if they do not. It never changes the schema itself.
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
     show-sql: false
     properties:
@@ -51,11 +59,8 @@ spring:
     # back with the change that set it.
     job-store-type: jdbc
     jdbc:
-      # Not Quartz's stock script, which drops every table first and would wipe
-      # the stored triggers on each start — see the file for what differs.
-      initialize-schema: always
-      schema: classpath:quartz/tables_mysql_innodb.sql
-      continue-on-error: false
+      # The QRTZ_ tables come from Liquibase (changes/002-quartz-schema.xml).
+      initialize-schema: never
     # Clustered, because several backend instances can share this database —
     # the Docker setup runs two. Without it each instance would fire every
     # contest alarm; clustered, they share the triggers through row locks in
@@ -87,21 +92,6 @@ codeforge:
       secure: false
       same-site: Lax
       path: /
-
-  seed:
-    # The catalogue is inserted only when the problems table is empty; see
-    # ProblemSeeder.
-    problems: true
-    # Somebody has to be able to write problems, and registration only ever
-    # creates ordinary users. Created on first start if absent; an account that
-    # already exists is promoted, never re-passworded. Dev-only defaults, exactly
-    # like the JWT secret above — turn this off, or change the password, before
-    # the instance is reachable from anywhere but localhost.
-    admin:
-      enabled: true
-      username: admin
-      email: admin@codeforge.local
-      password: forge-admin
 
   cors:
     allowed-origins:

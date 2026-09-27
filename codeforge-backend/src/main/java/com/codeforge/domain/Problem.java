@@ -77,10 +77,6 @@ public class Problem extends AuditableEntity {
      * <p>A new problem starts unpublished, which is what makes authoring in the
      * app safe: a half-written statement or a test case whose expected output has
      * not been checked yet is invisible to solvers until an author says otherwise.
-     *
-     * <p>The column carries a database-level default of true so that problems
-     * written before this flag existed — every seeded one — stay in the catalogue
-     * when the column is added, rather than all disappearing at once.
      */
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean published = true;
@@ -185,8 +181,8 @@ public class Problem extends AuditableEntity {
      * published.
      *
      * <p>A lifecycle hook rather than a setter, because there are routes to
-     * {@code published = true} that call no setter at all — a new problem starts
-     * published by default, which is how the seeder writes its catalogue — and a
+     * {@code published = true} that call no setter at all — a problem built in
+     * code starts out published — and a
      * contest's rule about new problems is only as strong as the route that
      * slips past it.
      */

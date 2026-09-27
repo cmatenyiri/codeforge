@@ -80,7 +80,7 @@ public class ProblemController {
      *
      * <p>Declared before {@code /{slug}} matters not at all — Spring prefers the
      * literal path over the template — but a problem may never be slugged
-     * "random", which {@code ProblemSeeder.slugify} cannot produce anyway.
+     * "random", which {@code ProblemUpsertRequestValidator} reserves.
      */
     @GetMapping("/random")
     public ResponseEntity<ProblemSummaryResponse> random(

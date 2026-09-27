@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The first administrator. Registration only ever creates ordinary users, so
+  without this account nobody could author a problem or a contest.
+
+      username  admin
+      password  forge-admin
+
+  The password is stored as a BCrypt hash (cost 10, what SecurityConfig's
+  BCryptPasswordEncoder produces and checks). These are local-development
+  credentials, like the JWT secret in application.yml: change the password from
+  the profile page before the instance is reachable from anywhere but
+  localhost.
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-insert-admin-account" author="codeforge">
+        <insert tableName="users">
+            <column name="username" value="admin"/>
+            <column name="email" value="admin@codeforge.local"/>
+            <column name="password_hash" value="$2a$10$Qf0F1TR/vd5E8WO9W08CleRZcz.sprPJrqdTIqNobHGbzezanMbH6"/>
+            <column name="role" value="ADMIN"/>
+            <column name="avatar" value="FORGE"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="rating" valueNumeric="1500"/>
+            <column name="max_rating" valueNumeric="1500"/>
+            <column name="contests_attended" valueNumeric="0"/>
+            <!-- UTC, like every Instant the application writes. -->
+            <column name="created_at" valueComputed="UTC_TIMESTAMP(6)"/>
+            <column name="updated_at" valueComputed="UTC_TIMESTAMP(6)"/>
+        </insert>
+        <rollback>
+            <delete tableName="users">
+                <where>username = 'admin'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

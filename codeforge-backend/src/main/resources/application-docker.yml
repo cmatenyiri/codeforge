@@ -26,9 +26,11 @@ codeforge:
   execution:
     judge0:
       base-url: http://judge0-server:2358
-      # Each instance names itself. HOSTNAME is the container's hostname, which
-      # the Compose network resolves to that container, so Judge0 calls the
-      # instance that is waiting for the result straight back — no hop through
-      # nginx, and nothing forwarded between instances. Should a callback land
-      # elsewhere anyway, the receiving instance forwards it over RabbitMQ.
+      # Each replica names itself. HOSTNAME is the container's hostname — its
+      # short id, since replicas cannot be given one — and the Compose network
+      # resolves it to that one container. So Judge0 calls the replica that is
+      # waiting for the result straight back: no hop through nginx, and nothing
+      # forwarded between replicas. Should a callback land on another replica
+      # anyway, the callback path names the instance it is for, and the
+      # receiving one forwards it over RabbitMQ (Judge0CallbackRouter).
       callback-url: http://${HOSTNAME}:8080

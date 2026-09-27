@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The whole database schema. Hibernate only validates against it
+  (spring.jpa.hibernate.ddl-auto: validate), and Quartz creates nothing of its
+  own (spring.quartz.jdbc.initialize-schema: never), so every table there is
+  comes from a changeset below.
+
+  Several backend instances can start against one database at the same time.
+  Liquibase takes a row lock in DATABASECHANGELOGLOCK before it applies
+  anything, so exactly one instance applies what is pending while the others
+  wait for the lock, find nothing left to do, and carry on. (Creating
+  DATABASECHANGELOG itself happens before that lock; ConcurrentChangeLogHistoryService
+  covers two instances racing to do it on an empty database.)
+
+  A schema change is a new changeset in a new file, included at the end of this
+  list. A changeset that has run is never edited: Liquibase stores a checksum
+  of each one and refuses to start if an applied changeset has changed.
+
+  MySQL cannot roll back DDL, so a changeset that fails halfway leaves what it
+  had already created behind. Each changeset below builds one table with its
+  keys and indexes; on the disposable dev database the fix for a broken one is
+  to drop the schema and start again.
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="changes/001-application-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changes/002-quartz-schema.xml" relativeToChangelogFile="true"/>
+    <include file="changes/003-admin-account.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

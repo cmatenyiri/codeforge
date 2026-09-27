@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The application's tables, as the entities in com.codeforge.domain map them.
+
+  Column types follow what Hibernate itself would generate for MySQL, because
+  it validates every mapped column against them on startup: a boolean is
+  BIT(1), an Instant is DATETIME(6), and a @Lob String is TEXT or LONGTEXT as its
+  columnDefinition says. Booleans are spelled BIT(1) rather than BOOLEAN on
+  purpose: Liquibase turns BOOLEAN into TINYINT on MySQL, which fails that
+  validation.
+
+  A Java enum is a MySQL ENUM listing every constant alphabetically. A new
+  constant needs a changeset that runs
+  ALTER TABLE ... MODIFY col ENUM(...) NOT NULL with the full new list, or every
+  insert that uses it fails.
+
+  Tables come in the order their foreign keys need, so each can declare its
+  own inline.
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- ── Accounts ─────────────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-users" author="codeforge">
+        <createTable tableName="users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="username" type="VARCHAR(32)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_users_username"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_users_email"/>
+            </column>
+            <column name="password_hash" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="ENUM('ADMIN','USER')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="avatar"
+                    type="ENUM('CIPHER','CIRCUIT','FORGE','GLITCH','LATTICE','NEBULA','ORBIT','PRISM','PULSE','VERTEX')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating" type="DOUBLE" defaultValueNumeric="1500">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_rating" type="DOUBLE" defaultValueNumeric="1500">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contests_attended" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ── Problems ─────────────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-tags" author="codeforge">
+        <createTable tableName="tags">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_tags_name"/>
+            </column>
+            <column name="slug" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_tags_slug"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-problems" author="codeforge">
+        <createTable tableName="problems">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="title" type="VARCHAR(160)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_problems_title"/>
+            </column>
+            <column name="slug" type="VARCHAR(180)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_problems_slug"/>
+            </column>
+            <column name="description" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="constraints_md" type="TEXT"/>
+            <column name="difficulty" type="ENUM('EASY','HARD','MEDIUM')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="difficulty_rank" type="INT"/>
+            <column name="published" type="BIT(1)" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="archived" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_published_at" type="DATETIME(6)"/>
+            <column name="total_submissions" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accepted_submissions" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="BIGINT">
+                <constraints foreignKeyName="fk_problems_created_by"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="function_name" type="VARCHAR(64)"/>
+            <column name="return_type"
+                    type="ENUM('BOOLEAN','DOUBLE','DOUBLE_ARRAY','INT','INT_ARRAY','INT_MATRIX','LONG','LONG_ARRAY','STRING','STRING_ARRAY')"/>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-problem-tags" author="codeforge">
+        <createTable tableName="problem_tags">
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             foreignKeyName="fk_problem_tags_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="tag_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             foreignKeyName="fk_problem_tags_tag"
+                             referencedTableName="tags" referencedColumnNames="id"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Problem.parameters, an ordered element collection: `position` is its index. -->
+    <changeSet id="001-create-problem-parameters" author="codeforge">
+        <createTable tableName="problem_parameters">
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             foreignKeyName="fk_problem_parameters_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="param_name" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="param_type"
+                    type="ENUM('BOOLEAN','DOUBLE','DOUBLE_ARRAY','INT','INT_ARRAY','INT_MATRIX','LONG','LONG_ARRAY','STRING','STRING_ARRAY')">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-problem-examples" author="codeforge">
+        <createTable tableName="problem_examples">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_problem_examples_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="input_text" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="output_text" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="explanation" type="TEXT"/>
+            <column name="display_order" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-problem-hints" author="codeforge">
+        <createTable tableName="problem_hints">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_problem_hints_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-test-cases" author="codeforge">
+        <createTable tableName="test_cases">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_test_cases_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="input_text" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expected_output" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hidden" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_order" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="001-create-editorials" author="codeforge">
+        <createTable tableName="editorials">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_editorials_problem"
+                             foreignKeyName="fk_editorials_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="content_md" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="time_complexity" type="VARCHAR(48)"/>
+            <column name="space_complexity" type="VARCHAR(48)"/>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Editorial.solutions: one reference solution per language. -->
+    <changeSet id="001-create-editorial-solutions" author="codeforge">
+        <createTable tableName="editorial_solutions">
+            <column name="editorial_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             foreignKeyName="fk_editorial_solutions_editorial"
+                             referencedTableName="editorials" referencedColumnNames="id"/>
+            </column>
+            <column name="language" type="ENUM('CPP','JAVA','JAVASCRIPT','PYTHON','TYPESCRIPT')">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="source_code" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ── Contests ─────────────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-contests" author="codeforge">
+        <createTable tableName="contests">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="title" type="VARCHAR(160)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_contests_title"/>
+            </column>
+            <column name="slug" type="VARCHAR(180)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_contests_slug"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="type" type="ENUM('BIWEEKLY','SPECIAL','WEEKLY')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="starts_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="duration_minutes" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ends_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="published" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rated" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unrated_reason" type="VARCHAR(500)"/>
+            <column name="sealed_at" type="DATETIME(6)"/>
+            <column name="problems_released_at" type="DATETIME(6)"/>
+            <column name="ratings_applied_at" type="DATETIME(6)"/>
+            <column name="rejudge_state" type="ENUM('COMPLETED','FAILED','NONE','RUNNING')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rejudge_started_at" type="DATETIME(6)"/>
+            <column name="rejudge_finished_at" type="DATETIME(6)"/>
+            <column name="rejudge_total" type="INT"/>
+            <column name="rejudge_done" type="INT"/>
+            <column name="rejudge_error" type="VARCHAR(500)"/>
+            <column name="created_by" type="BIGINT">
+                <constraints foreignKeyName="fk_contests_created_by"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="contests" indexName="ix_contests_starts_at">
+            <column name="starts_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-create-contest-problems" author="codeforge">
+        <createTable tableName="contest_problems">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="contest_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_problems_contest"
+                             referencedTableName="contests" referencedColumnNames="id"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_problems_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="points" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="problem_snapshot" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="contest_problems" constraintName="uk_contest_problem_position"
+                             columnNames="contest_id, position"/>
+        <addUniqueConstraint tableName="contest_problems" constraintName="uk_contest_problem_problem"
+                             columnNames="contest_id, problem_id"/>
+    </changeSet>
+
+    <!-- ── Interviews ───────────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-interviews" author="codeforge">
+        <createTable tableName="interviews">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_interviews_user"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="format" type="ENUM('HARD','STANDARD','WARM_UP')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="ENUM('ABANDONED','COMPLETED','IN_PROGRESS')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="duration_minutes" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="started_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ended_at" type="DATETIME(6)"/>
+            <column name="score" type="INT"/>
+            <column name="outcome" type="ENUM('NO_SOLVE','PARTIAL','SOLID','STRONG')"/>
+            <column name="used_outside_help" type="BIT(1)"/>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="interviews" indexName="ix_interviews_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ── Submissions ──────────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-submissions" author="codeforge">
+        <createTable tableName="submissions">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_submissions_user"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_submissions_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="interview_id" type="BIGINT">
+                <constraints foreignKeyName="fk_submissions_interview"
+                             referencedTableName="interviews" referencedColumnNames="id"/>
+            </column>
+            <column name="contest_id" type="BIGINT">
+                <constraints foreignKeyName="fk_submissions_contest"
+                             referencedTableName="contests" referencedColumnNames="id"/>
+            </column>
+            <column name="contest_problem_id" type="BIGINT">
+                <constraints foreignKeyName="fk_submissions_contest_problem"
+                             referencedTableName="contest_problems" referencedColumnNames="id"/>
+            </column>
+            <column name="counted_in_contest" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contest_seconds" type="BIGINT"/>
+            <column name="language" type="ENUM('CPP','JAVA','JAVASCRIPT','PYTHON','TYPESCRIPT')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_code" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status"
+                    type="ENUM('ACCEPTED','COMPILE_ERROR','INTERNAL_ERROR','MEMORY_LIMIT_EXCEEDED','PENDING','RUNNING','RUNTIME_ERROR','TIME_LIMIT_EXCEEDED','WRONG_ANSWER')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="runtime_ms" type="INT"/>
+            <column name="memory_kb" type="INT"/>
+            <column name="passed_tests" type="INT"/>
+            <column name="total_tests" type="INT"/>
+            <column name="failure_message" type="TEXT"/>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="submissions" indexName="ix_submissions_user">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="submissions" indexName="ix_submissions_problem">
+            <column name="problem_id"/>
+        </createIndex>
+        <createIndex tableName="submissions" indexName="ix_submissions_contest">
+            <column name="contest_id"/>
+        </createIndex>
+        <createIndex tableName="submissions" indexName="ix_submissions_user_created">
+            <column name="user_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-create-interview-problems" author="codeforge">
+        <createTable tableName="interview_problems">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="interview_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_interview_problems_interview"
+                             referencedTableName="interviews" referencedColumnNames="id"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_interview_problems_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="problem_snapshot" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solved" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="skipped" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="opened_at" type="DATETIME(6)"/>
+            <column name="solved_at" type="DATETIME(6)"/>
+            <column name="attempts" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hints_revealed" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solved_by_submission_id" type="BIGINT">
+                <constraints foreignKeyName="fk_interview_problems_solved_by"
+                             referencedTableName="submissions" referencedColumnNames="id"/>
+            </column>
+            <column name="last_submission_id" type="BIGINT">
+                <constraints foreignKeyName="fk_interview_problems_last_submission"
+                             referencedTableName="submissions" referencedColumnNames="id"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="interview_problems" constraintName="uk_interview_problem_position"
+                             columnNames="interview_id, position"/>
+    </changeSet>
+
+    <!-- ── Contest results ──────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-contest-participations" author="codeforge">
+        <createTable tableName="contest_participations">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="contest_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_participations_contest"
+                             referencedTableName="contests" referencedColumnNames="id"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_participations_user"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="registered_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="score" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finish_seconds" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="penalty_seconds" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_time_seconds" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rank_position" type="INT"/>
+            <column name="submission_count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="contest_participations" constraintName="uk_contest_participation"
+                             columnNames="contest_id, user_id"/>
+        <createIndex tableName="contest_participations" indexName="ix_contest_participations_user">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="contest_participations" indexName="ix_contest_participations_ranking">
+            <column name="contest_id"/>
+            <column name="score"/>
+            <column name="total_time_seconds"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="001-create-contest-participation-problems" author="codeforge">
+        <createTable tableName="contest_participation_problems">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="participation_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_participation_problems_participation"
+                             referencedTableName="contest_participations" referencedColumnNames="id"/>
+            </column>
+            <column name="contest_problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_participation_problems_problem"
+                             referencedTableName="contest_problems" referencedColumnNames="id"/>
+            </column>
+            <column name="position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solved" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solved_at_seconds" type="BIGINT"/>
+            <column name="wrong_attempts" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="solved_by_submission_id" type="BIGINT">
+                <constraints foreignKeyName="fk_contest_participation_problems_solved_by"
+                             referencedTableName="submissions" referencedColumnNames="id"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="contest_participation_problems"
+                             constraintName="uk_contest_participation_problem"
+                             columnNames="participation_id, position"/>
+    </changeSet>
+
+    <changeSet id="001-create-contest-rating-changes" author="codeforge">
+        <createTable tableName="contest_rating_changes">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="contest_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_rating_changes_contest"
+                             referencedTableName="contests" referencedColumnNames="id"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_contest_rating_changes_user"
+                             referencedTableName="users" referencedColumnNames="id"/>
+            </column>
+            <column name="rating_before" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rating_after" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="delta" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rank_position" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="participant_count" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attended_before" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="applied_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="contest_rating_changes" constraintName="uk_contest_rating_change"
+                             columnNames="contest_id, user_id"/>
+        <createIndex tableName="contest_rating_changes" indexName="ix_contest_rating_changes_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ── Daily challenge ──────────────────────────────────────────────── -->
+
+    <changeSet id="001-create-daily-challenges" author="codeforge">
+        <createTable tableName="daily_challenges">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="challenge_date" type="DATE">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_daily_challenge_date"/>
+            </column>
+            <column name="problem_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_daily_challenges_problem"
+                             referencedTableName="problems" referencedColumnNames="id"/>
+            </column>
+            <column name="pinned" type="BIT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME(6)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

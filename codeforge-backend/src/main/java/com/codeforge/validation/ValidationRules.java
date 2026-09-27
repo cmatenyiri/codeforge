@@ -41,7 +41,7 @@ public final class ValidationRules {
      *
      * <p>Sized for generated stress cases, not for typing. A hidden case that
      * sits at the top of a problem's constraints — 3·10^5 integers on one line —
-     * is already about 2 MB in the seeded catalogue, so a limit chosen for
+     * is already about 2 MB, so a limit chosen for
      * hand-written cases would make those problems unsaveable and unpublishable.
      * The column is LONGTEXT; this is a bound on what one field can carry, well
      * under MySQL's default 64 MB packet.

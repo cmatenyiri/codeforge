@@ -5,10 +5,10 @@ import java.util.Locale;
 /**
  * The one way a human-readable name becomes a URL segment.
  *
- * <p>Shared rather than reimplemented per caller so that a problem seeded from
- * the catalogue, one written in the app and a tag created alongside it all land
- * on the same slug for the same name — which is what makes "does this already
- * exist?" a question the database can answer.
+ * <p>Shared rather than reimplemented per caller so that a problem, a contest
+ * and a tag created alongside them all land on the same slug for the same name
+ * — which is what makes "does this already exist?" a question the database can
+ * answer.
  */
 public final class Slugs {
 

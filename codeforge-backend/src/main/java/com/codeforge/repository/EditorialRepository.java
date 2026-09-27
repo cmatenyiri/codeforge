@@ -18,10 +18,6 @@ public interface EditorialRepository extends JpaRepository<Editorial, Long> {
 
     void deleteByProblemId(Long problemId);
 
-    /** Which problems already have one, so the seeder can fill in only the gaps. */
-    @Query("select e.problem.slug from Editorial e")
-    Set<String> findProblemSlugs();
-
     /** Which of these problems have an editorial — one query per page, not per row. */
     @Query("select e.problem.id from Editorial e where e.problem.id in :problemIds")
     Set<Long> findProblemIdsIn(@Param("problemIds") Collection<Long> problemIds);
